@@ -42,15 +42,15 @@
 }
 
 .persistent-era-rail.rail-on-dark {
-  color: #fff;
+  color: #ffffff !important;
 }
 
 .persistent-era-rail.rail-on-light {
-  color: #172a43;
+  color: #111820 !important;
 }
 
 .persistent-emblem text {
-  fill: currentColor;
+  fill: currentColor !important;
   font-family: 'DM Sans', sans-serif;
   font-size: 8px;
   font-weight: 700;

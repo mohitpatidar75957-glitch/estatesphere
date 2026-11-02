@@ -166,30 +166,32 @@ export default function App() {
 
         if (!bgEl) return false;
 
-        // Special handling for interior cinematic tour:
+        // 1. Special handling for interior cinematic tour:
         // When panels are in center (small), the top margins are cream (#f1f0e8) -> LIGHT (BLACK text).
         // When panels expand to full screen (progress > 0.38), image covers screen -> DARK (WHITE text).
         if (bgEl.closest('.interior-cinematic-scroll')) {
           return interiorCinemaProgressRef.current > 0.38;
         }
 
-        // Known LIGHT sections (Cream / Pastel Blue / Soft White)
+        // 2. Known DARK sections (Deep Navy / Charcoal / Evening Views / Night Scenes):
+        // Always pure WHITE text and WHITE emblem
+        if (bgEl.closest(
+          '.apartment-showcase, .residence-statement, .residence-breath, ' +
+          '.community-feature, .space-reveal-scroll, .lifestyle-slides, ' +
+          '.estate-final-view, .estate-footer, .amenities, .era-contact'
+        )) {
+          return true; // DARK -> WHITE
+        }
+
+        // 3. Known LIGHT sections (Cream / Pastel Blue / Soft White):
+        // Always pure BLACK text and BLACK emblem
         if (bgEl.closest(
           '.estate-horizontal-story, .story-concept, .story-intro, .story-route, ' +
           '.era-location-intro, .manifesto, .location, .location-copy, #concept, ' +
-          '.space-reveal-scroll, .space-details-story, .interior-film, ' +
+          '.space-details-story, .interior-film, ' +
           '.estate-credentials, .cinematic-property-scroll, .estate-exterior-reveal'
         )) {
-          return false; // LIGHT -> Black text/emblem
-        }
-
-        // Known DARK sections (Deep Navy / Charcoal / Evening Views)
-        if (bgEl.closest(
-          '.apartment-showcase, .residence-breath, .residence-statement, ' +
-          '.community-feature, .lifestyle-slides, .estate-final-view, .estate-footer, ' +
-          '.amenities, .era-contact'
-        )) {
-          return true; // DARK -> White text/emblem
+          return false; // LIGHT -> BLACK
         }
 
         // Fallback: check computed background color
