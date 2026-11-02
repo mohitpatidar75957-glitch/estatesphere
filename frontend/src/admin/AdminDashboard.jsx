@@ -4132,12 +4132,17 @@ export default function AdminDashboard() {
                       Concept Main Heading
                     </label>
                     <textarea
-                      rows={2}
+                      rows={3}
                       className="input-clean"
+                      ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = Math.max(80, el.scrollHeight) + 'px'; } }}
                       value={contentForm.conceptHeading || ''}
-                      onChange={(e) => setContentForm({ ...contentForm, conceptHeading: e.target.value })}
+                      onChange={(e) => {
+                        setContentForm({ ...contentForm, conceptHeading: e.target.value });
+                        e.target.style.height = 'auto';
+                        e.target.style.height = Math.max(80, e.target.scrollHeight) + 'px';
+                      }}
                       placeholder="ESTATESPHERE IS A BOUTIQUE RESIDENTIAL COMMUNITY..."
-                      style={{ resize: 'vertical' }}
+                      style={{ minHeight: '80px', overflow: 'hidden', resize: 'none', lineHeight: '1.5' }}
                     />
                   </div>
 
@@ -4378,12 +4383,28 @@ export default function AdminDashboard() {
                         Full Statement Title
                       </label>
                       <textarea
-                        rows={2}
+                        rows={4}
                         className="input-clean"
+                        ref={(el) => {
+                          if (el) {
+                            el.style.height = 'auto';
+                            el.style.height = Math.max(110, el.scrollHeight) + 'px';
+                          }
+                        }}
                         value={contentForm.residencesStatementTitle || ''}
-                        onChange={(e) => setContentForm({ ...contentForm, residencesStatementTitle: e.target.value })}
+                        onChange={(e) => {
+                          setContentForm({ ...contentForm, residencesStatementTitle: e.target.value });
+                          e.target.style.height = 'auto';
+                          e.target.style.height = Math.max(110, e.target.scrollHeight) + 'px';
+                        }}
                         placeholder="RESIDENCES RANGE FROM 104 TO 244 SQ.M., OFFERING SPACIOUS SINGLE-LEVEL..."
-                        style={{ resize: 'vertical' }}
+                        style={{
+                          minHeight: '110px',
+                          overflow: 'hidden',
+                          resize: 'none',
+                          lineHeight: '1.55',
+                          fontSize: '13px'
+                        }}
                       />
                     </div>
                   </div>
