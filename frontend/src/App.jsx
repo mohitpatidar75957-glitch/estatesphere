@@ -145,13 +145,13 @@ export default function App() {
   const emblemLastScrollRef = useRef({ y: 0, time: 0 })
   useEffect(() => { const fn = e => setCursor({ x: e.clientX, y: e.clientY, nx: (e.clientX / window.innerWidth - .5) * 2, ny: (e.clientY / window.innerHeight - .5) * 2 }); window.addEventListener('mousemove', fn); return () => window.removeEventListener('mousemove', fn) }, [])
   useEffect(() => { emblemLastScrollRef.current = { y: window.scrollY, time: performance.now() }; let autoFrame = 0; const onScroll = () => { const now = performance.now(), nextY = window.scrollY, delta = nextY - emblemLastScrollRef.current.y; emblemAngleRef.current += delta * .52; emblemLastScrollRef.current = { y: nextY, time: now }; if (emblemSvgRef.current) emblemSvgRef.current.style.transform = `rotate(${emblemAngleRef.current}deg)` }; const autoRotate = now => { if (now - emblemLastScrollRef.current.time > 180) { emblemAngleRef.current += .11; if (emblemSvgRef.current) emblemSvgRef.current.style.transform = `rotate(${emblemAngleRef.current}deg)` } autoFrame = requestAnimationFrame(autoRotate) }; window.addEventListener('scroll', onScroll, { passive: true }); autoFrame = requestAnimationFrame(autoRotate); return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(autoFrame) } }, [])
-  useEffect(() => { let frame = 0; const fn = () => { if (frame) return; frame = requestAnimationFrame(() => { heroTargetRef.current = Math.min(1, Math.max(0, window.scrollY / (window.innerHeight * 2))); const available = Math.max(1, document.documentElement.scrollHeight - window.innerHeight); setPageProgress(Math.min(1, Math.max(0, window.scrollY / available))); if (horizontalStoryRef.current) { const start = horizontalStoryRef.current.offsetTop; const distance = Math.max(1, horizontalStoryRef.current.offsetHeight - window.innerHeight); setStoryProgress(Math.min(1, Math.max(0, (window.scrollY - start) / distance))) } if (cinematicRef.current) { const start = cinematicRef.current.offsetTop; const distance = Math.max(1, cinematicRef.current.offsetHeight - window.innerHeight); setCinematicProgress(Math.min(1, Math.max(0, (window.scrollY - start) / distance))) } if (spaceRevealRef.current) { const sectionStart = spaceRevealRef.current.offsetTop; const start = sectionStart + window.innerHeight * .22; const end = sectionStart + spaceRevealRef.current.offsetHeight - window.innerHeight; const distance = Math.max(1, end - start); spaceTargetRef.current = Math.min(1, Math.max(0, (window.scrollY - start) / distance)) } if (interiorCinemaRef.current) { const start = interiorCinemaRef.current.offsetTop; const distance = Math.max(1, interiorCinemaRef.current.offsetHeight - window.innerHeight); interiorCinemaTargetRef.current = Math.min(1, Math.max(0, (window.scrollY - start) / distance)) } if (lifestyleRef.current) { const start = lifestyleRef.current.offsetTop; const distance = Math.max(1, lifestyleRef.current.offsetHeight - window.innerHeight); lifestyleTargetRef.current = Math.min(1, Math.max(0, (window.scrollY - start) / distance)) } if (finalRef.current) { const start = finalRef.current.offsetTop; const distance = Math.max(1, finalRef.current.offsetHeight - window.innerHeight); finalTargetRef.current = Math.min(1, Math.max(0, (window.scrollY - start) / distance)) } const railSection = document.elementFromPoint(Math.min(80, window.innerWidth * .06), Math.min(90, window.innerHeight * .12))?.closest('section'); setRailOnDark(!railSection || railSection.matches('.era-hero-scroll,.era-location-intro,.concept-image,.cinematic-property-scroll,.community-feature,.amenities,.architecture,.era-contact,.interior-cinematic-scroll,.lifestyle-slides,.estate-final-view,.estate-footer') || (railSection.matches('.space-reveal-scroll') && spaceProgressRef.current < .42)); frame = 0 }) }; window.addEventListener('scroll', fn, { passive: true }); fn(); return () => { window.removeEventListener('scroll', fn); if (frame) cancelAnimationFrame(frame) } }, [])
+  useEffect(() => { let frame = 0; const fn = () => { if (frame) return; frame = requestAnimationFrame(() => { heroTargetRef.current = Math.min(1, Math.max(0, window.scrollY / (window.innerHeight * 2))); const available = Math.max(1, document.documentElement.scrollHeight - window.innerHeight); setPageProgress(Math.min(1, Math.max(0, window.scrollY / available))); if (horizontalStoryRef.current) { const start = horizontalStoryRef.current.offsetTop; const distance = Math.max(1, horizontalStoryRef.current.offsetHeight - window.innerHeight); setStoryProgress(Math.min(1, Math.max(0, (window.scrollY - start) / distance))) } if (cinematicRef.current) { const start = cinematicRef.current.offsetTop; const distance = Math.max(1, cinematicRef.current.offsetHeight - window.innerHeight); setCinematicProgress(Math.min(1, Math.max(0, (window.scrollY - start) / distance))) } if (spaceRevealRef.current) { const sectionStart = spaceRevealRef.current.offsetTop; const start = sectionStart + window.innerHeight * .22; const end = sectionStart + spaceRevealRef.current.offsetHeight - window.innerHeight; const distance = Math.max(1, end - start); spaceTargetRef.current = Math.min(1, Math.max(0, (window.scrollY - start) / distance)) } if (interiorCinemaRef.current) { const start = interiorCinemaRef.current.offsetTop; const distance = Math.max(1, interiorCinemaRef.current.offsetHeight - window.innerHeight); interiorCinemaTargetRef.current = Math.min(1, Math.max(0, (window.scrollY - start) / distance)) } if (lifestyleRef.current) { const start = lifestyleRef.current.offsetTop; const distance = Math.max(1, lifestyleRef.current.offsetHeight - window.innerHeight); lifestyleTargetRef.current = Math.min(1, Math.max(0, (window.scrollY - start) / distance)) } if (finalRef.current) { const start = finalRef.current.offsetTop; const distance = Math.max(1, finalRef.current.offsetHeight - window.innerHeight); finalTargetRef.current = Math.min(1, Math.max(0, (window.scrollY - start) / distance)) } frame = 0 }) }; window.addEventListener('scroll', fn, { passive: true }); fn(); return () => { window.removeEventListener('scroll', fn); if (frame) cancelAnimationFrame(frame) } }, [])
   useEffect(() => { let animationFrame = 0; const animate = () => { const heroCurrent = heroProgressRef.current, heroTarget = heroTargetRef.current; const heroNext = Math.abs(heroTarget - heroCurrent) < .0005 ? heroTarget : heroCurrent + (heroTarget - heroCurrent) * .045; heroProgressRef.current = heroNext; setHeroProgress(heroNext); const current = spaceProgressRef.current, target = spaceTargetRef.current; const next = Math.abs(target - current) < .0005 ? target : current + (target - current) * .045; spaceProgressRef.current = next; setSpaceProgress(next); const cinemaCurrent = interiorCinemaProgressRef.current, cinemaTarget = interiorCinemaTargetRef.current; const cinemaNext = Math.abs(cinemaTarget - cinemaCurrent) < .0004 ? cinemaTarget : cinemaCurrent + (cinemaTarget - cinemaCurrent) * .055; interiorCinemaProgressRef.current = cinemaNext; setInteriorCinemaProgress(cinemaNext); const lifeCurrent = lifestyleProgressRef.current, lifeTarget = lifestyleTargetRef.current; const lifeNext = Math.abs(lifeTarget - lifeCurrent) < .0004 ? lifeTarget : lifeCurrent + (lifeTarget - lifeCurrent) * .055; lifestyleProgressRef.current = lifeNext; setLifestyleProgress(lifeNext); const finalCurrent = finalProgressRef.current, finalTarget = finalTargetRef.current; const finalNext = Math.abs(finalTarget - finalCurrent) < .0004 ? finalTarget : finalCurrent + (finalTarget - finalCurrent) * .055; finalProgressRef.current = finalNext; setFinalProgress(finalNext); animationFrame = requestAnimationFrame(animate) }; animationFrame = requestAnimationFrame(animate); return () => cancelAnimationFrame(animationFrame) }, [])
   useEffect(() => {
     const updateHeaderThemes = () => {
       const scrollY = window.scrollY;
 
-      // Top Hero section handling
+      // 1. Top Hero Section Handling
       if (scrollY < window.innerHeight * 0.65) {
         const isNight = heroTime === 'NIGHT';
         setNavOnDark(isNight);
@@ -159,53 +159,64 @@ export default function App() {
         return;
       }
 
-      // 1. Right Navigation Theme Detection (at top-right actions point)
+      // Helper to check if a point is over a dark or light background
+      const evaluateThemeAtPoint = (x, y, excludeSelector) => {
+        const elements = document.elementsFromPoint ? document.elementsFromPoint(x, y) : [];
+        const bgEl = elements.find(el => !el.closest(excludeSelector) && !el.closest('.custom-cursor'));
+
+        if (!bgEl) return false;
+
+        // Special handling for interior cinematic tour:
+        // When panels are in center (small), the top margins are cream (#f1f0e8) -> LIGHT (BLACK text).
+        // When panels expand to full screen (progress > 0.38), image covers screen -> DARK (WHITE text).
+        if (bgEl.closest('.interior-cinematic-scroll')) {
+          return interiorCinemaProgressRef.current > 0.38;
+        }
+
+        // Known LIGHT sections (Cream / Pastel Blue / Soft White)
+        if (bgEl.closest(
+          '.estate-horizontal-story, .story-concept, .story-intro, .story-route, ' +
+          '.era-location-intro, .manifesto, .location, .location-copy, #concept, ' +
+          '.space-reveal-scroll, .space-details-story, .interior-film, ' +
+          '.estate-credentials, .cinematic-property-scroll, .estate-exterior-reveal'
+        )) {
+          return false; // LIGHT -> Black text/emblem
+        }
+
+        // Known DARK sections (Deep Navy / Charcoal / Evening Views)
+        if (bgEl.closest(
+          '.apartment-showcase, .residence-breath, .residence-statement, ' +
+          '.community-feature, .lifestyle-slides, .estate-final-view, .estate-footer, ' +
+          '.amenities, .era-contact'
+        )) {
+          return true; // DARK -> White text/emblem
+        }
+
+        // Fallback: check computed background color
+        let curr = bgEl;
+        while (curr && curr !== document.body && curr !== document.documentElement) {
+          const bg = window.getComputedStyle(curr).backgroundColor;
+          if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') {
+            const rgb = bg.match(/\d+/g);
+            if (rgb && rgb.length >= 3) {
+              const brightness = (parseInt(rgb[0]) * 299 + parseInt(rgb[1]) * 587 + parseInt(rgb[2]) * 114) / 1000;
+              return brightness < 155;
+            }
+          }
+          curr = curr.parentElement;
+        }
+        return false;
+      };
+
+      // Right Header Theme Detection (at top-right actions point)
       const navX = Math.max(10, window.innerWidth - 80);
       const navY = 50;
-      const navElements = document.elementsFromPoint ? document.elementsFromPoint(navX, navY) : [];
-      const navBgEl = navElements.find(el => !el.closest('.era-nav') && !el.closest('.custom-cursor'));
+      setNavOnDark(evaluateThemeAtPoint(navX, navY, '.era-nav'));
 
-      if (navBgEl) {
-        if (navBgEl.closest('.story-concept, .story-intro, .era-location-intro, .manifesto, .location, .location-copy, #concept')) {
-          setNavOnDark(false);
-        } else if (navBgEl.closest('.era-hero-scroll, .concept-image, .cinematic-property-scroll, .community-feature, .amenities, .architecture, .era-contact, .interior-cinematic-scroll, .lifestyle-slides, .estate-final-view, .estate-footer, .space-reveal-scroll, .residence-section, .estate-residences, .estate-horizontal-story, .story-route')) {
-          setNavOnDark(true);
-        } else {
-          let curr = navBgEl;
-          let isDark = true;
-          while (curr && curr !== document.body && curr !== document.documentElement) {
-            const bg = window.getComputedStyle(curr).backgroundColor;
-            if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') {
-              const rgb = bg.match(/\d+/g);
-              if (rgb && rgb.length >= 3) {
-                const brightness = (parseInt(rgb[0]) * 299 + parseInt(rgb[1]) * 587 + parseInt(rgb[2]) * 114) / 1000;
-                isDark = brightness < 160;
-                break;
-              }
-            }
-            curr = curr.parentElement;
-          }
-          setNavOnDark(isDark);
-        }
-      } else {
-        setNavOnDark(true);
-      }
-
-      // 2. Left Rail Theme Detection (at top-left rail point)
+      // Left Rail Theme Detection (at top-left rail point)
       const railX = Math.min(80, window.innerWidth * 0.06);
       const railY = Math.min(90, window.innerHeight * 0.12);
-      const railElements = document.elementsFromPoint ? document.elementsFromPoint(railX, railY) : [];
-      const railBgEl = railElements.find(el => !el.closest('.persistent-era-rail') && !el.closest('.custom-cursor'));
-
-      if (railBgEl) {
-        if (railBgEl.closest('.story-concept, .story-intro, .era-location-intro, .manifesto, .location, .location-copy, #concept')) {
-          setRailOnDark(false);
-        } else {
-          setRailOnDark(true);
-        }
-      } else {
-        setRailOnDark(true);
-      }
+      setRailOnDark(evaluateThemeAtPoint(railX, railY, '.persistent-era-rail'));
     };
 
     window.addEventListener('scroll', updateHeaderThemes, { passive: true });
