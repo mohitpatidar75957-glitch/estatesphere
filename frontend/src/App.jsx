@@ -5,6 +5,7 @@ import ApartmentsPage from './components/ApartmentsPage'
 import ContactPage from './components/ContactPage'
 import AdminLogin from './admin/AdminLogin'
 import AdminDashboard from './admin/AdminDashboard'
+import { authService } from './admin/auth'
 import Lenis from 'lenis'
 import { dataStore } from './admin/dataStore'
 
@@ -213,6 +214,9 @@ export default function App() {
   }
 
   if (currentPath.startsWith('/admin')) {
+    if (!authService.isAuthenticated() || !authService.getUser()) {
+      return <AdminLogin onLoginSuccess={() => navigateTo('/admin/dashboard')} />
+    }
     return <AdminDashboard />
   }
 

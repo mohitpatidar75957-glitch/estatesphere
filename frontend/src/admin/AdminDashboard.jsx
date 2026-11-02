@@ -14,8 +14,20 @@ import { authService } from './auth';
 import { dataStore, DEFAULT_SITE_CONTENT, ROLE_PERMISSIONS } from './dataStore';
 
 export default function AdminDashboard() {
+  const currentUser = authService.getUser();
+
+  useEffect(() => {
+    if (!authService.isAuthenticated() || !currentUser) {
+      window.location.href = '/admin/login';
+    }
+  }, [currentUser]);
+
+  if (!currentUser) {
+    return null;
+  }
+
   const [user, setUser] = useState(() => {
-    const rawUser = authService.getUser() || { name: 'Super Admin', email: 'superadmin@estatesphere.com', role: 'SUPER_ADMIN' };
+    const rawUser = currentUser;
     const teamDb = dataStore.getTeam();
     const matched = teamDb.find(m => (m.email && rawUser.email && m.email.trim().toLowerCase() === rawUser.email.trim().toLowerCase()) || m.id === rawUser.id);
     if (matched) {
@@ -33,8 +45,8 @@ export default function AdminDashboard() {
     };
   });
 
-  const currentRole = user?.role || 'SUPER_ADMIN';
-  const isSuperAdmin = !user || currentRole === 'SUPER_ADMIN';
+  const currentRole = user?.role || 'SALES_AGENT';
+  const isSuperAdmin = currentRole === 'SUPER_ADMIN';
   const isSalesAgent = currentRole === 'SALES_AGENT';
 
   const userPermissions = useMemo(() => {
