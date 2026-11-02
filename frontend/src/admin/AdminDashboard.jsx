@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Building2, LogOut, ShieldCheck, Users, Home, CheckCircle2, 
+  Building2, LogOut, ShieldCheck, Users, Home, CheckCircle2, Printer, Download, Handshake, Receipt, BadgeCheck, 
   Clock, Plus, RefreshCw, ChevronRight, Search, Bell, Filter, 
   Trash2, Edit3, ExternalLink, Calendar, Check, X, 
   Layers, Mail, Phone, TrendingUp, AlertCircle, Inbox, 
@@ -63,7 +63,7 @@ export default function AdminDashboard() {
   // 1. dashboard | 2. apartments | 3. media | 4. content | 5. inquiries | 6. team | 7. settings
   const [currentTab, setCurrentTab] = useState(() => {
     const hash = typeof window !== 'undefined' ? window.location.hash.replace('#', '') : '';
-    if (['dashboard', 'apartments', 'media', 'content', 'inquiries', 'team', 'settings'].includes(hash)) {
+    if (['dashboard', 'apartments', 'sales', 'media', 'content', 'inquiries', 'team', 'settings'].includes(hash)) {
       return hash;
     }
     return 'dashboard';
@@ -111,7 +111,111 @@ export default function AdminDashboard() {
   const [showAddMediaModal, setShowAddMediaModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  // Option 2: Live Media & Photo Changer State
+    // Option: Sold Units & Buyer Registry State
+  const [searchSalesQuery, setSearchSalesQuery] = useState('');
+  const [salesStatusFilter, setSalesStatusFilter] = useState('ALL'); // 'ALL' | 'SOLD' | 'RESERVED'
+  const [buyerModal, setBuyerModal] = useState({
+    isOpen: false,
+    apartmentId: null,
+    apartmentNumber: '',
+    unitTitle: '',
+    price: 0,
+    status: 'SOLD',
+    name: '',
+    phone: '',
+    email: '',
+    dealAmount: '',
+    saleDate: '',
+    paymentStatus: 'FULLY_PAID',
+    paymentStatusLabel: '100% Payment Cleared (Registry Complete)',
+    assignedAgent: '',
+    notes: ''
+  });
+  const [saleReceiptModal, setSaleReceiptModal] = useState({
+    isOpen: false,
+    apt: null
+  });
+
+  const openEditBuyerModal = (apt) => {
+    if (!apt) return;
+    const todayFormatted = new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date());
+    const existingBuyer = apt.buyer || {};
+    setBuyerModal({
+      isOpen: true,
+      apartmentId: apt.id,
+      apartmentNumber: apt.apartmentNumber,
+      unitTitle: apt.title || `${apt.bedrooms || 3} BHK ${apt.typology || 'Residence'}`,
+      price: apt.price || 0,
+      status: apt.status === 'AVAILABLE' ? 'SOLD' : apt.status,
+      name: existingBuyer.name || '',
+      phone: existingBuyer.phone || '',
+      email: existingBuyer.email || '',
+      dealAmount: existingBuyer.dealAmount || apt.price || '',
+      saleDate: existingBuyer.saleDate || todayFormatted,
+      paymentStatus: existingBuyer.paymentStatus || (apt.status === 'RESERVED' ? 'TOKEN_PAID' : 'FULLY_PAID'),
+      paymentStatusLabel: existingBuyer.paymentStatusLabel || (apt.status === 'RESERVED' ? 'Token Advance Received' : '100% Payment Cleared (Registry Complete)'),
+      assignedAgent: existingBuyer.assignedAgent || user?.name || 'Super Admin',
+      notes: existingBuyer.notes || ''
+    });
+  };
+
+  const handleSaveBuyerModal = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!buyerModal.name.trim()) {
+      alert('Please enter Buyer Full Name.');
+      return;
+    }
+    const updatedBuyerObj = {
+      name: buyerModal.name.trim(),
+      phone: buyerModal.phone.trim(),
+      email: buyerModal.email.trim(),
+      dealAmount: Number(buyerModal.dealAmount) || buyerModal.price,
+      saleDate: buyerModal.saleDate || 'Today',
+      paymentStatus: buyerModal.paymentStatus,
+      paymentStatusLabel: buyerModal.paymentStatusLabel,
+      assignedAgent: buyerModal.assignedAgent || user?.name || 'Super Admin',
+      notes: buyerModal.notes.trim()
+    };
+    const updatedApts = dataStore.updateApartment(
+      buyerModal.apartmentId,
+      {
+        status: buyerModal.status,
+        buyer: updatedBuyerObj
+      },
+      user?.name || 'Super Admin'
+    );
+    setApartments(updatedApts);
+    setActivityFeed(dataStore.getActivityFeed());
+    setBuyerModal(prev => ({ ...prev, isOpen: false }));
+    triggerToast(`Buyer details for Unit ${buyerModal.apartmentNumber} saved successfully!`);
+  };
+
+  const filteredSalesApartments = useMemo(() => {
+    return apartments.filter(apt => {
+      if (salesStatusFilter === 'SOLD') {
+        if (apt.status !== 'SOLD') return false;
+      } else if (salesStatusFilter === 'RESERVED') {
+        if (apt.status !== 'RESERVED') return false;
+      } else {
+        if (apt.status !== 'SOLD' && apt.status !== 'RESERVED') return false;
+      }
+
+      if (!searchSalesQuery.trim()) return true;
+      const q = searchSalesQuery.toLowerCase().trim();
+      const num = (apt.apartmentNumber || '').toLowerCase();
+      const title = (apt.title || '').toLowerCase();
+      const block = (apt.block || '').toLowerCase();
+      const buyerName = (apt.buyer?.name || '').toLowerCase();
+      const buyerPhone = (apt.buyer?.phone || '').toLowerCase();
+      const buyerEmail = (apt.buyer?.email || '').toLowerCase();
+      const agent = (apt.buyer?.assignedAgent || '').toLowerCase();
+
+      return num.includes(q) || title.includes(q) || block.includes(q) ||
+             buyerName.includes(q) || buyerPhone.includes(q) || buyerEmail.includes(q) || agent.includes(q);
+    });
+  }, [apartments, salesStatusFilter, searchSalesQuery]);
+
+// Option 2: Live Media & Photo Changer State
   const [siteContent, setSiteContent] = useState(() => dataStore.getSiteContent());
   const [contentForm, setContentForm] = useState(() => dataStore.getSiteContent());
   const [selectedUnitForPhoto, setSelectedUnitForPhoto] = useState(1);
@@ -928,7 +1032,7 @@ export default function AdminDashboard() {
   };
 
   // Lock body/html scroll when any fullscreen view is active to eliminate duplicate scrollbars
-  const isAnyFullscreenOpen = Boolean(showAddModal || showEditModal || showAddTeamModal || showEditPermissionsModal || photoModal?.isOpen);
+  const isAnyFullscreenOpen = Boolean(showAddModal || showEditModal || showAddTeamModal || showEditPermissionsModal || photoModal?.isOpen || buyerModal?.isOpen || saleReceiptModal?.isOpen);
   useEffect(() => {
     if (isAnyFullscreenOpen) {
       document.body.classList.add('has-fullscreen-open');
@@ -1769,6 +1873,31 @@ export default function AdminDashboard() {
             </button>
           )}
 
+          {/* Sold Units & Buyers (Customer Ownership Registry) */}
+          {userPermissions.modules?.includes('sales') && (
+            <button 
+              className={`sidebar-link-btn ${currentTab === 'sales' ? 'active' : ''}`}
+              onClick={() => handleSwitchTab('sales')}
+            >
+              <div className="sidebar-link-content">
+                <UserCheck size={18} />
+                <span>Sold Units & Buyers</span>
+              </div>
+              {soldCount > 0 && (
+                <span style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  padding: '2px 8px',
+                  borderRadius: '10px',
+                  background: currentTab === 'sales' ? '#dc2626' : '#fee2e2',
+                  color: currentTab === 'sales' ? '#ffffff' : '#b91c1c'
+                }}>
+                  {soldCount}
+                </span>
+              )}
+            </button>
+          )}
+
           {/* Media & Photos Manager */}
           {userPermissions.modules?.includes('media') && (
             <button 
@@ -1878,6 +2007,7 @@ export default function AdminDashboard() {
             <span className="breadcrumb-active">
               {currentTab === 'dashboard' && 'Dashboard Overview'}
               {currentTab === 'apartments' && 'Apartments & Inventory Manager'}
+              {currentTab === 'sales' && 'Sold Properties & Buyer Registry'}
               {currentTab === 'media' && 'Media & Photos Manager'}
               {currentTab === 'inquiries' && 'Customer Inquiries (Leads)'}
               {currentTab === 'team' && 'Team & Roles (Super Admin Access)'}
@@ -2135,6 +2265,16 @@ export default function AdminDashboard() {
                           <span style={{ fontSize: '11px', color: '#64748b' }}>
                             {apt.typology} {apt.completion ? `• ${apt.completion}` : ''}
                           </span>
+                          {apt.buyer?.name && (apt.status === 'SOLD' || apt.status === 'RESERVED') && (
+                            <div 
+                              onClick={() => openEditBuyerModal(apt)}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 600, color: '#2563eb', cursor: 'pointer', marginTop: '3px' }}
+                              title="Click to view/edit buyer details"
+                            >
+                              <UserCheck size={11} />
+                              <span>Buyer: {apt.buyer.name}</span>
+                            </div>
+                          )}
                         </td>
 
                         {/* Block & Floor */}
@@ -2276,6 +2416,437 @@ export default function AdminDashboard() {
 
             </div>
           )}
+
+          {/* ========================================================
+              MODULE: SOLD PROPERTIES & BUYER REGISTRY
+          ======================================================== */}
+          {currentTab === 'sales' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              
+              {/* Header Panel */}
+              <div className="white-panel" style={{ padding: '22px 24px' }}>
+                <div className="panel-header-row" style={{ flexWrap: 'wrap', gap: '16px', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px', marginBottom: '18px' }}>
+                  <div>
+                    <h3 className="panel-title" style={{ fontSize: '19px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <UserCheck size={22} style={{ color: '#2563eb' }} />
+                      <span>Sold Properties & Buyer Registry</span>
+                    </h3>
+                    <p style={{ margin: '5px 0 0', fontSize: '13px', color: '#64748b', lineHeight: 1.5 }}>
+                      Comprehensive ownership registry of all closed sales and reserved units. View buyer contact profiles, transaction values, payment status, and generate official allotment slips.
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <button
+                      className="btn-secondary-action"
+                      onClick={() => window.print()}
+                      title="Print buyer sales report"
+                      style={{ height: '38px', padding: '0 14px', fontSize: '13px' }}
+                    >
+                      <Printer size={15} />
+                      <span>Print Report</span>
+                    </button>
+
+                    <button
+                      className="btn-primary-action"
+                      onClick={() => {
+                        const target = apartments.find(a => a.status === 'AVAILABLE') || apartments[0];
+                        openEditBuyerModal(target);
+                      }}
+                      style={{ height: '38px', padding: '0 16px', fontSize: '13px' }}
+                    >
+                      <Plus size={16} />
+                      <span>Record New Buyer / Sale</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 4 Summary Metric Cards */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '20px' }}>
+                  
+                  {/* Total Sold Units */}
+                  <div style={{ background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '12px', padding: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#991b1b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Sold Out Units</span>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#fee2e2', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <ShieldCheck size={18} />
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '26px', fontWeight: 800, color: '#991b1b', letterSpacing: '-0.02em' }}>
+                      {soldCount} <span style={{ fontSize: '14px', fontWeight: 600, color: '#b91c1c' }}>Units Closed</span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#7f1d1d', marginTop: '4px' }}>
+                      Official registry complete
+                    </div>
+                  </div>
+
+                  {/* Reserved Units */}
+                  <div style={{ background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '12px', padding: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Reserved / On Hold</span>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Clock size={18} />
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '26px', fontWeight: 800, color: '#92400e', letterSpacing: '-0.02em' }}>
+                      {reservedCount} <span style={{ fontSize: '14px', fontWeight: 600, color: '#b45309' }}>Under Token</span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#78350f', marginTop: '4px' }}>
+                      Advance deposit received
+                    </div>
+                  </div>
+
+                  {/* Booked Sales Revenue */}
+                  <div style={{ background: '#ecfdf5', border: '1px solid #d1fae5', borderRadius: '12px', padding: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#065f46', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Closed Booked Value</span>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#d1fae5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <TrendingUp size={18} />
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '26px', fontWeight: 800, color: '#065f46', letterSpacing: '-0.02em' }}>
+                      {formatINR(totalSoldRevenue)}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#047857', marginTop: '4px' }}>
+                      Total value of sold units
+                    </div>
+                  </div>
+
+                  {/* Registered Buyers Count */}
+                  <div style={{ background: '#eff6ff', border: '1px solid #dbeafe', borderRadius: '12px', padding: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Active Buyers</span>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#dbeafe', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Users size={18} />
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '26px', fontWeight: 800, color: '#1e40af', letterSpacing: '-0.02em' }}>
+                      {apartments.filter(a => (a.status === 'SOLD' || a.status === 'RESERVED') && a.buyer?.name).length} <span style={{ fontSize: '14px', fontWeight: 600, color: '#2563eb' }}>Profiles</span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#1d4ed8', marginTop: '4px' }}>
+                      Verified contact details
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Filter and Search Bar */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap', background: '#f8fafc', padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  
+                  {/* Search Input */}
+                  <div style={{ position: 'relative', flex: '1 1 280px', maxWidth: '360px' }}>
+                    <Search size={15} style={{ position: 'absolute', left: '12px', top: '10px', color: '#94a3b8' }} />
+                    <input
+                      type="text"
+                      placeholder="Search buyer name, phone, email, unit..."
+                      value={searchSalesQuery}
+                      onChange={(e) => setSearchSalesQuery(e.target.value)}
+                      className="input-clean"
+                      style={{ paddingLeft: '36px', height: '36px', fontSize: '13px', background: '#ffffff', width: '100%' }}
+                    />
+                  </div>
+
+                  {/* Filter Pills */}
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={() => setSalesStatusFilter('ALL')}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: '20px',
+                        fontSize: '12.5px',
+                        fontWeight: 600,
+                        border: '1px solid',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        background: salesStatusFilter === 'ALL' ? '#2563eb' : '#ffffff',
+                        borderColor: salesStatusFilter === 'ALL' ? '#2563eb' : '#cbd5e1',
+                        color: salesStatusFilter === 'ALL' ? '#ffffff' : '#475569'
+                      }}
+                    >
+                      All Booked Units ({soldCount + reservedCount})
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSalesStatusFilter('SOLD')}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: '20px',
+                        fontSize: '12.5px',
+                        fontWeight: 600,
+                        border: '1px solid',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        background: salesStatusFilter === 'SOLD' ? '#dc2626' : '#ffffff',
+                        borderColor: salesStatusFilter === 'SOLD' ? '#dc2626' : '#cbd5e1',
+                        color: salesStatusFilter === 'SOLD' ? '#ffffff' : '#475569'
+                      }}
+                    >
+                      🔴 Sold Out Only ({soldCount})
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setSalesStatusFilter('RESERVED')}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: '20px',
+                        fontSize: '12.5px',
+                        fontWeight: 600,
+                        border: '1px solid',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        background: salesStatusFilter === 'RESERVED' ? '#d97706' : '#ffffff',
+                        borderColor: salesStatusFilter === 'RESERVED' ? '#d97706' : '#cbd5e1',
+                        color: salesStatusFilter === 'RESERVED' ? '#ffffff' : '#475569'
+                      }}
+                    >
+                      🟡 Reserved Only ({reservedCount})
+                    </button>
+                  </div>
+
+                </div>
+
+                {/* Buyers & Properties Table */}
+                <div style={{ marginTop: '20px', overflowX: 'auto' }}>
+                  {filteredSalesApartments.length === 0 ? (
+                    <div style={{ padding: '48px 24px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
+                      <UserCheck size={40} style={{ color: '#94a3b8', margin: '0 auto 12px' }} />
+                      <h4 style={{ margin: '0 0 6px', fontSize: '16px', fontWeight: 700, color: '#334155' }}>No matching property sales found</h4>
+                      <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#64748b' }}>
+                        {searchSalesQuery ? 'Try clearing your search query or switching filters.' : 'Mark apartments as Sold Out or Reserved in the inventory to track them here.'}
+                      </p>
+                      <button
+                        className="btn-primary-action"
+                        onClick={() => handleSwitchTab('apartments')}
+                        style={{ margin: '0 auto' }}
+                      >
+                        <Building2 size={15} />
+                        <span>Go to Apartments Inventory</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <table className="admin-table" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+                      <thead>
+                        <tr>
+                          <th style={{ width: '22%' }}>Unit & Typology</th>
+                          <th style={{ width: '12%' }}>Status</th>
+                          <th style={{ width: '24%' }}>Buyer Contact Details</th>
+                          <th style={{ width: '14%' }}>Deal Value</th>
+                          <th style={{ width: '14%' }}>Payment Status</th>
+                          <th style={{ width: '14%', textAlign: 'right' }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredSalesApartments.map(apt => {
+                          const buyer = apt.buyer || {
+                            name: apt.status === 'SOLD' ? 'Private Client' : 'Prospective Buyer',
+                            phone: '+91 98200 00000',
+                            email: 'client@estatesphere.in',
+                            dealAmount: apt.price,
+                            saleDate: 'Recently',
+                            paymentStatus: apt.status === 'SOLD' ? 'FULLY_PAID' : 'TOKEN_PAID',
+                            paymentStatusLabel: apt.status === 'SOLD' ? '100% Payment Cleared' : 'Token Advance Received',
+                            assignedAgent: 'Super Admin',
+                            notes: 'Allotment in progress.'
+                          };
+
+                          return (
+                            <tr key={apt.id} style={{ transition: 'background 0.15s ease' }}>
+                              
+                              {/* 1. Unit & Typology */}
+                              <td>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                  <img
+                                    src={apt.imageUrl || '/assets/estate-boutique-lounge.png'}
+                                    alt={apt.apartmentNumber}
+                                    style={{ width: '46px', height: '46px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #e2e8f0', flexShrink: 0 }}
+                                  />
+                                  <div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <b style={{ color: '#0f172a', fontSize: '14.5px', letterSpacing: '-0.01em' }}>
+                                        {apt.apartmentNumber}
+                                      </b>
+                                      <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569', background: '#f1f5f9', padding: '1px 6px', borderRadius: '4px' }}>
+                                        {apt.block}
+                                      </span>
+                                    </div>
+                                    <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#334155', marginTop: '2px' }}>
+                                      {apt.title || `${apt.bedrooms} BHK Residence`}
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#64748b' }}>
+                                      {apt.floor} &bull; {apt.areaSqft} sq.ft
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* 2. Status Badge */}
+                              <td>
+                                {apt.status === 'SOLD' ? (
+                                  <span style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    padding: '4px 10px',
+                                    borderRadius: '16px',
+                                    fontSize: '11.5px',
+                                    fontWeight: 700,
+                                    background: '#fef2f2',
+                                    color: '#b91c1c',
+                                    border: '1px solid #fecaca'
+                                  }}>
+                                    <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ef4444' }} />
+                                    Sold Out
+                                  </span>
+                                ) : (
+                                  <span style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    padding: '4px 10px',
+                                    borderRadius: '16px',
+                                    fontSize: '11.5px',
+                                    fontWeight: 700,
+                                    background: '#fffbeb',
+                                    color: '#b45309',
+                                    border: '1px solid #fde68a'
+                                  }}>
+                                    <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#f59e0b' }} />
+                                    Reserved
+                                  </span>
+                                )}
+                              </td>
+
+                              {/* 3. Buyer Details */}
+                              <td>
+                                <div>
+                                  <div style={{ fontWeight: 700, fontSize: '13.5px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <UserCheck size={14} style={{ color: '#2563eb' }} />
+                                    <span>{buyer.name}</span>
+                                  </div>
+                                  
+                                  {buyer.phone && (
+                                    <div style={{ marginTop: '3px' }}>
+                                      <a
+                                        href={`tel:${buyer.phone}`}
+                                        style={{ fontSize: '12px', color: '#475569', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                                        title="Click to call buyer"
+                                      >
+                                        <Phone size={11} style={{ color: '#64748b' }} />
+                                        <span>{buyer.phone}</span>
+                                      </a>
+                                    </div>
+                                  )}
+
+                                  {buyer.email && (
+                                    <div style={{ marginTop: '2px' }}>
+                                      <a
+                                        href={`mailto:${buyer.email}`}
+                                        style={{ fontSize: '11.5px', color: '#2563eb', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                                        title="Click to email buyer"
+                                      >
+                                        <Mail size={11} />
+                                        <span>{buyer.email}</span>
+                                      </a>
+                                    </div>
+                                  )}
+
+                                  {buyer.assignedAgent && (
+                                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '3px' }}>
+                                      Handled by: <b>{buyer.assignedAgent}</b>
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+
+                              {/* 4. Deal Value */}
+                              <td>
+                                <div>
+                                  <div style={{ fontSize: '14.5px', fontWeight: 800, color: '#0f172a' }}>
+                                    {formatINR(buyer.dealAmount || apt.price)}
+                                  </div>
+                                  <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                                    List: {formatINR(apt.price)}
+                                  </div>
+                                  {buyer.saleDate && (
+                                    <div style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '3px' }}>
+                                      <Calendar size={11} />
+                                      <span>{buyer.saleDate}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+
+                              {/* 5. Payment Status */}
+                              <td>
+                                <div>
+                                  <span style={{
+                                    display: 'inline-block',
+                                    padding: '3px 9px',
+                                    borderRadius: '12px',
+                                    fontSize: '11px',
+                                    fontWeight: 700,
+                                    background: buyer.paymentStatus === 'FULLY_PAID' ? '#ecfdf5' : (buyer.paymentStatus === 'PARTIALLY_PAID' ? '#eff6ff' : '#fffbeb'),
+                                    color: buyer.paymentStatus === 'FULLY_PAID' ? '#047857' : (buyer.paymentStatus === 'PARTIALLY_PAID' ? '#1d4ed8' : '#b45309'),
+                                    border: `1px solid ${buyer.paymentStatus === 'FULLY_PAID' ? '#a7f3d0' : (buyer.paymentStatus === 'PARTIALLY_PAID' ? '#bfdbfe' : '#fde68a')}`
+                                  }}>
+                                    {buyer.paymentStatus === 'FULLY_PAID' ? '✅ Cleared' : (buyer.paymentStatus === 'PARTIALLY_PAID' ? '🔵 Milestone' : '🟡 Token')}
+                                  </span>
+
+                                  <div style={{ fontSize: '11.5px', color: '#475569', marginTop: '4px', fontWeight: 500, lineHeight: 1.3 }}>
+                                    {buyer.paymentStatusLabel || 'Details recorded'}
+                                  </div>
+
+                                  {buyer.notes && (
+                                    <div style={{ fontSize: '10.5px', color: '#64748b', fontStyle: 'italic', marginTop: '3px', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={buyer.notes}>
+                                      "{buyer.notes}"
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+
+                              {/* 6. Actions */}
+                              <td style={{ textAlign: 'right' }}>
+                                <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => openEditBuyerModal(apt)}
+                                    className="btn-secondary-action"
+                                    style={{ padding: '6px 11px', fontSize: '12px', gap: '5px' }}
+                                    title="Edit buyer details"
+                                  >
+                                    <Edit3 size={13} />
+                                    <span>Edit</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => setSaleReceiptModal({ isOpen: true, apt })}
+                                    className="btn-secondary-action"
+                                    style={{ padding: '6px 11px', fontSize: '12px', gap: '5px', background: '#f8fafc' }}
+                                    title="View luxury allotment receipt / booking certificate"
+                                  >
+                                    <FileText size={13} style={{ color: '#2563eb' }} />
+                                    <span>Slip</span>
+                                  </button>
+                                </div>
+                              </td>
+
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+
+              </div>
+
+            </div>
+          )}
+
 
           {/* ========================================================
               MODULE 1: DASHBOARD OVERVIEW
@@ -6092,7 +6663,406 @@ export default function AdminDashboard() {
       )}
 
       {/* Custom In-App Logout Modal (No browser alert) */}
-      {showLogoutModal && (
+      
+      {/* ========================================================
+          MODAL: RECORD / EDIT BUYER DETAILS FOR SOLD UNIT
+      ======================================================== */}
+      {buyerModal.isOpen && (
+        <div className="modal-backdrop-clean" style={{ zIndex: 9999 }}>
+          <div className="modal-card-clean" style={{ maxWidth: '640px', width: '92%', maxHeight: '92vh', overflowY: 'auto' }}>
+            
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '14px', marginBottom: '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <UserCheck size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#0f172a' }}>
+                    Buyer & Ownership Record
+                  </h3>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>
+                    Unit {buyerModal.apartmentNumber} &bull; {buyerModal.unitTitle}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setBuyerModal(prev => ({ ...prev, isOpen: false }))}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveBuyerModal} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              
+              {/* Apartment Target & Unit Status */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
+                    Select Apartment Unit
+                  </label>
+                  <select
+                    className="input-clean"
+                    value={buyerModal.apartmentId}
+                    onChange={(e) => {
+                      const selected = apartments.find(a => a.id === Number(e.target.value));
+                      if (selected) {
+                        openEditBuyerModal(selected);
+                      }
+                    }}
+                    style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                  >
+                    {apartments.map(a => (
+                      <option key={a.id} value={a.id}>
+                        {a.apartmentNumber} — {a.title} ({a.status})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
+                    Unit Status
+                  </label>
+                  <select
+                    className="input-clean"
+                    value={buyerModal.status}
+                    onChange={(e) => setBuyerModal(prev => ({ ...prev, status: e.target.value }))}
+                    style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                  >
+                    <option value="SOLD">🔴 SOLD OUT (Purchased)</option>
+                    <option value="RESERVED">🟡 RESERVED (Token Paid)</option>
+                    <option value="AVAILABLE">🟢 AVAILABLE</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Buyer Full Name */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
+                  Buyer / Allottee Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Vikramaditya Singhania"
+                  value={buyerModal.name}
+                  onChange={(e) => setBuyerModal(prev => ({ ...prev, name: e.target.value }))}
+                  className="input-clean"
+                  style={{ width: '100%', height: '38px', fontSize: '13.5px' }}
+                />
+              </div>
+
+              {/* Phone & Email */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
+                    Buyer Contact Phone *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="+91 98201 44521"
+                    value={buyerModal.phone}
+                    onChange={(e) => setBuyerModal(prev => ({ ...prev, phone: e.target.value }))}
+                    className="input-clean"
+                    style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
+                    Buyer Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="buyer@domain.com"
+                    value={buyerModal.email}
+                    onChange={(e) => setBuyerModal(prev => ({ ...prev, email: e.target.value }))}
+                    className="input-clean"
+                    style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                  />
+                </div>
+              </div>
+
+              {/* Deal Amount & Sale Date */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
+                    Agreed Deal Amount (₹ INR)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 31250000"
+                    value={buyerModal.dealAmount}
+                    onChange={(e) => setBuyerModal(prev => ({ ...prev, dealAmount: e.target.value }))}
+                    className="input-clean"
+                    style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
+                    Booking / Sale Date
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 26 Oct 2026"
+                    value={buyerModal.saleDate}
+                    onChange={(e) => setBuyerModal(prev => ({ ...prev, saleDate: e.target.value }))}
+                    className="input-clean"
+                    style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                  />
+                </div>
+              </div>
+
+              {/* Payment Status & Details */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
+                    Payment Status
+                  </label>
+                  <select
+                    className="input-clean"
+                    value={buyerModal.paymentStatus}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      let label = '100% Payment Cleared (Registry Complete)';
+                      if (val === 'PARTIALLY_PAID') label = 'Agreement Signed (90% Paid)';
+                      if (val === 'TOKEN_PAID') label = 'Token Advance Received';
+                      if (val === 'PENDING') label = 'Payment Verification In Progress';
+                      setBuyerModal(prev => ({ ...prev, paymentStatus: val, paymentStatusLabel: label }));
+                    }}
+                    style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                  >
+                    <option value="FULLY_PAID">✅ Fully Paid (100% Cleared)</option>
+                    <option value="PARTIALLY_PAID">🔵 Partially Paid (Milestones)</option>
+                    <option value="TOKEN_PAID">🟡 Token Advance Received</option>
+                    <option value="PENDING">⚪ Payment Pending Verification</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
+                    Payment Details / Milestone Note
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Token Advance Received (₹15 Lakh)"
+                    value={buyerModal.paymentStatusLabel}
+                    onChange={(e) => setBuyerModal(prev => ({ ...prev, paymentStatusLabel: e.target.value }))}
+                    className="input-clean"
+                    style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                  />
+                </div>
+              </div>
+
+              {/* Assigned Agent */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
+                  Assigned Staff / Relationship Manager
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Super Admin or Rohit Verma"
+                  value={buyerModal.assignedAgent}
+                  onChange={(e) => setBuyerModal(prev => ({ ...prev, assignedAgent: e.target.value }))}
+                  className="input-clean"
+                  style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                />
+              </div>
+
+              {/* Special Terms / Agreement Notes */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
+                  Agreement Notes / Special Terms (e.g. Parking Slot, Bespoke Customizations)
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="e.g. Bespoke travertine finishes requested. Car parking slot P-14 allocated in basement B1."
+                  value={buyerModal.notes}
+                  onChange={(e) => setBuyerModal(prev => ({ ...prev, notes: e.target.value }))}
+                  className="input-clean"
+                  style={{ width: '100%', fontSize: '13px', resize: 'vertical' }}
+                />
+              </div>
+
+              {/* Footer Actions */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
+                <button
+                  type="button"
+                  className="btn-secondary-action"
+                  onClick={() => setBuyerModal(prev => ({ ...prev, isOpen: false }))}
+                  style={{ padding: '9px 18px' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary-action"
+                  style={{ padding: '9px 22px' }}
+                >
+                  <Save size={15} />
+                  <span>Save Buyer Record</span>
+                </button>
+              </div>
+
+            </form>
+
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          MODAL: LUXURY BUYER ALLOTMENT CERTIFICATE & SLIP
+      ======================================================== */}
+      {saleReceiptModal.isOpen && saleReceiptModal.apt && (() => {
+        const apt = saleReceiptModal.apt;
+        const buyer = apt.buyer || {
+          name: 'Private Client',
+          phone: '+91 98200 00000',
+          email: 'client@estatesphere.in',
+          dealAmount: apt.price,
+          saleDate: 'Recently',
+          paymentStatus: 'FULLY_PAID',
+          paymentStatusLabel: '100% Payment Cleared (Registry Complete)',
+          assignedAgent: 'Super Admin',
+          notes: 'Standard residence allotment.'
+        };
+
+        return (
+          <div className="modal-backdrop-clean" style={{ zIndex: 9999 }}>
+            <div className="modal-card-clean" style={{ maxWidth: '680px', width: '92%', maxHeight: '92vh', overflowY: 'auto', background: '#fdfbf7', border: '1px solid #dcd1be' }}>
+              
+              {/* Slip Header Actions */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '14px', borderBottom: '1px dashed #cbd5e1', marginBottom: '20px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.08em', color: '#78350f', textTransform: 'uppercase' }}>
+                  EstateSphere Official Allotment Slip
+                </span>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="btn-secondary-action"
+                    style={{ padding: '5px 12px', fontSize: '12px', gap: '5px' }}
+                  >
+                    <Printer size={13} />
+                    <span>Print</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSaleReceiptModal({ isOpen: false, apt: null })}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px' }}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Certificate Inner Body */}
+              <div style={{ background: '#ffffff', padding: '28px', borderRadius: '12px', border: '1px solid #e7ded0', boxShadow: '0 4px 16px rgba(0,0,0,0.03)' }}>
+                
+                {/* Brand Title & Watermark Seal */}
+                <div style={{ textAlign: 'center', marginBottom: '24px', position: 'relative' }}>
+                  <div style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '0.12em', color: '#1e293b', textTransform: 'uppercase' }}>
+                    EstateSphere Luxury Residences
+                  </div>
+                  <div style={{ fontSize: '11px', letterSpacing: '0.2em', color: '#94a3b8', textTransform: 'uppercase', marginTop: '3px' }}>
+                    New Golden Mile &bull; Private Sanctuary
+                  </div>
+                  <div style={{ height: '2px', width: '80px', background: '#d97706', margin: '12px auto' }} />
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#78350f' }}>
+                    PROPERTY ALLOTMENT CONFIRMATION
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>
+                    Ref: ES-REC-{apt.apartmentNumber}-{String(apt.id).padStart(4, '0')} &bull; Date: {buyer.saleDate || 'Today'}
+                  </div>
+                </div>
+
+                {/* Allottee & Unit Overview */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px', background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <div>
+                    <div style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: 700, color: '#64748b', letterSpacing: '0.04em' }}>
+                      Allottee / Buyer Details
+                    </div>
+                    <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>
+                      {buyer.name}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>
+                      Phone: <b>{buyer.phone || 'N/A'}</b>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>
+                      Email: <b>{buyer.email || 'N/A'}</b>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: 700, color: '#64748b', letterSpacing: '0.04em' }}>
+                      Allotted Residence
+                    </div>
+                    <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>
+                      Unit {apt.apartmentNumber}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>
+                      {apt.block} &bull; {apt.floor}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>
+                      {apt.bedrooms} BHK &bull; {apt.areaSqft} sq.ft ({apt.areaSqm || Math.round(apt.areaSqft / 10.764)} m²)
+                    </div>
+                  </div>
+                </div>
+
+                {/* Financial Summary */}
+                <div style={{ marginBottom: '20px', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                  <div style={{ background: '#f1f5f9', padding: '10px 14px', fontSize: '12px', fontWeight: 700, color: '#334155', textTransform: 'uppercase' }}>
+                    Financial & Settlement Details
+                  </div>
+                  <div style={{ padding: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #f1f5f9', fontSize: '13px' }}>
+                      <span style={{ color: '#64748b' }}>Agreed Deal Value:</span>
+                      <b style={{ color: '#0f172a', fontSize: '14px' }}>{formatINR(buyer.dealAmount || apt.price)}</b>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f1f5f9', fontSize: '13px' }}>
+                      <span style={{ color: '#64748b' }}>Payment Status:</span>
+                      <b style={{ color: buyer.paymentStatus === 'FULLY_PAID' ? '#059669' : '#d97706' }}>
+                        {buyer.paymentStatusLabel || 'Recorded'}
+                      </b>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px', fontSize: '13px' }}>
+                      <span style={{ color: '#64748b' }}>Authorized Agent:</span>
+                      <b style={{ color: '#334155' }}>{buyer.assignedAgent || 'Super Admin'}</b>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                {buyer.notes && (
+                  <div style={{ marginBottom: '24px', padding: '12px', background: '#fefce8', border: '1px solid #fef08a', borderRadius: '8px', fontSize: '12px', color: '#854d0e' }}>
+                    <b>Special Terms / Inclusions:</b> {buyer.notes}
+                  </div>
+                )}
+
+                {/* Verification Seal */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: '16px', borderTop: '1px dashed #cbd5e1' }}>
+                  <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.4 }}>
+                    Digitally generated by EstateSphere Admin Portal.<br />
+                    Complies with standard luxury real-estate registry records.
+                  </div>
+                  <div style={{ textAlign: 'center', border: '2px solid #059669', color: '#059669', padding: '6px 16px', borderRadius: '6px', fontWeight: 800, fontSize: '11.5px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                    ✔ VERIFIED & RECORDED
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
+
+{showLogoutModal && (
         <div className="modal-overlay" onClick={() => setShowLogoutModal(false)} style={{ zIndex: 999999 }}>
           <div 
             className="modal-content-card" 

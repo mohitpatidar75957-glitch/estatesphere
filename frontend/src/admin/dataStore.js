@@ -44,8 +44,74 @@ export const DEFAULT_25_APARTMENTS = Array.from({ length: 25 }, (_, i) => {
   
   // Realistic initial statuses (18 Available, 4 Reserved, 3 Sold)
   let status = 'AVAILABLE';
-  if (index === 3 || index === 7 || index === 14 || index === 21) status = 'RESERVED';
-  if (index === 5 || index === 8 || index === 19) status = 'SOLD';
+  let buyer = null;
+
+  if (index === 3) {
+    status = 'RESERVED';
+    buyer = {
+      name: 'Ananya Deshmukh',
+      phone: '+91 98112 33490',
+      email: 'ananya.deshmukh@fortiscare.org',
+      dealAmount: price,
+      saleDate: '01 Nov 2026',
+      paymentStatus: 'TOKEN_PAID',
+      paymentStatusLabel: 'Token Advance Received (₹15 Lakh)',
+      assignedAgent: 'Rohit Verma (Manager)',
+      notes: 'Token received for 3 BHK Duplex. Financing approval in progress.'
+    };
+  } else if (index === 5) {
+    status = 'SOLD';
+    buyer = {
+      name: 'Vikramaditya Singhania',
+      phone: '+91 98201 44521',
+      email: 'vikram.singhania@apexcapital.in',
+      dealAmount: 31250000,
+      saleDate: '26 Oct 2026',
+      paymentStatus: 'PARTIALLY_PAID',
+      paymentStatusLabel: 'Agreement Signed (90% Paid)',
+      assignedAgent: 'Super Admin',
+      notes: 'Bespoke travertine finishes requested. Final registry scheduled next month.'
+    };
+  } else if (index === 8) {
+    status = 'SOLD';
+    buyer = {
+      name: 'Dr. Harshvardhan Kapoor',
+      phone: '+91 98220 88711',
+      email: 'dr.harsh@cardiohealth.in',
+      dealAmount: 35000000,
+      saleDate: '29 Oct 2026',
+      paymentStatus: 'PARTIALLY_PAID',
+      paymentStatusLabel: 'Agreement Executed (50% Milestone)',
+      assignedAgent: 'Pooja Sharma (Sales Agent)',
+      notes: 'Car parking slot P-14 allocated in basement B1.'
+    };
+  } else if (index === 19) {
+    status = 'SOLD';
+    buyer = {
+      name: 'Sunil & Meera Mittal',
+      phone: '+91 98330 99812',
+      email: 'sunil.mittal@mittalgroup.com',
+      dealAmount: 48750000,
+      saleDate: '02 Nov 2026',
+      paymentStatus: 'FULLY_PAID',
+      paymentStatusLabel: '100% Payment Cleared (Registry Complete)',
+      assignedAgent: 'Super Admin',
+      notes: 'All dues cleared. Possession letter and key handover scheduled.'
+    };
+  } else if (index === 7 || index === 14 || index === 21) {
+    status = 'RESERVED';
+    buyer = {
+      name: index === 7 ? 'Siddharth Oberoi' : (index === 14 ? 'Kavita Chawla' : 'Aditya Roy'),
+      phone: index === 7 ? '+91 98101 22345' : (index === 14 ? '+91 98711 55670' : '+91 99200 44321'),
+      email: index === 7 ? 'siddharth@oberoiholdings.com' : (index === 14 ? 'kavita.chawla@gmail.com' : 'aditya.roy@zenithtech.io'),
+      dealAmount: price,
+      saleDate: '31 Oct 2026',
+      paymentStatus: 'TOKEN_PAID',
+      paymentStatusLabel: 'Holding Token Received',
+      assignedAgent: index === 7 ? 'Pooja Sharma (Sales Agent)' : 'Rohit Verma (Manager)',
+      notes: 'Client scheduled on-site inspection before final signing.'
+    };
+  }
 
   const typology = floorNum === 3 ? typologies[2] : (floorNum === 0 ? typologies[0] : typologies[1]);
 
@@ -63,6 +129,7 @@ export const DEFAULT_25_APARTMENTS = Array.from({ length: 25 }, (_, i) => {
     typology,
     price,
     status,
+    buyer,
     headline: `${bedrooms} Bed Luxury Residence with panoramic skyline views`,
     description: `Elevated residence in ${block} featuring natural travertine stone finishes, open floorplan, Italian modular kitchen, and expansive private terrace.`,
     imageUrl: index % 4 === 0 
@@ -187,7 +254,7 @@ const DEFAULT_INITIAL_ACTIVITY = [
 // Role-Based Access Control (RBAC) & Custom Permissions Configuration
 export const ROLE_PERMISSIONS = {
   SUPER_ADMIN: {
-    modules: ['dashboard', 'apartments', 'media', 'content', 'inquiries', 'team', 'settings'],
+    modules: ['dashboard', 'apartments', 'sales', 'media', 'content', 'inquiries', 'team', 'settings'],
     canAddApartment: true,
     canEditApartment: true,
     canDeleteApartment: true,
@@ -197,7 +264,7 @@ export const ROLE_PERMISSIONS = {
     canEditSettings: true
   },
   ADMIN_MANAGER: {
-    modules: ['dashboard', 'apartments', 'media', 'content', 'inquiries'],
+    modules: ['dashboard', 'apartments', 'sales', 'media', 'content', 'inquiries'],
     canAddApartment: true,
     canEditApartment: true,
     canDeleteApartment: false,
@@ -207,7 +274,7 @@ export const ROLE_PERMISSIONS = {
     canEditSettings: false
   },
   SALES_AGENT: {
-    modules: ['dashboard', 'apartments', 'inquiries'],
+    modules: ['dashboard', 'apartments', 'sales', 'inquiries'],
     canAddApartment: false,
     canEditApartment: false,
     canDeleteApartment: false,
@@ -432,17 +499,52 @@ export const dataStore = {
         if (Array.isArray(parsed) && parsed.length > 0) {
           let needsUpdate = false;
           const normalized = parsed.map(a => {
-            if (a.apartmentNumber && (a.apartmentNumber.includes('№') || a.apartmentNumber.startsWith('NO.') || a.apartmentNumber.startsWith('NO '))) {
+            let item = { ...a };
+            if (item.apartmentNumber && (item.apartmentNumber.includes('№') || item.apartmentNumber.startsWith('NO.') || item.apartmentNumber.startsWith('NO '))) {
               needsUpdate = true;
-              const intNum = parseInt(a.apartmentNumber.replace(/[^\d]/g, ''), 10) || a.id || 1;
+              const intNum = parseInt(item.apartmentNumber.replace(/[^\d]/g, ''), 10) || item.id || 1;
               const newNum = `No-${intNum < 10 ? '0' + intNum : intNum}`;
-              return {
-                ...a,
+              item = {
+                ...item,
                 apartmentNumber: newNum,
-                title: a.title ? a.title.replace(/№0?\d+/g, newNum).replace(/NO\.\s*\d+/gi, newNum) : a.title
+                title: item.title ? item.title.replace(/№0?\d+/g, newNum).replace(/NO\.\s*\d+/gi, newNum) : item.title
               };
             }
-            return a;
+            // Auto-hydrate buyer on sold/reserved units if missing
+            if ((item.status === 'SOLD' || item.status === 'RESERVED') && (!item.buyer || !item.buyer.name)) {
+              const seed = DEFAULT_25_APARTMENTS.find(d => d.id === item.id || d.apartmentNumber === item.apartmentNumber);
+              if (seed && seed.buyer) {
+                needsUpdate = true;
+                item.buyer = { ...seed.buyer };
+              } else if (item.status === 'SOLD') {
+                needsUpdate = true;
+                item.buyer = {
+                  name: 'Private Client',
+                  phone: '+91 98200 11000',
+                  email: 'buyer@estatesphere.in',
+                  dealAmount: item.price || 30000000,
+                  saleDate: '28 Oct 2026',
+                  paymentStatus: 'FULLY_PAID',
+                  paymentStatusLabel: '100% Payment Cleared (Registry Complete)',
+                  assignedAgent: 'Super Admin',
+                  notes: 'Direct client purchase.'
+                };
+              } else if (item.status === 'RESERVED') {
+                needsUpdate = true;
+                item.buyer = {
+                  name: 'Prospective Client',
+                  phone: '+91 98112 00000',
+                  email: 'client@estatesphere.in',
+                  dealAmount: item.price || 28000000,
+                  saleDate: 'Today',
+                  paymentStatus: 'TOKEN_PAID',
+                  paymentStatusLabel: 'Token Advance Received',
+                  assignedAgent: 'Rohit Verma',
+                  notes: 'Token advance received. Document verification in progress.'
+                };
+              }
+            }
+            return item;
           });
           if (needsUpdate) {
             safeSetItem(STORAGE_KEYS.APARTMENTS, JSON.stringify(normalized));
@@ -660,9 +762,13 @@ export const dataStore = {
           // Guarantee all team members have valid permissions structure
           return parsed.map(m => {
             const defaultPerms = ROLE_PERMISSIONS[m.role] || ROLE_PERMISSIONS.SALES_AGENT;
+            let perms = m.permissions || defaultPerms;
+            if (perms && Array.isArray(perms.modules) && !perms.modules.includes('sales')) {
+              perms = { ...perms, modules: [...perms.modules, 'sales'] };
+            }
             return {
               ...m,
-              permissions: m.permissions || defaultPerms
+              permissions: perms
             };
           });
         }
