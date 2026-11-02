@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.zip
+*.log
+baseline.png
+final-top.png
+premium-desktop.png

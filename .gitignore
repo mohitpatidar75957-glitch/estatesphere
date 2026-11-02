@@ -1,0 +1,31 @@
+# Dependencies and Builds
+frontend/node_modules/
+frontend/dist/
+backend/target/
+backend/apache-maven-*/
+
+# Large archives
+*.zip
+*.tar.gz
+*.rar
+
+# IDE & Editor
+.idea/
+.vscode/
+*.code-workspace
+.eclipse/
+.settings/
+.classpath
+.project
+
+# Temporary & review files
+.tmp/
+.edge-*/
+.story-review/
+.video-*/
+
+# Logs & Environment variables
+*.log
+.env
+.env.*
+!.env.example

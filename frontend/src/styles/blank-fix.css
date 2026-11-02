@@ -1,0 +1,40 @@
+.era-hero-scroll .pool-stage {
+    z-index: 2 !important;
+    visibility: visible !important;
+    display: block !important
+}
+
+.era-hero-scroll .era-title {
+    z-index: 6
+}
+
+.era-hero-scroll .era-emblem,
+.era-hero-scroll .select-apartment,
+.era-hero-scroll .hero-links,
+.era-hero-scroll .hero-index,
+.era-hero-scroll .scroll-note {
+    z-index: 8
+}
+
+.era-hero-scroll .pool-hotspots,
+.era-hero-scroll .view-apartments {
+    z-index: 7
+}
+
+.era-hero-scroll .reason-circle {
+    z-index: 10
+}
+
+.era-site {
+    overflow-x: clip !important;
+    overflow-y: visible !important
+}
+
+.era-hero-scroll {
+    overflow: visible !important
+}
+
+.era-hero-scroll>.era-hero {
+    position: sticky !important;
+    top: 0 !important
+}

@@ -1,0 +1,877 @@
+/* Apartments Page Stylesheet */
+
+/* The landing hero uses a long scroll sequence for the circular reveal. */
+.era-hero-scroll {
+  height: 300vh !important;
+  overflow: visible !important;
+  background: #bad3df !important;
+}
+
+.apartments-page-layout {
+  min-height: 100vh;
+  background-color: #f4f1ea;
+  color: #252822;
+  font-family: 'DM Sans', sans-serif;
+  position: relative;
+  padding-left: 6vw;
+  /* Space for persistent rail */
+  overflow-x: clip;
+}
+
+/* Nav Adjustment for light theme */
+.apartments-page-layout .era-nav.nav-on-light {
+  background-color: transparent !important;
+  border-bottom: none !important;
+}
+
+.apartments-page-layout .era-nav.nav-on-light .era-mark {
+  visibility: hidden !important; /* Hide to prevent overlaying the circular logo */
+}
+
+.apartments-page-layout .persistent-era-rail {
+  pointer-events: auto !important;
+}
+
+
+
+/* Breadcrumb inside Left Rail */
+.rail-routing-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin: 40px 0;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.rail-route-link {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #8c9288;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.rail-route-link:hover {
+  color: #252822;
+}
+
+.rail-route-separator {
+  font-size: 9px;
+  color: #b9c0b5;
+  transform: rotate(90deg);
+}
+
+.rail-route-active {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #252822;
+}
+
+/* Bougainvillea Visual placement */
+.bougainvillea-corner-frame {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 32vw;
+  max-width: 450px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.bougainvillea-video-loop {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Main Content area */
+.apartments-listing-sec {
+  padding: 180px 5vw 120px 4vw;
+  position: relative;
+  z-index: 2;
+}
+
+.apartments-title-container {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 1.5px solid rgba(37, 40, 34, 0.15);
+  padding-bottom: 24px;
+  margin-bottom: 40px;
+}
+
+.apartments-serif-title {
+  font-family: 'Playfair Display', 'Bodoni Moda', Georgia, serif;
+  font-size: clamp(55px, 8.5vw, 115px);
+  font-weight: 300;
+  letter-spacing: -0.04em;
+  margin: 0;
+  color: #252822;
+}
+
+.apartments-total-count {
+  font-family: 'Playfair Display', 'Bodoni Moda', Georgia, serif;
+  font-size: clamp(55px, 8.5vw, 115px);
+  font-weight: 300;
+  letter-spacing: -0.04em;
+  color: #252822;
+}
+
+/* Filter controls row */
+.apartments-filters-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+  margin-bottom: 50px;
+  position: relative;
+}
+
+.filter-dropdown-and-reset {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+
+.filter-dropdown-container {
+  position: relative;
+}
+
+.filter-toggle-btn {
+  background: none;
+  border: 0;
+  padding: 8px 0;
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: #8c9288;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  text-transform: uppercase;
+  border-bottom: 1px solid transparent;
+  transition: all 0.25s ease;
+}
+
+.filter-toggle-btn:hover {
+  color: #252822;
+}
+
+.filter-toggle-btn span {
+  color: #252822 !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-weight: 700;
+  margin-left: 5px;
+}
+
+.filter-dropdown-options {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  background-color: #fcfbfa;
+  border: 1px solid #dcd9d0;
+  min-width: 250px;
+  box-shadow: 0 12px 36px rgba(18, 20, 16, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.filter-option {
+  padding: 14px 20px;
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #252822;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+  background-color: #fdfcf9;
+}
+
+.filter-option:hover {
+  background-color: #111820;
+  color: #ffffff;
+}
+
+.filter-option.selected {
+  background-color: #111820;
+  color: #ffffff;
+}
+
+.filter-reset-btn {
+  background: none;
+  border: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #8c9288;
+  cursor: pointer;
+  margin-left: auto;
+  border-bottom: 1px solid currentColor;
+  padding: 2px 0;
+  transition: color 0.2s ease;
+}
+
+.filter-reset-btn:hover {
+  color: #ee5d39;
+}
+
+/* Loader and Empty State */
+.listing-loader,
+.listing-empty-state {
+  padding: 100px 0;
+  text-align: center;
+  font-size: 15px;
+  color: #8c9288;
+}
+
+.listing-empty-state button {
+  background-color: #252822;
+  color: #fff;
+  border: 0;
+  padding: 12px 28px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  margin-top: 20px;
+  border-radius: 20px;
+}
+
+/* Card Grid Styles */
+.apartments-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+}
+
+.apartment-item-card {
+  background-color: #f8f6f0;
+  border: 1px solid #e4dfd3;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.4s ease;
+}
+
+.apartment-item-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 50px rgba(37, 40, 34, 0.07);
+  border-color: #c0bba9;
+}
+
+.card-top-details {
+  display: flex;
+  justify-content: space-between;
+  padding: 18px 24px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #8c9288;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(37, 40, 34, 0.06);
+}
+
+.card-typology {
+  color: #252822;
+}
+
+.card-floorplan-visual {
+  flex-grow: 1;
+  padding: 10px;
+  background-color: #f8f6f0;
+}
+
+.apartment-floorplans-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.floorplan-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.floorplan-svg-wrap {
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 1.85 / 1;
+  border: 1.5px solid #eae5db;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+  overflow: hidden;
+}
+
+.floorplan-label {
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #a4aaa0;
+  margin-top: 6px;
+  text-transform: uppercase;
+}
+
+.card-mid-specifications {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid rgba(37, 40, 34, 0.06);
+}
+
+.card-unit-info {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #8c9288;
+  text-transform: uppercase;
+}
+
+.card-size-heading {
+  font-family: 'Playfair Display', 'Bodoni Moda', Georgia, serif;
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1;
+  margin: 10px 0;
+  color: #252822;
+}
+
+.card-terrace-footer {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #8c9288;
+  text-transform: uppercase;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1100px) {
+  .apartments-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 800px) {
+  .apartments-page-layout {
+    padding-left: 0;
+  }
+
+  .apartments-listing-sec {
+    padding: 120px 24px 80px 24px;
+  }
+
+  .apartments-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .apartments-filters-row {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 16px !important;
+  }
+
+  .filter-dropdown-and-reset {
+    display: flex !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+  }
+
+  .filter-reset-btn {
+    margin-left: 0 !important;
+    width: auto !important;
+    text-align: right !important;
+    margin-top: 0 !important;
+  }
+
+  .bougainvillea-corner-frame {
+    width: 60vw;
+  }
+}
+
+/* Apartment Detail View Styles */
+.apartment-detail-view {
+  background-color: #f4f1ea;
+  min-height: 100vh;
+  position: relative;
+  padding-left: clamp(80px, 6vw, 120px);
+}
+
+.apartment-detail-intro-sec {
+  padding: 180px 5vw 80px 4vw;
+}
+
+.apartment-detail-header {
+  margin-bottom: 60px;
+}
+
+.detail-serif-title {
+  font-family: 'Playfair Display', 'Bodoni Moda', Georgia, serif;
+  font-size: clamp(60px, 9vw, 130px);
+  font-weight: 300;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  margin: 0 0 16px 0;
+  color: #252822;
+}
+
+.detail-typology-row {
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #8c9288;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.detail-typology-row .bullet-dot {
+  color: #c0bba9;
+}
+
+.detail-content-columns {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 8vw;
+  align-items: start;
+}
+
+.detail-floorplans-column {
+  background-color: #fcfbfa;
+  border: 1px solid #e4dfd3;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.detail-floorplan-container {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+/* Floor plans inside detail view: stack them vertically if multiple */
+.detail-floorplan-container svg {
+  width: 100%;
+  height: auto;
+  border: 1px solid #eae5db;
+  padding: 15px;
+  background-color: #ffffff;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+}
+
+.detail-specs-column {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+
+.detail-spec-item {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid rgba(37, 40, 34, 0.08);
+  padding-bottom: 20px;
+}
+
+.detail-spec-label {
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  color: #8c9288;
+  margin-bottom: 8px;
+}
+
+.detail-spec-val {
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: clamp(28px, 4vw, 48px);
+  font-weight: 700;
+  color: #252822;
+  line-height: 1;
+}
+
+.detail-spec-val.serif {
+  font-family: 'Playfair Display', 'Bodoni Moda', Georgia, serif !important;
+  font-weight: 300;
+}
+
+/* Tabs styling */
+.detail-tab-container {
+  display: flex;
+  gap: 28px;
+  border-bottom: 1px solid #25282218;
+  margin-top: 36px;
+  margin-bottom: 24px;
+}
+
+.detail-tab-btn {
+  background: none;
+  border: none;
+  padding: 12px 0;
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: #8c9288;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.3s ease;
+}
+
+.detail-tab-btn:hover {
+  color: #252822;
+}
+
+.detail-tab-btn.active {
+  color: #252822;
+}
+
+.detail-tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background-color: #252822;
+}
+
+/* Tab content styling */
+.detail-tab-content {
+  min-height: 110px;
+  margin-bottom: 30px;
+}
+
+.detail-info-desc {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13.5px;
+  line-height: 1.8;
+  color: #555852;
+  margin: 0;
+}
+
+.detail-benefits-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 8px;
+}
+
+.benefit-pill {
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #252822;
+  background-color: #f4efe5;
+  border: 1px solid #25282210;
+  padding: 8px 16px;
+  border-radius: 20px;
+  display: inline-block;
+  letter-spacing: 0.02em;
+  transition: all 0.25s ease;
+}
+
+.benefit-pill:hover {
+  background-color: #eadecd;
+  border-color: #25282220;
+}
+
+
+.detail-action-buttons {
+  display: flex;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.detail-request-btn {
+  background-color: #252822;
+  color: #ffffff;
+  border: none;
+  padding: 18px 36px;
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-grow: 1;
+}
+
+.detail-request-btn:hover {
+  background-color: #111820;
+}
+
+.detail-pdf-btn {
+  background: none;
+  color: #252822;
+  border: 1px solid #252822;
+  padding: 18px 24px;
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.detail-pdf-btn:hover {
+  background-color: rgba(37, 40, 34, 0.05);
+}
+
+/* Scrolled Room Rows */
+.apartment-detail-rooms-sec {
+  padding: 40px 4vw 120px 4vw;
+  display: flex;
+  flex-direction: column;
+  gap: 8vw;
+  width: 100%;
+}
+
+.detail-room-row {
+  width: 100%;
+}
+
+.detail-room-image-wrap {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  cursor: pointer;
+  aspect-ratio: 2.1 / 1;
+}
+
+.detail-room-image-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.detail-room-image-wrap:hover img {
+  transform: scale(1.045);
+}
+
+.detail-room-overlay-info {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(18, 20, 16, 0.5) 0%, rgba(18, 20, 16, 0) 50%);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 40px 50px;
+}
+
+.detail-room-overlay-info span {
+  font-family: 'Playfair Display', 'Bodoni Moda', Georgia, serif;
+  font-size: clamp(24px, 3.5vw, 42px);
+  color: #ffffff;
+  font-weight: 300;
+}
+
+.detail-pano-btn {
+  background-color: rgba(255, 255, 255, 0.95);
+  border: none;
+  color: #111820;
+  padding: 14px 24px;
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.detail-pano-btn:hover {
+  background-color: #ffffff;
+  transform: translateY(-2px);
+}
+
+/* Pano Overlay Styles */
+.pano-viewer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background-color: #0b0d0c;
+  display: flex;
+  flex-direction: column;
+}
+
+.pano-close-btn {
+  position: absolute;
+  top: 30px;
+  right: 40px;
+  z-index: 10001;
+  background-color: rgba(255, 255, 255, 0.92);
+  border: none;
+  color: #111820;
+  padding: 12px 24px;
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pano-close-btn:hover {
+  background-color: #ffffff;
+  color: #ee5d39;
+}
+
+.pano-canvas-container {
+  width: 100%;
+  height: 100%;
+  flex-grow: 1;
+}
+
+/* Progressive panorama loader: blurred low-res preview under the spinner,
+   then the sharp 360 view fades in once the full texture is on the GPU. */
+.pano-loader {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #1a1611;
+}
+
+.pano-loader-preview {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background-size: cover;
+  background-position: center;
+  filter: blur(28px) saturate(1.05);
+  transform: scale(1.15);
+  opacity: 0.85;
+  transition: opacity 0.6s ease-out;
+  pointer-events: none;
+  will-change: opacity, transform, filter;
+}
+
+.pano-loader.ready .pano-loader-preview {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pano-loader > canvas,
+.pano-loader > div > canvas {
+  position: relative;
+  z-index: 1;
+  animation: pano-fade-in 0.55s ease-out forwards;
+}
+
+@keyframes pano-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.pano-loader-indicator {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  color: #f4f1ea;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, rgba(11,13,12,0.0), rgba(11,13,12,0.55));
+  pointer-events: none;
+  animation: pano-indicator-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pano-indicator-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+
+/* The master-suite source is a standard architectural room photograph, not an
+   equirectangular panorama. Show it as a straight, undistorted room view. */
+.pano-flat-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.pano-flat-stage:active {
+  cursor: grabbing;
+}
+
+.pano-flat-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: transform 0.16s ease-out;
+  will-change: transform;
+}
+
+.pano-flat-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 32px;
+  transform: translateX(-50%);
+  color: #fff;
+  font: 700 9px/1 'DM Sans', sans-serif;
+  letter-spacing: .18em;
+  text-shadow: 0 2px 10px #111a;
+  pointer-events: none;
+}
+
+/* Animations */
+.animate-fade-in {
+  animation: detailFadeIn 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes detailFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.apartments-page-layout .community-feature,
+.apartments-page-layout .community-feature-sticky {
+  margin-left: -6vw !important;
+  margin-right: 0 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}
+
+.apartments-page-layout .apartment-detail-intro-sec {
+  padding-bottom: 0px !important;
+}
+
+.apartments-page-layout .apartment-detail-rooms-sec {
+  padding-bottom: 80px !important;
+}

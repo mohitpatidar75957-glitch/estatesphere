@@ -1,0 +1,323 @@
+.contact-page-wrapper {
+  background: #b4ccdc; /* Light pastel blue */
+  min-height: 100vh;
+  color: #1a2233;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* Nav Header */
+.contact-page-wrapper .era-nav {
+  position: relative;
+  border-bottom: none;
+  padding: 40px 6vw;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.contact-page-wrapper .era-mark-circular {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 120px;
+  position: relative;
+  text-decoration: none;
+}
+
+.contact-page-wrapper .era-mark-circular svg {
+  animation: rotate 20s linear infinite;
+  width: 100%;
+  height: 100%;
+}
+
+.contact-page-wrapper .era-mark-circular .center-icon {
+  position: absolute;
+  font-size: 32px;
+  color: #1a2233;
+  animation: none;
+}
+
+@keyframes rotate {
+  100% { transform: rotate(360deg); }
+}
+
+.contact-page-wrapper .nav-actions-stacked {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 15px;
+  position: relative;
+  z-index: 50;
+  pointer-events: auto;
+}
+
+.contact-page-wrapper .select-apartment-contact {
+  border: 0;
+  border-bottom: 1px solid rgba(26, 34, 51, 0.3);
+  padding-bottom: 10px;
+  background: none;
+  color: #1a2233;
+  font-family: 'Bodoni Moda', 'Playfair Display', Georgia, serif;
+  font-size: 18px;
+  line-height: 0.9;
+  text-align: right;
+  cursor: pointer;
+}
+
+.contact-page-wrapper .hero-links-contact {
+  text-align: right;
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  font-weight: 600;
+  line-height: 1.8;
+  color: #1a2233;
+}
+
+.contact-page-wrapper .hero-links-contact a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Hero Section */
+.contact-hero {
+  text-align: center;
+  padding: 8vh 6vw 12vh;
+}
+
+.contact-hero h1 {
+  font-family: 'Bodoni Moda', 'Playfair Display', Georgia, serif;
+  font-size: clamp(60px, 10vw, 140px);
+  font-weight: 400;
+  color: #121826;
+  margin: 0;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  transform: none;
+  margin-bottom: 80px;
+}
+
+.contact-grid-info {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+  text-align: center;
+  margin-top: 80px;
+}
+
+.contact-grid-info .info-col small {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #4a5a6a;
+  display: block;
+  margin-bottom: 15px;
+}
+
+.contact-grid-info .info-col p,
+.contact-grid-info .info-col a {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #1a2233;
+  text-decoration: none;
+  margin: 0;
+}
+
+/* Map & Form Section */
+.contact-interactive-section {
+  display: grid;
+  grid-template-columns: 55% 45%;
+  min-height: 100vh;
+  border-top: 1px solid rgba(26, 34, 51, 0.1);
+}
+
+.map-container {
+  position: relative;
+  background: url('/assets/light_blue_map.png') center/cover no-repeat;
+  padding: 6vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.map-marker {
+  background: #1a2233;
+  color: #fff;
+  padding: 12px 24px;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: absolute;
+  top: 45%;
+  left: 40%;
+}
+
+.map-marker svg {
+  width: 16px;
+}
+
+.book-call-circle {
+  position: absolute;
+  bottom: 15%;
+  right: 15%;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  border: 1px solid rgba(26, 34, 51, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Playfair Display', serif;
+  font-size: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 20px;
+  color: #1a2233;
+  text-decoration: none;
+  transition: background 0.3s, color 0.3s;
+}
+
+.book-call-circle:hover {
+  background: #1a2233;
+  color: #fff;
+}
+
+/* Dark Form Section */
+.dark-form-container {
+  background: #1d2522; /* Retaining the original dark aesthetic for the form side */
+  padding: 8vw 6vw;
+  color: #eeeae1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.premium-contact-form {
+  max-width: 100%;
+}
+
+.premium-contact-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin-bottom: 40px;
+}
+
+.premium-contact-form .form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.premium-contact-form .form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.premium-contact-form label {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: #a9b1ab;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+}
+
+.premium-contact-form input,
+.premium-contact-form textarea {
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+  padding: 10px 0;
+  color: #fff;
+  font-size: 16px;
+  font-family: 'DM Sans', sans-serif;
+  transition: border-color 0.3s;
+}
+
+.premium-contact-form input:focus,
+.premium-contact-form textarea:focus {
+  outline: none;
+  border-bottom-color: #fff;
+}
+
+.premium-contact-form textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 60px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 30px;
+}
+
+.privacy-note {
+  font-size: 10px;
+  color: #888;
+}
+
+.privacy-note a {
+  color: #fff;
+  text-decoration: none;
+}
+
+.submit-btn {
+  background: #fff;
+  color: #1d2522;
+  border: none;
+  padding: 15px 40px;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 0.3s;
+}
+
+.submit-btn:hover {
+  opacity: 0.8;
+}
+
+/* Vertical text element */
+.vertical-home-contact {
+  position: fixed;
+  top: 50%;
+  left: 40px;
+  transform: translateY(-50%) rotate(-90deg);
+  transform-origin: center center;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: #4a5a6a;
+  text-transform: uppercase;
+  z-index: 10;
+}
+
+@media (max-width: 1024px) {
+  .contact-interactive-section {
+    grid-template-columns: 1fr;
+  }
+  .map-container {
+    min-height: 500px;
+  }
+  .contact-grid-info {
+    grid-template-columns: 1fr 1fr;
+    gap: 50px;
+  }
+  .contact-hero h1 {
+    font-size: clamp(50px, 15vw, 100px);
+  }
+}
+@media (max-width: 768px) {
+  .contact-grid-info {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+  .premium-contact-form .form-row {
+    grid-template-columns: 1fr;
+  }
+}

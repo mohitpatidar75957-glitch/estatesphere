@@ -1,0 +1,120 @@
+.lifestyle-slides {
+  position: relative;
+  height: 300vh;
+  background: #0f1a1e !important;
+  color: white;
+  z-index: 10;
+  opacity: 1 !important;
+  transform: none !important;
+  filter: none !important;
+  transition: none !important;
+}
+
+.lifestyle-slides.scroll-depth-item,
+.lifestyle-slides.is-depth-visible {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+.lifestyle-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.lifestyle-wrap {
+  display: grid;
+  grid-template-columns: 0.4fr 0.6fr;
+  width: 100%;
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 0 5vw 0 14vw;
+  gap: 4rem;
+  height: 80vh;
+}
+
+@media (max-width: 991px) {
+  .lifestyle-wrap {
+    grid-template-columns: 1fr;
+    height: 100vh;
+    padding: 2rem;
+  }
+}
+
+.lifestyle-text-col {
+  display: flex;
+  position: relative;
+  height: 100%;
+  padding-top: 10%;
+}
+
+.lifestyle-text-content {
+  flex: 1;
+  position: relative;
+}
+
+.lifestyle-text-slide {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  opacity: 0;
+  transform: translateY(2rem);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  pointer-events: none;
+}
+
+.lifestyle-text-slide.is-active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.lifestyle-text-slide h2 {
+  font-family: var(--font-heading, "Playfair Display", serif);
+  font-size: 3rem;
+  font-weight: 300;
+  text-transform: uppercase;
+  margin-bottom: 2rem;
+  line-height: 1.1;
+  letter-spacing: 0.05em;
+}
+
+.lifestyle-text-slide p {
+  font-family: var(--font-body, "Inter", sans-serif);
+  font-size: 1.125rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.8);
+  max-width: 90%;
+}
+
+.lifestyle-image-col {
+  position: relative;
+  height: 100%;
+  width: 100%;
+}
+
+.lifestyle-big-image {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 85%;
+  height: 90%;
+  object-fit: cover;
+  will-change: clip-path;
+}
+
+.lifestyle-small-image {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 50%;
+  height: 55%;
+  object-fit: cover;
+  z-index: 5;
+  will-change: clip-path;
+}
