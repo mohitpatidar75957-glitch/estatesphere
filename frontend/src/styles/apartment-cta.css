@@ -167,7 +167,29 @@
 
 .era-nav .nav-actions a,
 .era-nav .nav-actions button {
+  color: #111820;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.era-nav.nav-on-dark .nav-actions a,
+.era-nav.nav-on-dark .nav-actions button,
+.era-nav.nav-on-hero .nav-actions a,
+.era-nav.nav-on-hero .nav-actions button {
+  color: #ffffff !important;
+}
+
+.era-nav.nav-on-dark .nav-actions>a,
+.era-nav.nav-on-hero .nav-actions>a {
+  border-bottom-color: #ffffff !important;
+}
+
+.era-nav.nav-on-light .nav-actions a,
+.era-nav.nav-on-light .nav-actions button {
   color: #111820 !important;
+}
+
+.era-nav.nav-on-light .nav-actions>a {
+  border-bottom-color: #111820 !important;
 }
 
 .era-nav .nav-actions>a {
@@ -205,14 +227,26 @@
   color: #fff !important;
 }
 
+.era-nav.nav-on-dark .era-menu,
 .era-nav.nav-on-hero .era-menu {
   border-color: #fff !important;
   color: #fff !important;
 }
 
+.era-nav.nav-on-dark .era-menu svg,
 .era-nav.nav-on-hero .era-menu svg {
   color: #fff !important;
   stroke: #fff !important;
+}
+
+.era-nav.nav-on-light .era-menu {
+  border-color: #111820 !important;
+  color: #111820 !important;
+}
+
+.era-nav.nav-on-light .era-menu svg {
+  color: #111820 !important;
+  stroke: #111820 !important;
 }
 
 .era-hero>.select-apartment,

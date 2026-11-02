@@ -123,7 +123,7 @@ export default function App() {
       }
     }
   }, [])
-  const [menu, setMenu] = useState(false), [form, setForm] = useState(false), [formClosing, setFormClosing] = useState(false), [cookies, setCookies] = useState(true), [railOnDark, setRailOnDark] = useState(true), [heroProgress, setHeroProgress] = useState(0), [pageProgress, setPageProgress] = useState(0), [storyProgress, setStoryProgress] = useState(0), [cinematicProgress, setCinematicProgress] = useState(0), [spaceProgress, setSpaceProgress] = useState(0), [interiorCinemaProgress, setInteriorCinemaProgress] = useState(0), [introSlide, setIntroSlide] = useState(0), [apartmentSlide, setApartmentSlide] = useState(0), [interiorSlide, setInteriorSlide] = useState(0), [cursor, setCursor] = useState({ x: 0, y: 0, nx: 0, ny: 0 }), [finalProgress, setFinalProgress] = useState(0), [lifestyleProgress, setLifestyleProgress] = useState(0), [activeCommunityTab, setActiveCommunityTab] = useState(0), [notification, setNotification] = useState(null)
+  const [menu, setMenu] = useState(false), [form, setForm] = useState(false), [formClosing, setFormClosing] = useState(false), [cookies, setCookies] = useState(true), [railOnDark, setRailOnDark] = useState(true), [navOnDark, setNavOnDark] = useState(true), [heroProgress, setHeroProgress] = useState(0), [pageProgress, setPageProgress] = useState(0), [storyProgress, setStoryProgress] = useState(0), [cinematicProgress, setCinematicProgress] = useState(0), [spaceProgress, setSpaceProgress] = useState(0), [interiorCinemaProgress, setInteriorCinemaProgress] = useState(0), [introSlide, setIntroSlide] = useState(0), [apartmentSlide, setApartmentSlide] = useState(0), [interiorSlide, setInteriorSlide] = useState(0), [cursor, setCursor] = useState({ x: 0, y: 0, nx: 0, ny: 0 }), [finalProgress, setFinalProgress] = useState(0), [lifestyleProgress, setLifestyleProgress] = useState(0), [activeCommunityTab, setActiveCommunityTab] = useState(0), [notification, setNotification] = useState(null)
   const lifestyleRef = useRef(null)
   const lifestyleProgressRef = useRef(0)
   const lifestyleTargetRef = useRef(0)
@@ -147,7 +147,71 @@ export default function App() {
   useEffect(() => { emblemLastScrollRef.current = { y: window.scrollY, time: performance.now() }; let autoFrame = 0; const onScroll = () => { const now = performance.now(), nextY = window.scrollY, delta = nextY - emblemLastScrollRef.current.y; emblemAngleRef.current += delta * .52; emblemLastScrollRef.current = { y: nextY, time: now }; if (emblemSvgRef.current) emblemSvgRef.current.style.transform = `rotate(${emblemAngleRef.current}deg)` }; const autoRotate = now => { if (now - emblemLastScrollRef.current.time > 180) { emblemAngleRef.current += .11; if (emblemSvgRef.current) emblemSvgRef.current.style.transform = `rotate(${emblemAngleRef.current}deg)` } autoFrame = requestAnimationFrame(autoRotate) }; window.addEventListener('scroll', onScroll, { passive: true }); autoFrame = requestAnimationFrame(autoRotate); return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(autoFrame) } }, [])
   useEffect(() => { let frame = 0; const fn = () => { if (frame) return; frame = requestAnimationFrame(() => { heroTargetRef.current = Math.min(1, Math.max(0, window.scrollY / (window.innerHeight * 2))); const available = Math.max(1, document.documentElement.scrollHeight - window.innerHeight); setPageProgress(Math.min(1, Math.max(0, window.scrollY / available))); if (horizontalStoryRef.current) { const start = horizontalStoryRef.current.offsetTop; const distance = Math.max(1, horizontalStoryRef.current.offsetHeight - window.innerHeight); setStoryProgress(Math.min(1, Math.max(0, (window.scrollY - start) / distance))) } if (cinematicRef.current) { const start = cinematicRef.current.offsetTop; const distance = Math.max(1, cinematicRef.current.offsetHeight - window.innerHeight); setCinematicProgress(Math.min(1, Math.max(0, (window.scrollY - start) / distance))) } if (spaceRevealRef.current) { const sectionStart = spaceRevealRef.current.offsetTop; const start = sectionStart + window.innerHeight * .22; const end = sectionStart + spaceRevealRef.current.offsetHeight - window.innerHeight; const distance = Math.max(1, end - start); spaceTargetRef.current = Math.min(1, Math.max(0, (window.scrollY - start) / distance)) } if (interiorCinemaRef.current) { const start = interiorCinemaRef.current.offsetTop; const distance = Math.max(1, interiorCinemaRef.current.offsetHeight - window.innerHeight); interiorCinemaTargetRef.current = Math.min(1, Math.max(0, (window.scrollY - start) / distance)) } if (lifestyleRef.current) { const start = lifestyleRef.current.offsetTop; const distance = Math.max(1, lifestyleRef.current.offsetHeight - window.innerHeight); lifestyleTargetRef.current = Math.min(1, Math.max(0, (window.scrollY - start) / distance)) } if (finalRef.current) { const start = finalRef.current.offsetTop; const distance = Math.max(1, finalRef.current.offsetHeight - window.innerHeight); finalTargetRef.current = Math.min(1, Math.max(0, (window.scrollY - start) / distance)) } const railSection = document.elementFromPoint(Math.min(80, window.innerWidth * .06), Math.min(90, window.innerHeight * .12))?.closest('section'); setRailOnDark(!railSection || railSection.matches('.era-hero-scroll,.era-location-intro,.concept-image,.cinematic-property-scroll,.community-feature,.amenities,.architecture,.era-contact,.interior-cinematic-scroll,.lifestyle-slides,.estate-final-view,.estate-footer') || (railSection.matches('.space-reveal-scroll') && spaceProgressRef.current < .42)); frame = 0 }) }; window.addEventListener('scroll', fn, { passive: true }); fn(); return () => { window.removeEventListener('scroll', fn); if (frame) cancelAnimationFrame(frame) } }, [])
   useEffect(() => { let animationFrame = 0; const animate = () => { const heroCurrent = heroProgressRef.current, heroTarget = heroTargetRef.current; const heroNext = Math.abs(heroTarget - heroCurrent) < .0005 ? heroTarget : heroCurrent + (heroTarget - heroCurrent) * .045; heroProgressRef.current = heroNext; setHeroProgress(heroNext); const current = spaceProgressRef.current, target = spaceTargetRef.current; const next = Math.abs(target - current) < .0005 ? target : current + (target - current) * .045; spaceProgressRef.current = next; setSpaceProgress(next); const cinemaCurrent = interiorCinemaProgressRef.current, cinemaTarget = interiorCinemaTargetRef.current; const cinemaNext = Math.abs(cinemaTarget - cinemaCurrent) < .0004 ? cinemaTarget : cinemaCurrent + (cinemaTarget - cinemaCurrent) * .055; interiorCinemaProgressRef.current = cinemaNext; setInteriorCinemaProgress(cinemaNext); const lifeCurrent = lifestyleProgressRef.current, lifeTarget = lifestyleTargetRef.current; const lifeNext = Math.abs(lifeTarget - lifeCurrent) < .0004 ? lifeTarget : lifeCurrent + (lifeTarget - lifeCurrent) * .055; lifestyleProgressRef.current = lifeNext; setLifestyleProgress(lifeNext); const finalCurrent = finalProgressRef.current, finalTarget = finalTargetRef.current; const finalNext = Math.abs(finalTarget - finalCurrent) < .0004 ? finalTarget : finalCurrent + (finalTarget - finalCurrent) * .055; finalProgressRef.current = finalNext; setFinalProgress(finalNext); animationFrame = requestAnimationFrame(animate) }; animationFrame = requestAnimationFrame(animate); return () => cancelAnimationFrame(animationFrame) }, [])
-  useEffect(() => { const updateRailColor = () => { const section = document.elementFromPoint(Math.min(80, window.innerWidth * .06), Math.min(90, window.innerHeight * .12))?.closest('section'); setRailOnDark(Boolean(section && section.matches('.concept-image,.cinematic-property-scroll,.community-feature,.amenities,.architecture,.era-contact,.interior-cinematic-scroll,.estate-final-view,.estate-footer')) || (Boolean(section && section.matches('.space-reveal-scroll')) && spaceProgressRef.current < .42)) }; window.addEventListener('scroll', updateRailColor, { passive: true }); updateRailColor(); return () => window.removeEventListener('scroll', updateRailColor) }, [])
+  useEffect(() => {
+    const updateHeaderThemes = () => {
+      const scrollY = window.scrollY;
+
+      // Top Hero section handling
+      if (scrollY < window.innerHeight * 0.65) {
+        const isNight = heroTime === 'NIGHT';
+        setNavOnDark(isNight);
+        setRailOnDark(isNight);
+        return;
+      }
+
+      // 1. Right Navigation Theme Detection (at top-right actions point)
+      const navX = Math.max(10, window.innerWidth - 80);
+      const navY = 50;
+      const navElements = document.elementsFromPoint ? document.elementsFromPoint(navX, navY) : [];
+      const navBgEl = navElements.find(el => !el.closest('.era-nav') && !el.closest('.custom-cursor'));
+
+      if (navBgEl) {
+        if (navBgEl.closest('.story-concept, .story-intro, .era-location-intro, .manifesto, .location, .location-copy, #concept')) {
+          setNavOnDark(false);
+        } else if (navBgEl.closest('.era-hero-scroll, .concept-image, .cinematic-property-scroll, .community-feature, .amenities, .architecture, .era-contact, .interior-cinematic-scroll, .lifestyle-slides, .estate-final-view, .estate-footer, .space-reveal-scroll, .residence-section, .estate-residences, .estate-horizontal-story, .story-route')) {
+          setNavOnDark(true);
+        } else {
+          let curr = navBgEl;
+          let isDark = true;
+          while (curr && curr !== document.body && curr !== document.documentElement) {
+            const bg = window.getComputedStyle(curr).backgroundColor;
+            if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') {
+              const rgb = bg.match(/\d+/g);
+              if (rgb && rgb.length >= 3) {
+                const brightness = (parseInt(rgb[0]) * 299 + parseInt(rgb[1]) * 587 + parseInt(rgb[2]) * 114) / 1000;
+                isDark = brightness < 160;
+                break;
+              }
+            }
+            curr = curr.parentElement;
+          }
+          setNavOnDark(isDark);
+        }
+      } else {
+        setNavOnDark(true);
+      }
+
+      // 2. Left Rail Theme Detection (at top-left rail point)
+      const railX = Math.min(80, window.innerWidth * 0.06);
+      const railY = Math.min(90, window.innerHeight * 0.12);
+      const railElements = document.elementsFromPoint ? document.elementsFromPoint(railX, railY) : [];
+      const railBgEl = railElements.find(el => !el.closest('.persistent-era-rail') && !el.closest('.custom-cursor'));
+
+      if (railBgEl) {
+        if (railBgEl.closest('.story-concept, .story-intro, .era-location-intro, .manifesto, .location, .location-copy, #concept')) {
+          setRailOnDark(false);
+        } else {
+          setRailOnDark(true);
+        }
+      } else {
+        setRailOnDark(true);
+      }
+    };
+
+    window.addEventListener('scroll', updateHeaderThemes, { passive: true });
+    updateHeaderThemes();
+    return () => window.removeEventListener('scroll', updateHeaderThemes);
+  }, [heroTime]);
   useEffect(() => {
     setActiveCommunityTab(Math.min(communityFeatures.length - 1, Math.floor((spaceProgress / 0.65) * communityFeatures.length)))
   }, [spaceProgress])
@@ -242,7 +306,7 @@ export default function App() {
   return <main className="era-site">
     <div className="custom-cursor" style={{ transform: `translate(${cursor.x}px,${cursor.y}px)` }} />
     <aside className={`persistent-era-rail ${railOnDark ? 'rail-on-dark' : 'rail-on-light'}`}><div className="persistent-emblem"><svg ref={emblemSvgRef} viewBox="0 0 120 120"><defs><path id="persistentEmblemPath" d="M60,60 m-43,0 a43,43 0 1,1 86,0 a43,43 0 1,1 -86,0" /></defs><text><textPath href="#persistentEmblemPath" textLength="270">D W E L L O R A　•　R E S I D E N C E　•　</textPath></text></svg><span>✣</span></div><b>{String(Math.round(railNumber)).padStart(2, '0')}</b><i />{isAtEnd ? (<><small style={{ cursor: 'pointer', pointerEvents: 'auto' }} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>TO TOP</small><ArrowUp style={{ cursor: 'pointer', pointerEvents: 'auto' }} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} /></>) : (<><small>SCROLL</small><ArrowDown /></>)}</aside>
-    <header className={`era-nav ${heroProgress < .98 ? 'nav-on-hero' : ''}`}><a href="#top" className="era-mark" onClick={e => { e.preventDefault(); navigateTo('/') }}><span>Dwellora</span></a><div className="nav-actions"><a href="/apartments" onClick={e => { e.preventDefault(); navigateTo('/apartments') }}>Select an apartment</a><button onClick={openForm}>Book a call</button><a className="nav-contact" href="/contact" onClick={e => { e.preventDefault(); navigateTo('/contact') }}>Contact</a><button className="era-menu" onClick={() => setMenu(!menu)}><Menu /></button></div></header>
+    <header className={`era-nav ${navOnDark ? 'nav-on-dark nav-on-hero' : 'nav-on-light'}`}><a href="#top" className="era-mark" onClick={e => { e.preventDefault(); navigateTo('/') }}><span>Dwellora</span></a><div className="nav-actions"><a href="/apartments" onClick={e => { e.preventDefault(); navigateTo('/apartments') }}>Select an apartment</a><button onClick={openForm}>Book a call</button><a className="nav-contact" href="/contact" onClick={e => { e.preventDefault(); navigateTo('/contact') }}>Contact</a><button className="era-menu" onClick={() => setMenu(!menu)}><Menu /></button></div></header>
     {menu && <div className="menu-panel"><button onClick={() => setMenu(false)}><X /></button><p>THE MENU</p>{['Home', 'Concept', 'Location', 'Residences', 'Amenities', 'Architecture', 'Contact'].map(x => <a key={x} href={`#${x.toLowerCase()}`} onClick={() => setMenu(false)}>{x}</a>)}<a href="/admin/login" onClick={e => { e.preventDefault(); setMenu(false); navigateTo('/admin/login') }} style={{ color: '#d4af37', marginTop: '16px', borderTop: '1px solid rgba(212, 175, 55, 0.25)', paddingTop: '16px' }}>🔐 Admin Portal</a></div>}
 
     <section className="era-hero-scroll" id="top"><div className="era-hero" style={{ '--mx': `${cursor.nx * 18}px`, '--my': `${cursor.ny * 12}px` }}><img className="pool-stage day-image" src={heroDayPhoto} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'opacity 1.2s ease-in-out', opacity: heroTime === 'DAY' ? 1 : 0, transform: `scale(${1.035 - heroProgress * .035})` }} /><img className="pool-stage night-image" src={siteContent?.heroNightImage || "/assets/luxury_villa_night.jpg"} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'opacity 1.2s ease-in-out', opacity: heroTime === 'NIGHT' ? 1 : 0, transform: `scale(${1.035 - heroProgress * .035})` }} /><div className="era-emblem"><svg className="emblem-ring" viewBox="0 0 120 120" aria-hidden="true" style={{ transform: `rotate(${heroProgress * 720}deg)` }}><defs><path id="emblemPath" d="M60,60 m-43,0 a43,43 0 1,1 86,0 a43,43 0 1,1 -86,0" /></defs><text><textPath href="#emblemPath" startOffset="0%" textLength="270">D W E L L O R A　•　R E S I D E N C E　•　</textPath></text></svg><span className="emblem-core">✣</span></div><div className="era-title" style={{ opacity: Math.max(0, 1 - heroProgress * 3.2), transform: `translateY(${-heroProgress * 70}px)` }}><h1>{siteContent?.heroTitle || 'Dwellora'}</h1><div><span>A PLACE</span><i style={{ pointerEvents: 'auto', position: 'relative', zIndex: 9999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><button style={{ all: 'unset', cursor: 'pointer', opacity: heroTime === 'DAY' ? 1 : 0.4, transition: 'opacity 0.3s', padding: '10px 5px', pointerEvents: 'auto' }} onClick={() => setHeroTime('DAY')}>BY DAY</button><span style={{ padding: '0 8px', opacity: 0.7 }}>—</span><button style={{ all: 'unset', cursor: 'pointer', opacity: heroTime === 'NIGHT' ? 1 : 0.4, transition: 'opacity 0.3s', padding: '10px 5px', pointerEvents: 'auto' }} onClick={() => setHeroTime('NIGHT')}>BY NIGHT</button></i><span>TO RETURN TO</span></div></div><button className="select-apartment" onClick={() => navigateTo('/apartments')}>SELECT<br />AN APARTMENT</button><div className="hero-links">BOOK A CALL<br />CONTACT</div><div className="hero-index">{String(Math.round(heroProgress * 16)).padStart(2, '0')}</div>
