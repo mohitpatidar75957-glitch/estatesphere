@@ -110,6 +110,13 @@ export default function AdminDashboard() {
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
   const [showAddMediaModal, setShowAddMediaModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Delete',
+    onConfirm: null
+  });
 
     // Option: Sold Units & Buyer Registry State
   const [searchSalesQuery, setSearchSalesQuery] = useState('');
@@ -486,16 +493,23 @@ export default function AdminDashboard() {
     handleApartmentStatus(apt.id, nextStatus);
   };
 
-  // Handle Deleting Apartment
+  // Handle Deleting Apartment with Custom In-App Popup
   const handleDeleteApartment = (aptId) => {
     const target = apartments.find(a => a.id === aptId);
-    if (window.confirm(`Are you sure you want to delete and archive ${target?.apartmentNumber || 'this unit'}?`)) {
-      const userName = user?.name || 'Super Admin';
-      const updated = dataStore.deleteApartment(aptId, userName);
-      setApartments(updated);
-      setActivityFeed(dataStore.getActivityFeed());
-      triggerToast('Apartment unit removed from inventory and website.');
-    }
+    setDeleteConfirmModal({
+      isOpen: true,
+      title: `Delete Unit ${target?.apartmentNumber || ''}?`,
+      message: `Are you sure you want to delete and archive ${target?.apartmentNumber || 'this unit'}? It will be removed from your active inventory and the public website.`,
+      confirmText: 'Yes, Delete Unit',
+      onConfirm: () => {
+        const userName = user?.name || 'Super Admin';
+        const updated = dataStore.deleteApartment(aptId, userName);
+        setApartments(updated);
+        setActivityFeed(dataStore.getActivityFeed());
+        triggerToast('Apartment unit removed from inventory and website.');
+        setDeleteConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
+      }
+    });
   };
 
   // Handle Adding New Apartment (Fixed: Single plus)
@@ -890,15 +904,22 @@ export default function AdminDashboard() {
     triggerToast(`Lead assigned to ${agentName}`);
   };
 
-  // Handle Delete Inquiry
+  // Handle Delete Inquiry with Custom In-App Popup
   const handleDeleteInquiry = (id) => {
-    if (window.confirm('Are you sure you want to delete this customer inquiry?')) {
-      const userName = user?.name || 'Super Admin';
-      const updated = dataStore.deleteInquiry(id, userName);
-      setInquiries(updated);
-      setActivityFeed(dataStore.getActivityFeed());
-      triggerToast('Inquiry record deleted.');
-    }
+    setDeleteConfirmModal({
+      isOpen: true,
+      title: 'Delete Customer Lead?',
+      message: 'Are you sure you want to permanently delete this customer lead inquiry from CRM?',
+      confirmText: 'Yes, Delete Lead',
+      onConfirm: () => {
+        const userName = user?.name || 'Super Admin';
+        const updated = dataStore.deleteInquiry(id, userName);
+        setInquiries(updated);
+        setActivityFeed(dataStore.getActivityFeed());
+        triggerToast('Inquiry record deleted.');
+        setDeleteConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
+      }
+    });
   };
 
   // Handle Adding Manual Offline / Walk-in Lead
@@ -1049,7 +1070,7 @@ export default function AdminDashboard() {
     triggerToast('Password reset and updated successfully!');
   };
 
-  // Handle Delete Team Member
+  // Handle Delete Team Member with Custom In-App Popup
   const handleDeleteTeamMember = (id) => {
     const member = team.find(m => m.id === id);
     if (!member) return;
@@ -1057,17 +1078,24 @@ export default function AdminDashboard() {
       triggerToast('Primary Super Admin cannot be deleted.');
       return;
     }
-    if (window.confirm(`Permanently delete account for "${member.name}" (${member.email}) and revoke all access?`)) {
-      try {
-        const userName = user?.name || 'Super Admin';
-        const updated = dataStore.deleteTeamMember(id, userName);
-        setTeam(updated);
-        setActivityFeed(dataStore.getActivityFeed());
-        triggerToast(`User ${member.name} permanently removed.`);
-      } catch (err) {
-        triggerToast(err.message || 'Could not delete member.');
+    setDeleteConfirmModal({
+      isOpen: true,
+      title: `Delete ${member.name}?`,
+      message: `Permanently delete account for "${member.name}" (${member.email}) and revoke all portal permissions?`,
+      confirmText: 'Yes, Delete Account',
+      onConfirm: () => {
+        try {
+          const userName = user?.name || 'Super Admin';
+          const updated = dataStore.deleteTeamMember(id, userName);
+          setTeam(updated);
+          setActivityFeed(dataStore.getActivityFeed());
+          triggerToast(`User ${member.name} permanently removed.`);
+        } catch (err) {
+          triggerToast(err.message || 'Could not delete member.');
+        }
+        setDeleteConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
       }
-    }
+    });
   };
 
   // Handle Adding New Media Asset
@@ -1140,12 +1168,19 @@ export default function AdminDashboard() {
   };
 
   const handleResetSiteContent = () => {
-    if (window.confirm('Reset all website text fields to defaults?')) {
-      setContentForm(DEFAULT_SITE_CONTENT);
-      dataStore.updateSiteContent(DEFAULT_SITE_CONTENT, user?.name || 'Super Admin');
-      setSiteContent(DEFAULT_SITE_CONTENT);
-      triggerToast('Website text reset to original defaults.');
-    }
+    setDeleteConfirmModal({
+      isOpen: true,
+      title: 'Reset Website Content?',
+      message: 'Are you sure you want to reset all public website text and headlines back to original factory defaults?',
+      confirmText: 'Yes, Reset Defaults',
+      onConfirm: () => {
+        setContentForm(DEFAULT_SITE_CONTENT);
+        dataStore.updateSiteContent(DEFAULT_SITE_CONTENT, user?.name || 'Super Admin');
+        setSiteContent(DEFAULT_SITE_CONTENT);
+        triggerToast('Website text reset to original defaults.');
+        setDeleteConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
+      }
+    });
   };
 
   // Handle Logout with custom in-app confirmation modal (No browser native alert)
@@ -1278,7 +1313,7 @@ export default function AdminDashboard() {
   };
 
   // Lock body/html scroll when any fullscreen view is active to eliminate duplicate scrollbars
-  const isAnyFullscreenOpen = Boolean(showAddModal || showEditModal || showAddTeamModal || showEditPermissionsModal || photoModal?.isOpen || buyerModal?.isOpen || saleReceiptModal?.isOpen);
+  const isAnyFullscreenOpen = Boolean(showAddModal || showEditModal || showAddTeamModal || showEditPermissionsModal || photoModal?.isOpen || buyerModal?.isOpen || saleReceiptModal?.isOpen || deleteConfirmModal?.isOpen);
   useEffect(() => {
     if (isAnyFullscreenOpen) {
       document.body.classList.add('has-fullscreen-open');
@@ -3833,11 +3868,18 @@ export default function AdminDashboard() {
                               className="btn-secondary-action"
                               style={{ color: '#dc2626', borderColor: '#fecaca' }}
                               onClick={() => {
-                                if (window.confirm('Delete this media asset?')) {
-                                  const updated = dataStore.deleteMediaItem(med.id);
-                                  setMediaList(updated);
-                                  triggerToast('Asset removed from library.');
-                                }
+                                setDeleteConfirmModal({
+                                  isOpen: true,
+                                  title: 'Delete Media Asset?',
+                                  message: 'Are you sure you want to remove this photo asset from the media library?',
+                                  confirmText: 'Yes, Delete Asset',
+                                  onConfirm: () => {
+                                    const updated = dataStore.deleteMediaItem(med.id);
+                                    setMediaList(updated);
+                                    triggerToast('Asset removed from library.');
+                                    setDeleteConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null });
+                                  }
+                                });
                               }}
                             >
                               <Trash2 size={13} />
@@ -9224,6 +9266,84 @@ export default function AdminDashboard() {
                 onClick={confirmLogout}
               >
                 Yes, Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          CUSTOM IN-APP DELETE CONFIRMATION POPUP (NO BROWSER ALERT)
+      ======================================================== */}
+      {deleteConfirmModal.isOpen && (
+        <div 
+          className="modal-overlay" 
+          onClick={() => setDeleteConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null })} 
+          style={{ zIndex: 999999 }}
+        >
+          <div 
+            className="modal-content-card" 
+            onClick={(e) => e.stopPropagation()} 
+            style={{ 
+              maxWidth: '430px', 
+              padding: '28px 24px', 
+              textAlign: 'center', 
+              borderRadius: '16px',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.22)'
+            }}
+          >
+            <div style={{ 
+              width: '54px', 
+              height: '54px', 
+              borderRadius: '50%', 
+              background: '#fee2e2', 
+              color: '#dc2626', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              margin: '0 auto 16px' 
+            }}>
+              <Trash2 size={26} strokeWidth={2.2} />
+            </div>
+
+            <h3 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
+              {deleteConfirmModal.title || 'Delete Confirmation'}
+            </h3>
+            
+            <p style={{ margin: '0 0 24px', fontSize: '13.5px', color: '#64748b', lineHeight: 1.55 }}>
+              {deleteConfirmModal.message}
+            </p>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                type="button"
+                className="btn-secondary-action"
+                style={{ flex: 1, padding: '10px 16px', fontSize: '13.5px', fontWeight: 600, justifyContent: 'center' }}
+                onClick={() => setDeleteConfirmModal({ isOpen: false, title: '', message: '', onConfirm: null })}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-primary-action"
+                style={{ 
+                  flex: 1, 
+                  padding: '10px 16px', 
+                  fontSize: '13.5px', 
+                  fontWeight: 600, 
+                  justifyContent: 'center', 
+                  background: '#dc2626', 
+                  borderColor: '#dc2626',
+                  color: '#ffffff',
+                  boxShadow: '0 4px 12px rgba(220, 38, 38, 0.35)'
+                }}
+                onClick={() => {
+                  if (typeof deleteConfirmModal.onConfirm === 'function') {
+                    deleteConfirmModal.onConfirm();
+                  }
+                }}
+              >
+                {deleteConfirmModal.confirmText || 'Yes, Delete'}
               </button>
             </div>
           </div>
