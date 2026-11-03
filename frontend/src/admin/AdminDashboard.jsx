@@ -488,7 +488,7 @@ export default function AdminDashboard() {
   const handleCreateApartment = (e) => {
     e.preventDefault();
     if (!formApt.apartmentNumber.trim()) {
-      alert('Please enter a unit number (e.g. Unit B3-102 or No-26)');
+      alert('Please enter a valid unit number.');
       return;
     }
 
@@ -2283,7 +2283,7 @@ export default function AdminDashboard() {
                     <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: '#94a3b8' }} />
                     <input
                       type="text"
-                      placeholder="Search Unit (e.g. B3-102 or No-01)..."
+                      placeholder="Search by unit number or title..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="input-clean"
@@ -4177,7 +4177,7 @@ export default function AdminDashboard() {
                             name: '',
                             email: '',
                             phone: '',
-                            password: 'Sphere@' + Math.floor(1000 + Math.random() * 9000),
+                            password: '',
                             role: 'SALES_AGENT'
                           });
                           setShowAddTeamModal(true);
@@ -5421,7 +5421,7 @@ export default function AdminDashboard() {
                       <input
                         type="text"
                         required
-                        placeholder="e.g. Unit B3-102 or No-26"
+                        placeholder="Enter unit number"
                         value={formApt.apartmentNumber}
                         onChange={(e) => setFormApt({ ...formApt, apartmentNumber: e.target.value })}
                         className="input-clean"
@@ -5578,7 +5578,7 @@ export default function AdminDashboard() {
                     <label>Short Catchy Headline</label>
                     <input
                       type="text"
-                      placeholder="e.g. Elevated duplex residence with sunset horizon views"
+                      placeholder="Enter short headline or highlights"
                       value={formApt.headline}
                       onChange={(e) => setFormApt({ ...formApt, headline: e.target.value })}
                       className="input-clean"
@@ -5856,7 +5856,7 @@ export default function AdminDashboard() {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Rahul Sharma"
+                      placeholder="Enter team member name"
                       value={formTeam.name}
                       onChange={(e) => setFormTeam({ ...formTeam, name: e.target.value })}
                       className="input-clean"
@@ -5869,7 +5869,7 @@ export default function AdminDashboard() {
                     <input
                       type="email"
                       required
-                      placeholder="e.g. rahul@estatesphere.com"
+                      placeholder="Enter official email address"
                       value={formTeam.email}
                       onChange={(e) => setFormTeam({ ...formTeam, email: e.target.value })}
                       className="input-clean"
@@ -5882,7 +5882,7 @@ export default function AdminDashboard() {
                       <label>Phone / WhatsApp</label>
                       <input
                         type="text"
-                        placeholder="+91 98765 43210"
+                        placeholder="Enter phone number"
                         value={formTeam.phone}
                         onChange={(e) => setFormTeam({ ...formTeam, phone: e.target.value })}
                         className="input-clean"
@@ -5904,7 +5904,7 @@ export default function AdminDashboard() {
                       <input
                         type="text"
                         required
-                        placeholder="e.g. Pass@1234"
+                        placeholder="Enter password"
                         value={formTeam.password}
                         onChange={(e) => setFormTeam({ ...formTeam, password: e.target.value })}
                         className="input-clean"
@@ -6433,7 +6433,7 @@ export default function AdminDashboard() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Master Bedroom Balcony View"
+                    placeholder="Enter media asset title"
                     value={formMedia.title}
                     onChange={(e) => setFormMedia({ ...formMedia, title: e.target.value })}
                     className="input-clean"
@@ -6526,7 +6526,7 @@ export default function AdminDashboard() {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Alok Sharma"
+                      placeholder="Enter customer full name"
                       value={formInquiry.name}
                       onChange={(e) => setFormInquiry({ ...formInquiry, name: e.target.value })}
                       className="input-clean"
@@ -6838,7 +6838,7 @@ export default function AdminDashboard() {
                   <input
                     type="text"
                     className="input-clean"
-                    placeholder="e.g. Master Bedroom — Skyline Balcony"
+                    placeholder="Enter photo title or room name"
                     value={photoModal.title}
                     onChange={(e) => setPhotoModal(prev => ({ ...prev, title: e.target.value }))}
                     style={{ fontSize: '13px', fontWeight: 600, height: '40px' }}
