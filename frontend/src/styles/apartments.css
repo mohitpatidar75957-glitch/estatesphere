@@ -408,11 +408,12 @@
 }
 
 .apartment-detail-intro-sec {
-  padding: 180px 5vw 80px 4vw;
+  padding: 180px 5vw 80px 5vw;
 }
 
 .apartment-detail-header {
   margin-bottom: 60px;
+  padding-left: clamp(40px, 5vw, 90px);
 }
 
 .detail-serif-title {
