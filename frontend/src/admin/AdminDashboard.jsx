@@ -125,6 +125,12 @@ export default function AdminDashboard() {
     phone: '',
     email: '',
     dealAmount: '',
+    paidAmount: '',
+    balanceAmount: 0,
+    paymentPlan: 'FULL_PAYMENT', // 'FULL_PAYMENT' | 'EMI_PLAN' | 'TOKEN_ADVANCE'
+    monthlyEmi: '',
+    nextDueDate: '',
+    bookingDate: '',
     saleDate: '',
     paymentStatus: 'FULLY_PAID',
     paymentStatusLabel: '100% Payment Cleared (Registry Complete)',
@@ -140,6 +146,12 @@ export default function AdminDashboard() {
     if (!apt) return;
     const todayFormatted = new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date());
     const existingBuyer = apt.buyer || {};
+    const deal = existingBuyer.dealAmount || apt.price || 30000000;
+    const isFull = existingBuyer.paymentStatus === 'FULLY_PAID' || existingBuyer.paymentPlan === 'FULL_PAYMENT';
+    const paid = existingBuyer.paidAmount !== undefined ? existingBuyer.paidAmount : (isFull ? deal : (apt.status === 'RESERVED' ? 1500000 : Math.round(deal * 0.9)));
+    const balance = Math.max(0, deal - paid);
+    const plan = existingBuyer.paymentPlan || (balance === 0 ? 'FULL_PAYMENT' : (apt.status === 'RESERVED' ? 'TOKEN_ADVANCE' : 'EMI_PLAN'));
+
     setBuyerModal({
       isOpen: true,
       apartmentId: apt.id,
@@ -150,10 +162,16 @@ export default function AdminDashboard() {
       name: existingBuyer.name || '',
       phone: existingBuyer.phone || '',
       email: existingBuyer.email || '',
-      dealAmount: existingBuyer.dealAmount || apt.price || '',
+      dealAmount: deal,
+      paidAmount: paid,
+      balanceAmount: balance,
+      paymentPlan: plan,
+      monthlyEmi: existingBuyer.emiDetails?.monthlyEmi || (plan === 'EMI_PLAN' ? Math.round(balance / 10) : ''),
+      nextDueDate: existingBuyer.emiDetails?.nextDueDate || '15 Nov 2026',
+      bookingDate: existingBuyer.bookingDate || existingBuyer.saleDate || todayFormatted,
       saleDate: existingBuyer.saleDate || todayFormatted,
-      paymentStatus: existingBuyer.paymentStatus || (apt.status === 'RESERVED' ? 'TOKEN_PAID' : 'FULLY_PAID'),
-      paymentStatusLabel: existingBuyer.paymentStatusLabel || (apt.status === 'RESERVED' ? 'Token Advance Received' : '100% Payment Cleared (Registry Complete)'),
+      paymentStatus: existingBuyer.paymentStatus || (balance === 0 ? 'FULLY_PAID' : (apt.status === 'RESERVED' ? 'TOKEN_PAID' : 'PARTIALLY_PAID')),
+      paymentStatusLabel: existingBuyer.paymentStatusLabel || (balance === 0 ? '100% Full Payment Cleared' : (apt.status === 'RESERVED' ? 'Token Advance Received' : 'Active EMI Schedule')),
       assignedAgent: existingBuyer.assignedAgent || user?.name || 'Super Admin',
       notes: existingBuyer.notes || ''
     });
@@ -165,21 +183,52 @@ export default function AdminDashboard() {
       alert('Please enter Buyer Full Name.');
       return;
     }
+    const deal = Number(buyerModal.dealAmount) || buyerModal.price;
+    const paid = Number(buyerModal.paidAmount) || 0;
+    const balance = Math.max(0, deal - paid);
+    const plan = buyerModal.paymentPlan;
+
+    let computedStatus = buyerModal.status;
+    let paymentStatus = 'PARTIALLY_PAID';
+    let paymentStatusLabel = `Active EMI (${formatINR(paid)} Paid • ${formatINR(balance)} Balance)`;
+
+    if (balance === 0 && paid > 0) {
+      paymentStatus = 'FULLY_PAID';
+      paymentStatusLabel = '100% Full Payment Cleared (Zero Balance Due)';
+      computedStatus = 'SOLD';
+    } else if (plan === 'TOKEN_ADVANCE') {
+      paymentStatus = 'TOKEN_PAID';
+      paymentStatusLabel = `Token Advance (${formatINR(paid)} Paid • Balance on Agreement)`;
+      computedStatus = 'RESERVED';
+    }
+
     const updatedBuyerObj = {
       name: buyerModal.name.trim(),
       phone: buyerModal.phone.trim(),
       email: buyerModal.email.trim(),
-      dealAmount: Number(buyerModal.dealAmount) || buyerModal.price,
+      dealAmount: deal,
+      paidAmount: paid,
+      balanceAmount: balance,
+      paymentPlan: plan,
+      bookingDate: buyerModal.bookingDate || 'Today',
       saleDate: buyerModal.saleDate || 'Today',
-      paymentStatus: buyerModal.paymentStatus,
-      paymentStatusLabel: buyerModal.paymentStatusLabel,
+      paymentStatus: paymentStatus,
+      paymentStatusLabel: paymentStatusLabel,
+      emiDetails: plan === 'EMI_PLAN' ? {
+        monthlyEmi: Number(buyerModal.monthlyEmi) || Math.round(balance / 10),
+        nextDueDate: buyerModal.nextDueDate || '15 Nov 2026'
+      } : (plan === 'TOKEN_ADVANCE' ? {
+        tokenAmount: paid,
+        nextDueDate: buyerModal.nextDueDate || 'Within 15 Days'
+      } : null),
       assignedAgent: buyerModal.assignedAgent || user?.name || 'Super Admin',
       notes: buyerModal.notes.trim()
     };
+
     const updatedApts = dataStore.updateApartment(
       buyerModal.apartmentId,
       {
-        status: buyerModal.status,
+        status: computedStatus,
         buyer: updatedBuyerObj
       },
       user?.name || 'Super Admin'
@@ -187,7 +236,7 @@ export default function AdminDashboard() {
     setApartments(updatedApts);
     setActivityFeed(dataStore.getActivityFeed());
     setBuyerModal(prev => ({ ...prev, isOpen: false }));
-    triggerToast(`Buyer details for Unit ${buyerModal.apartmentNumber} saved successfully!`);
+    triggerToast(`Buyer details & payment record for Unit ${buyerModal.apartmentNumber} saved!`);
   };
 
   const filteredSalesApartments = useMemo(() => {
@@ -2761,25 +2810,22 @@ export default function AdminDashboard() {
                                 </div>
                               </td>
 
-                              {/* 4. Deal Value */}
+                              {/* 4. Deal Value & Payment Breakdown */}
                               <td>
                                 <div>
                                   <div style={{ fontSize: '14.5px', fontWeight: 800, color: '#0f172a' }}>
                                     {formatINR(buyer.dealAmount || apt.price)}
                                   </div>
-                                  <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
-                                    List: {formatINR(apt.price)}
+                                  <div style={{ fontSize: '11.5px', color: '#059669', fontWeight: 600, marginTop: '2px' }}>
+                                    Paid: {formatINR(buyer.paidAmount !== undefined ? buyer.paidAmount : (buyer.paymentStatus === 'FULLY_PAID' ? (buyer.dealAmount || apt.price) : Math.round((buyer.dealAmount || apt.price) * 0.9)))}
                                   </div>
-                                  {buyer.saleDate && (
-                                    <div style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '3px' }}>
-                                      <Calendar size={11} />
-                                      <span>{buyer.saleDate}</span>
-                                    </div>
-                                  )}
+                                  <div style={{ fontSize: '11px', color: (buyer.balanceAmount === 0 || buyer.paymentStatus === 'FULLY_PAID') ? '#059669' : '#dc2626', fontWeight: 600 }}>
+                                    Balance: {(buyer.balanceAmount === 0 || buyer.paymentStatus === 'FULLY_PAID') ? '₹0 (Cleared)' : formatINR(buyer.balanceAmount !== undefined ? buyer.balanceAmount : Math.round((buyer.dealAmount || apt.price) * 0.1))}
+                                  </div>
                                 </div>
                               </td>
 
-                              {/* 5. Payment Status */}
+                              {/* 5. Payment Status & Booking Date */}
                               <td>
                                 <div>
                                   <span style={{
@@ -2788,22 +2834,21 @@ export default function AdminDashboard() {
                                     borderRadius: '12px',
                                     fontSize: '11px',
                                     fontWeight: 700,
-                                    background: buyer.paymentStatus === 'FULLY_PAID' ? '#ecfdf5' : (buyer.paymentStatus === 'PARTIALLY_PAID' ? '#eff6ff' : '#fffbeb'),
-                                    color: buyer.paymentStatus === 'FULLY_PAID' ? '#047857' : (buyer.paymentStatus === 'PARTIALLY_PAID' ? '#1d4ed8' : '#b45309'),
-                                    border: `1px solid ${buyer.paymentStatus === 'FULLY_PAID' ? '#a7f3d0' : (buyer.paymentStatus === 'PARTIALLY_PAID' ? '#bfdbfe' : '#fde68a')}`
+                                    background: (buyer.balanceAmount === 0 || buyer.paymentStatus === 'FULLY_PAID') ? '#ecfdf5' : (buyer.paymentPlan === 'TOKEN_ADVANCE' || buyer.paymentStatus === 'TOKEN_PAID' ? '#fffbeb' : '#eff6ff'),
+                                    color: (buyer.balanceAmount === 0 || buyer.paymentStatus === 'FULLY_PAID') ? '#047857' : (buyer.paymentPlan === 'TOKEN_ADVANCE' || buyer.paymentStatus === 'TOKEN_PAID' ? '#b45309' : '#1d4ed8'),
+                                    border: `1px solid ${(buyer.balanceAmount === 0 || buyer.paymentStatus === 'FULLY_PAID') ? '#a7f3d0' : (buyer.paymentPlan === 'TOKEN_ADVANCE' || buyer.paymentStatus === 'TOKEN_PAID' ? '#fde68a' : '#bfdbfe')}`
                                   }}>
-                                    {buyer.paymentStatus === 'FULLY_PAID' ? '✅ Cleared' : (buyer.paymentStatus === 'PARTIALLY_PAID' ? '🔵 Milestone' : '🟡 Token')}
+                                    {(buyer.balanceAmount === 0 || buyer.paymentStatus === 'FULLY_PAID') ? '✅ Full Payment' : (buyer.paymentPlan === 'TOKEN_ADVANCE' || buyer.paymentStatus === 'TOKEN_PAID' ? '🟡 Token Advance' : '🔵 EMI / Installments')}
                                   </span>
 
-                                  <div style={{ fontSize: '11.5px', color: '#475569', marginTop: '4px', fontWeight: 500, lineHeight: 1.3 }}>
-                                    {buyer.paymentStatusLabel || 'Details recorded'}
+                                  <div style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+                                    <Calendar size={11} style={{ color: '#64748b' }} />
+                                    <span>Booked: <b>{buyer.bookingDate || buyer.saleDate || 'Recently'}</b></span>
                                   </div>
 
-                                  {buyer.notes && (
-                                    <div style={{ fontSize: '10.5px', color: '#64748b', fontStyle: 'italic', marginTop: '3px', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={buyer.notes}>
-                                      "{buyer.notes}"
-                                    </div>
-                                  )}
+                                  <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px', fontWeight: 500, lineHeight: 1.3 }}>
+                                    {buyer.paymentStatusLabel || 'Details recorded'}
+                                  </div>
                                 </div>
                               </td>
 
@@ -6665,20 +6710,50 @@ export default function AdminDashboard() {
       {/* Custom In-App Logout Modal (No browser alert) */}
       
       {/* ========================================================
-          MODAL: RECORD / EDIT BUYER DETAILS FOR SOLD UNIT
+          MODAL 1: RECORD / EDIT BUYER DETAILS & PAYMENT PLAN
       ======================================================== */}
       {buyerModal.isOpen && (
-        <div className="modal-backdrop-clean" style={{ zIndex: 9999 }}>
-          <div className="modal-card-clean" style={{ maxWidth: '640px', width: '92%', maxHeight: '92vh', overflowY: 'auto' }}>
+        <div 
+          className="modal-overlay" 
+          onClick={() => setBuyerModal(prev => ({ ...prev, isOpen: false }))}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 999999,
+            backgroundColor: 'rgba(15, 23, 42, 0.72)',
+            backdropFilter: 'blur(5px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+            overflowY: 'auto'
+          }}
+        >
+          <div 
+            className="modal-content-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{ 
+              maxWidth: '680px', 
+              width: '100%', 
+              margin: 'auto', 
+              maxHeight: '92vh', 
+              overflowY: 'auto', 
+              background: '#ffffff', 
+              borderRadius: '16px', 
+              padding: '24px 28px', 
+              boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.45)',
+              border: '1px solid #e2e8f0'
+            }}
+          >
             
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '14px', marginBottom: '18px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <UserCheck size={20} />
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#0f172a' }}>
-                    Buyer & Ownership Record
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
+                    Buyer Profile & Payment Schedule
                   </h3>
                   <span style={{ fontSize: '12px', color: '#64748b' }}>
                     Unit {buyerModal.apartmentNumber} &bull; {buyerModal.unitTitle}
@@ -6688,7 +6763,7 @@ export default function AdminDashboard() {
               <button
                 type="button"
                 onClick={() => setBuyerModal(prev => ({ ...prev, isOpen: false }))}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '6px' }}
               >
                 <X size={20} />
               </button>
@@ -6696,7 +6771,7 @@ export default function AdminDashboard() {
 
             <form onSubmit={handleSaveBuyerModal} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               
-              {/* Apartment Target & Unit Status */}
+              {/* Unit Selection & Status */}
               <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '12px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
@@ -6723,7 +6798,7 @@ export default function AdminDashboard() {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
-                    Unit Status
+                    Unit Inventory Status
                   </label>
                   <select
                     className="input-clean"
@@ -6787,82 +6862,134 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Deal Amount & Sale Date */}
+              {/* FINANCIAL BREAKDOWN SECTION (Kitna Diya, Kitna Bacha) */}
+              <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>💰 Financial Settlement & Payment Status</span>
+                  <span style={{ fontSize: '11px', color: (Number(buyerModal.dealAmount) - Number(buyerModal.paidAmount) <= 0) ? '#059669' : '#dc2626', fontWeight: 700 }}>
+                    Balance Due: {formatINR(Math.max(0, (Number(buyerModal.dealAmount) || 0) - (Number(buyerModal.paidAmount) || 0)))}
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
+                      Total Agreed Deal Amount (₹) *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      placeholder="e.g. 31250000"
+                      value={buyerModal.dealAmount}
+                      onChange={(e) => {
+                        const newDeal = Number(e.target.value) || 0;
+                        const newPaid = Number(buyerModal.paidAmount) || 0;
+                        setBuyerModal(prev => ({ ...prev, dealAmount: newDeal, balanceAmount: Math.max(0, newDeal - newPaid) }));
+                      }}
+                      className="input-clean"
+                      style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                    />
+                    <span style={{ fontSize: '11px', color: '#64748b' }}>{formatINR(Number(buyerModal.dealAmount))}</span>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#059669', marginBottom: '4px' }}>
+                      Amount Paid So Far (Kitna Diya) *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      placeholder="e.g. 28125000"
+                      value={buyerModal.paidAmount}
+                      onChange={(e) => {
+                        const newPaid = Number(e.target.value) || 0;
+                        const newDeal = Number(buyerModal.dealAmount) || 0;
+                        setBuyerModal(prev => ({ ...prev, paidAmount: newPaid, balanceAmount: Math.max(0, newDeal - newPaid) }));
+                      }}
+                      className="input-clean"
+                      style={{ width: '100%', height: '38px', fontSize: '13px', borderColor: '#a7f3d0' }}
+                    />
+                    <span style={{ fontSize: '11px', color: '#059669', fontWeight: 600 }}>{formatINR(Number(buyerModal.paidAmount))}</span>
+                  </div>
+                </div>
+
+                {/* Payment Plan Type */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
+                      Payment Plan Type
+                    </label>
+                    <select
+                      className="input-clean"
+                      value={buyerModal.paymentPlan}
+                      onChange={(e) => setBuyerModal(prev => ({ ...prev, paymentPlan: e.target.value }))}
+                      style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                    >
+                      <option value="FULL_PAYMENT">✅ 100% Full Payment (Zero Balance)</option>
+                      <option value="EMI_PLAN">🔵 Active EMI / Installments Schedule</option>
+                      <option value="TOKEN_ADVANCE">🟡 Token Booking Advance (Under Hold)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
+                      {buyerModal.paymentPlan === 'EMI_PLAN' ? 'Monthly EMI Amount (₹)' : 'Balance Status'}
+                    </label>
+                    {buyerModal.paymentPlan === 'EMI_PLAN' ? (
+                      <input
+                        type="number"
+                        placeholder="e.g. 312500"
+                        value={buyerModal.monthlyEmi}
+                        onChange={(e) => setBuyerModal(prev => ({ ...prev, monthlyEmi: e.target.value }))}
+                        className="input-clean"
+                        style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                      />
+                    ) : (
+                      <div style={{ height: '38px', display: 'flex', alignItems: 'center', padding: '0 12px', background: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: 700, color: buyerModal.paymentPlan === 'FULL_PAYMENT' ? '#059669' : '#d97706' }}>
+                        {buyerModal.paymentPlan === 'FULL_PAYMENT' ? 'Zero Dues Pending' : 'Balance Due on Agreement'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Booking Date & Handled By */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
-                    Agreed Deal Amount (₹ INR)
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="e.g. 31250000"
-                    value={buyerModal.dealAmount}
-                    onChange={(e) => setBuyerModal(prev => ({ ...prev, dealAmount: e.target.value }))}
-                    className="input-clean"
-                    style={{ width: '100%', height: '38px', fontSize: '13px' }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
-                    Booking / Sale Date
+                    Booking / Token Date *
                   </label>
                   <input
                     type="text"
+                    required
                     placeholder="e.g. 26 Oct 2026"
-                    value={buyerModal.saleDate}
-                    onChange={(e) => setBuyerModal(prev => ({ ...prev, saleDate: e.target.value }))}
+                    value={buyerModal.bookingDate}
+                    onChange={(e) => setBuyerModal(prev => ({ ...prev, bookingDate: e.target.value, saleDate: e.target.value }))}
                     className="input-clean"
                     style={{ width: '100%', height: '38px', fontSize: '13px' }}
                   />
                 </div>
-              </div>
-
-              {/* Payment Status & Details */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
-                    Payment Status
-                  </label>
-                  <select
-                    className="input-clean"
-                    value={buyerModal.paymentStatus}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      let label = '100% Payment Cleared (Registry Complete)';
-                      if (val === 'PARTIALLY_PAID') label = 'Agreement Signed (90% Paid)';
-                      if (val === 'TOKEN_PAID') label = 'Token Advance Received';
-                      if (val === 'PENDING') label = 'Payment Verification In Progress';
-                      setBuyerModal(prev => ({ ...prev, paymentStatus: val, paymentStatusLabel: label }));
-                    }}
-                    style={{ width: '100%', height: '38px', fontSize: '13px' }}
-                  >
-                    <option value="FULLY_PAID">✅ Fully Paid (100% Cleared)</option>
-                    <option value="PARTIALLY_PAID">🔵 Partially Paid (Milestones)</option>
-                    <option value="TOKEN_PAID">🟡 Token Advance Received</option>
-                    <option value="PENDING">⚪ Payment Pending Verification</option>
-                  </select>
-                </div>
 
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
-                    Payment Details / Milestone Note
+                    Next Due Date / Milestone
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Token Advance Received (₹15 Lakh)"
-                    value={buyerModal.paymentStatusLabel}
-                    onChange={(e) => setBuyerModal(prev => ({ ...prev, paymentStatusLabel: e.target.value }))}
+                    placeholder="e.g. 15 Nov 2026"
+                    value={buyerModal.nextDueDate}
+                    onChange={(e) => setBuyerModal(prev => ({ ...prev, nextDueDate: e.target.value }))}
                     className="input-clean"
                     style={{ width: '100%', height: '38px', fontSize: '13px' }}
                   />
                 </div>
               </div>
 
-              {/* Assigned Agent */}
+              {/* Assigned Staff */}
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
-                  Assigned Staff / Relationship Manager
+                  Assigned Relationship Manager / Staff
                 </label>
                 <input
                   type="text"
@@ -6877,10 +7004,10 @@ export default function AdminDashboard() {
               {/* Special Terms / Agreement Notes */}
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
-                  Agreement Notes / Special Terms (e.g. Parking Slot, Bespoke Customizations)
+                  Agreement Notes / Special Terms (Parking Slot, Bespoke Customizations)
                 </label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   placeholder="e.g. Bespoke travertine finishes requested. Car parking slot P-14 allocated in basement B1."
                   value={buyerModal.notes}
                   onChange={(e) => setBuyerModal(prev => ({ ...prev, notes: e.target.value }))}
@@ -6902,7 +7029,7 @@ export default function AdminDashboard() {
                 <button
                   type="submit"
                   className="btn-primary-action"
-                  style={{ padding: '9px 22px' }}
+                  style={{ padding: '9px 24px' }}
                 >
                   <Save size={15} />
                   <span>Save Buyer Record</span>
@@ -6916,7 +7043,7 @@ export default function AdminDashboard() {
       )}
 
       {/* ========================================================
-          MODAL: LUXURY BUYER ALLOTMENT CERTIFICATE & SLIP
+          MODAL 2: LUXURY REAL-ESTATE ALLOTMENT CERTIFICATE & SLIP (CENTERED MODAL)
       ======================================================== */}
       {saleReceiptModal.isOpen && saleReceiptModal.apt && (() => {
         const apt = saleReceiptModal.apt;
@@ -6924,134 +7051,306 @@ export default function AdminDashboard() {
           name: 'Private Client',
           phone: '+91 98200 00000',
           email: 'client@estatesphere.in',
-          dealAmount: apt.price,
-          saleDate: 'Recently',
+          dealAmount: apt.price || 30000000,
+          paidAmount: apt.price || 30000000,
+          balanceAmount: 0,
+          paymentPlan: 'FULL_PAYMENT',
+          bookingDate: '26 Oct 2026',
+          saleDate: '26 Oct 2026',
           paymentStatus: 'FULLY_PAID',
-          paymentStatusLabel: '100% Payment Cleared (Registry Complete)',
+          paymentStatusLabel: '100% Full Payment Cleared',
           assignedAgent: 'Super Admin',
           notes: 'Standard residence allotment.'
         };
 
+        const deal = Number(buyer.dealAmount) || apt.price || 30000000;
+        const paid = buyer.paidAmount !== undefined ? Number(buyer.paidAmount) : (buyer.paymentStatus === 'FULLY_PAID' ? deal : Math.round(deal * 0.9));
+        const balance = Math.max(0, deal - paid);
+        const percentPaid = Math.min(100, Math.round((paid / deal) * 100));
+        const isFullPayment = balance === 0 || buyer.paymentPlan === 'FULL_PAYMENT' || buyer.paymentStatus === 'FULLY_PAID';
+        const isEmi = !isFullPayment && (buyer.paymentPlan === 'EMI_PLAN' || buyer.paymentStatus === 'PARTIALLY_PAID');
+        const isToken = !isFullPayment && (buyer.paymentPlan === 'TOKEN_ADVANCE' || buyer.paymentStatus === 'TOKEN_PAID');
+
+        const refNo = `ES-REC-${apt.apartmentNumber}-${String(apt.id).padStart(4, '0')}`;
+        const bookingDateStr = buyer.bookingDate || buyer.saleDate || '26 Oct 2026';
+        const todayDateStr = new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date());
+
         return (
-          <div className="modal-backdrop-clean" style={{ zIndex: 9999 }}>
-            <div className="modal-card-clean" style={{ maxWidth: '680px', width: '92%', maxHeight: '92vh', overflowY: 'auto', background: '#fdfbf7', border: '1px solid #dcd1be' }}>
+          <div 
+            className="modal-overlay" 
+            onClick={() => setSaleReceiptModal({ isOpen: false, apt: null })}
+            style={{ 
+              position: 'fixed', 
+              inset: 0, 
+              zIndex: 999999, 
+              backgroundColor: 'rgba(15, 23, 42, 0.75)', 
+              backdropFilter: 'blur(6px)', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              padding: '24px 16px', 
+              overflowY: 'auto' 
+            }}
+          >
+            <div 
+              className="modal-content-card" 
+              onClick={(e) => e.stopPropagation()} 
+              style={{ 
+                maxWidth: '820px', 
+                width: '100%', 
+                margin: 'auto', 
+                maxHeight: '94vh', 
+                overflowY: 'auto', 
+                borderRadius: '16px', 
+                boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.45)', 
+                background: '#fcfbfa', 
+                border: '1px solid #e7dfd2', 
+                padding: '0' 
+              }}
+            >
               
-              {/* Slip Header Actions */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '14px', borderBottom: '1px dashed #cbd5e1', marginBottom: '20px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.08em', color: '#78350f', textTransform: 'uppercase' }}>
-                  EstateSphere Official Allotment Slip
-                </span>
-                <div style={{ display: 'flex', gap: '8px' }}>
+              {/* Slip Top Toolbar (Non-printable controls) */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 22px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ShieldCheck size={18} style={{ color: '#059669' }} />
+                  <span style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '0.04em', color: '#1e293b' }}>
+                    Official EstateSphere Allotment Slip & Payment Certificate
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                   <button
                     type="button"
                     onClick={() => window.print()}
-                    className="btn-secondary-action"
-                    style={{ padding: '5px 12px', fontSize: '12px', gap: '5px' }}
+                    className="btn-primary-action"
+                    style={{ padding: '6px 14px', fontSize: '12.5px', gap: '6px' }}
                   >
-                    <Printer size={13} />
-                    <span>Print</span>
+                    <Printer size={14} />
+                    <span>Print Slip / Save PDF</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setSaleReceiptModal({ isOpen: false, apt: null })}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px' }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: '4px', display: 'flex', alignItems: 'center' }}
                   >
-                    <X size={18} />
+                    <X size={20} />
                   </button>
                 </div>
               </div>
 
-              {/* Certificate Inner Body */}
-              <div style={{ background: '#ffffff', padding: '28px', borderRadius: '12px', border: '1px solid #e7ded0', boxShadow: '0 4px 16px rgba(0,0,0,0.03)' }}>
+              {/* Certificate Inner Printable Sheet */}
+              <div style={{ background: '#ffffff', margin: '20px', padding: '32px', borderRadius: '12px', border: '1px solid #e5ded2', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
                 
                 {/* Brand Title & Watermark Seal */}
                 <div style={{ textAlign: 'center', marginBottom: '24px', position: 'relative' }}>
-                  <div style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '0.12em', color: '#1e293b', textTransform: 'uppercase' }}>
+                  <div style={{ fontSize: '22px', fontWeight: 800, letterSpacing: '0.14em', color: '#0f172a', textTransform: 'uppercase' }}>
                     EstateSphere Luxury Residences
                   </div>
-                  <div style={{ fontSize: '11px', letterSpacing: '0.2em', color: '#94a3b8', textTransform: 'uppercase', marginTop: '3px' }}>
-                    New Golden Mile &bull; Private Sanctuary
+                  <div style={{ fontSize: '11px', letterSpacing: '0.22em', color: '#64748b', textTransform: 'uppercase', marginTop: '4px' }}>
+                    New Golden Mile &bull; Private Architectural Sanctuary
                   </div>
-                  <div style={{ height: '2px', width: '80px', background: '#d97706', margin: '12px auto' }} />
-                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#78350f' }}>
-                    PROPERTY ALLOTMENT CONFIRMATION
+                  <div style={{ height: '2px', width: '90px', background: '#d97706', margin: '12px auto' }} />
+                  <div style={{ fontSize: '15px', fontWeight: 800, color: '#78350f', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                    Official Residence Allotment Certificate & Payment Receipt
                   </div>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>
-                    Ref: ES-REC-{apt.apartmentNumber}-{String(apt.id).padStart(4, '0')} &bull; Date: {buyer.saleDate || 'Today'}
+                  
+                  {/* Reference & Booking Date Bar */}
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '8px', fontSize: '12px', color: '#475569', flexWrap: 'wrap' }}>
+                    <span><b>Certificate Ref:</b> {refNo}</span>
+                    <span>&bull;</span>
+                    <span><b>📅 Booking Date:</b> <span style={{ color: '#0f172a', fontWeight: 700 }}>{bookingDateStr}</span></span>
+                    <span>&bull;</span>
+                    <span><b>🕒 Issued On:</b> {todayDateStr}</span>
                   </div>
                 </div>
 
-                {/* Allottee & Unit Overview */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px', background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                {/* Allottee & Residence Profile Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: '18px', marginBottom: '22px', background: '#f8fafc', padding: '18px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
                   <div>
-                    <div style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: 700, color: '#64748b', letterSpacing: '0.04em' }}>
+                    <div style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: 800, color: '#64748b', letterSpacing: '0.06em' }}>
                       Allottee / Buyer Details
                     </div>
-                    <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>
+                    <div style={{ fontSize: '17px', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>
                       {buyer.name}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>
+                    <div style={{ fontSize: '12.5px', color: '#334155', marginTop: '3px' }}>
                       Phone: <b>{buyer.phone || 'N/A'}</b>
                     </div>
-                    <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>
+                    <div style={{ fontSize: '12.5px', color: '#334155', marginTop: '2px' }}>
                       Email: <b>{buyer.email || 'N/A'}</b>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                      Authorized Manager: <b>{buyer.assignedAgent || 'Super Admin'}</b>
                     </div>
                   </div>
 
                   <div>
-                    <div style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: 700, color: '#64748b', letterSpacing: '0.04em' }}>
-                      Allotted Residence
+                    <div style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: 800, color: '#64748b', letterSpacing: '0.06em' }}>
+                      Allotted Residence Specifications
                     </div>
-                    <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>
+                    <div style={{ fontSize: '17px', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>
                       Unit {apt.apartmentNumber}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>
-                      {apt.block} &bull; {apt.floor}
+                    <div style={{ fontSize: '12.5px', color: '#334155', marginTop: '3px' }}>
+                      Location: <b>{apt.block} &bull; {apt.floor}</b>
                     </div>
-                    <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>
-                      {apt.bedrooms} BHK &bull; {apt.areaSqft} sq.ft ({apt.areaSqm || Math.round(apt.areaSqft / 10.764)} m²)
+                    <div style={{ fontSize: '12.5px', color: '#334155', marginTop: '2px' }}>
+                      Typology: <b>{apt.bedrooms} BHK &bull; {apt.typology || 'Luxury Residence'}</b>
                     </div>
-                  </div>
-                </div>
-
-                {/* Financial Summary */}
-                <div style={{ marginBottom: '20px', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
-                  <div style={{ background: '#f1f5f9', padding: '10px 14px', fontSize: '12px', fontWeight: 700, color: '#334155', textTransform: 'uppercase' }}>
-                    Financial & Settlement Details
-                  </div>
-                  <div style={{ padding: '14px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #f1f5f9', fontSize: '13px' }}>
-                      <span style={{ color: '#64748b' }}>Agreed Deal Value:</span>
-                      <b style={{ color: '#0f172a', fontSize: '14px' }}>{formatINR(buyer.dealAmount || apt.price)}</b>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f1f5f9', fontSize: '13px' }}>
-                      <span style={{ color: '#64748b' }}>Payment Status:</span>
-                      <b style={{ color: buyer.paymentStatus === 'FULLY_PAID' ? '#059669' : '#d97706' }}>
-                        {buyer.paymentStatusLabel || 'Recorded'}
-                      </b>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px', fontSize: '13px' }}>
-                      <span style={{ color: '#64748b' }}>Authorized Agent:</span>
-                      <b style={{ color: '#334155' }}>{buyer.assignedAgent || 'Super Admin'}</b>
+                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                      Super Built-up: <b>{apt.areaSqft} sq.ft ({apt.areaSqm || Math.round(apt.areaSqft / 10.764)} m²) + {apt.terraceArea || 25} m² Terrace</b>
                     </div>
                   </div>
                 </div>
 
-                {/* Notes */}
-                {buyer.notes && (
-                  <div style={{ marginBottom: '24px', padding: '12px', background: '#fefce8', border: '1px solid #fef08a', borderRadius: '8px', fontSize: '12px', color: '#854d0e' }}>
-                    <b>Special Terms / Inclusions:</b> {buyer.notes}
+                {/* 3 SUMMARY METRICS (Kitna Diya, Kitna Bacha) */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', marginBottom: '22px' }}>
+                  
+                  {/* 1. Total Price */}
+                  <div style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '14px 16px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>
+                      Total Property Price
+                    </div>
+                    <div style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>
+                      {formatINR(deal)}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                      Agreed Consideration Value
+                    </div>
+                  </div>
+
+                  {/* 2. Amount Paid */}
+                  <div style={{ background: '#ecfdf5', border: '1.5px solid #a7f3d0', borderRadius: '10px', padding: '14px 16px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 800, color: '#065f46', textTransform: 'uppercase' }}>
+                      Amount Paid (Kitna Diya)
+                    </div>
+                    <div style={{ fontSize: '20px', fontWeight: 800, color: '#059669', marginTop: '4px' }}>
+                      {formatINR(paid)}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#047857', marginTop: '2px', fontWeight: 600 }}>
+                      {percentPaid}% of Total Price Cleared
+                    </div>
+                  </div>
+
+                  {/* 3. Balance Due */}
+                  <div style={{ background: isFullPayment ? '#ecfdf5' : '#fef2f2', border: `1.5px solid ${isFullPayment ? '#a7f3d0' : '#fecaca'}`, borderRadius: '10px', padding: '14px 16px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 800, color: isFullPayment ? '#065f46' : '#991b1b', textTransform: 'uppercase' }}>
+                      Balance Due (Kitna Bacha)
+                    </div>
+                    <div style={{ fontSize: '20px', fontWeight: 800, color: isFullPayment ? '#059669' : '#dc2626', marginTop: '4px' }}>
+                      {isFullPayment ? '₹0.00 (NIL)' : formatINR(balance)}
+                    </div>
+                    <div style={{ fontSize: '11px', color: isFullPayment ? '#047857' : '#b91c1c', marginTop: '2px', fontWeight: 600 }}>
+                      {isFullPayment ? 'Zero Outstanding Balance' : `${100 - percentPaid}% Pending Consideration`}
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* VISUAL PAYMENT PROGRESS BAR */}
+                <div style={{ marginBottom: '22px', background: '#f8fafc', padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                    <span>Payment Completion Progress</span>
+                    <span style={{ color: isFullPayment ? '#059669' : '#2563eb' }}>{percentPaid}% Completed</span>
+                  </div>
+                  <div style={{ width: '100%', height: '10px', background: '#e2e8f0', borderRadius: '5px', overflow: 'hidden' }}>
+                    <div style={{ width: `${percentPaid}%`, height: '100%', background: isFullPayment ? 'linear-gradient(90deg, #10b981, #059669)' : 'linear-gradient(90deg, #3b82f6, #2563eb)', borderRadius: '5px', transition: 'width 0.4s ease' }} />
+                  </div>
+                </div>
+
+                {/* DISTINCT PAYMENT PLAN BANNER (Full Payment vs EMI vs Token) */}
+                {isFullPayment && (
+                  <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '10px', padding: '16px 20px', marginBottom: '22px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#16a34a', fontWeight: 800, fontSize: '14px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      <CheckCircle2 size={18} />
+                      <span>100% Full Payment Received & Settled</span>
+                    </div>
+                    <p style={{ margin: '6px 0 0', fontSize: '12.5px', color: '#166534', lineHeight: 1.5 }}>
+                      The entire agreed property consideration of <b>{formatINR(deal)}</b> has been fully cleared and credited. All financial covenants for Unit <b>{apt.apartmentNumber}</b> have been discharged. Formal Title Deed Registry authorization and Keys Possession Clearance are granted.
+                    </p>
                   </div>
                 )}
 
-                {/* Verification Seal */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: '16px', borderTop: '1px dashed #cbd5e1' }}>
-                  <div style={{ fontSize: '11px', color: '#94a3b8', lineHeight: 1.4 }}>
-                    Digitally generated by EstateSphere Admin Portal.<br />
-                    Complies with standard luxury real-estate registry records.
+                {isEmi && (
+                  <div style={{ background: '#eff6ff', border: '1.5px solid #93c5fd', borderRadius: '10px', padding: '16px 20px', marginBottom: '22px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1d4ed8', fontWeight: 800, fontSize: '14px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      <CreditCard size={18} />
+                      <span>Active EMI / Installment Payment Plan</span>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #bfdbfe' }}>
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#1e40af', fontWeight: 600 }}>Amount Paid</div>
+                        <div style={{ fontSize: '15px', fontWeight: 800, color: '#1e3a8a' }}>{formatINR(paid)}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#1e40af', fontWeight: 600 }}>Remaining Balance</div>
+                        <div style={{ fontSize: '15px', fontWeight: 800, color: '#dc2626' }}>{formatINR(balance)}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#1e40af', fontWeight: 600 }}>Monthly Installment</div>
+                        <div style={{ fontSize: '15px', fontWeight: 800, color: '#1e3a8a' }}>
+                          {buyer.emiDetails?.monthlyEmi ? `${formatINR(buyer.emiDetails.monthlyEmi)} / mo` : 'Milestone Linked'}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#1e40af', fontWeight: 600 }}>Next Due Date</div>
+                        <div style={{ fontSize: '15px', fontWeight: 800, color: '#1e3a8a' }}>
+                          {buyer.emiDetails?.nextDueDate || '15 Nov 2026'}
+                        </div>
+                      </div>
+                    </div>
+                    <p style={{ margin: '10px 0 0', fontSize: '12px', color: '#1e40af', lineHeight: 1.4 }}>
+                      Customer account is verified in good standing. Installments are debited per approved milestone schedule.
+                    </p>
                   </div>
-                  <div style={{ textAlign: 'center', border: '2px solid #059669', color: '#059669', padding: '6px 16px', borderRadius: '6px', fontWeight: 800, fontSize: '11.5px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                    ✔ VERIFIED & RECORDED
+                )}
+
+                {isToken && (
+                  <div style={{ background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: '10px', padding: '16px 20px', marginBottom: '22px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#b45309', fontWeight: 800, fontSize: '14px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      <Clock size={18} />
+                      <span>Token Booking Advance Received & Verified</span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #fde68a' }}>
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#92400e', fontWeight: 600 }}>Token Paid</div>
+                        <div style={{ fontSize: '15px', fontWeight: 800, color: '#78350f' }}>{formatINR(paid)}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#92400e', fontWeight: 600 }}>Balance on Agreement</div>
+                        <div style={{ fontSize: '15px', fontWeight: 800, color: '#dc2626' }}>{formatINR(balance)}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#92400e', fontWeight: 600 }}>Agreement Target</div>
+                        <div style={{ fontSize: '15px', fontWeight: 800, color: '#78350f' }}>Within 15 Days of Token</div>
+                      </div>
+                    </div>
+                    <p style={{ margin: '10px 0 0', fontSize: '12px', color: '#92400e', lineHeight: 1.4 }}>
+                      Residence is exclusively reserved for the buyer. Balance consideration is payable upon execution of the Builder-Buyer Agreement.
+                    </p>
+                  </div>
+                )}
+
+                {/* Special Terms & Notes */}
+                {buyer.notes && (
+                  <div style={{ marginBottom: '22px', padding: '12px 16px', background: '#fefce8', border: '1px solid #fef08a', borderRadius: '8px', fontSize: '12.5px', color: '#854d0e', lineHeight: 1.5 }}>
+                    <b>Special Terms & Inclusions:</b> {buyer.notes}
+                  </div>
+                )}
+
+                {/* Official Legal Seal & Verification */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: '18px', borderTop: '1px dashed #cbd5e1' }}>
+                  <div style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.5 }}>
+                    <b>EstateSphere Luxury Community Living &bull; RERA Reg: PRM/KA/RERA/1251/310/PR/261026/007812</b><br />
+                    This is an electronically verifiable allotment slip issued directly by EstateSphere Property Management.
+                  </div>
+                  
+                  <div style={{ textAlign: 'center', border: '2px solid #059669', color: '#059669', padding: '8px 18px', borderRadius: '8px', fontWeight: 800, fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', background: '#ecfdf5' }}>
+                    ✔ OFFICIAL ALLOTMENT VERIFIED
+                    <div style={{ fontSize: '10px', color: '#047857', fontWeight: 600, marginTop: '2px' }}>
+                      EstateSphere Authorized Signatory
+                    </div>
                   </div>
                 </div>
 

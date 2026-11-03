@@ -53,9 +53,14 @@ export const DEFAULT_25_APARTMENTS = Array.from({ length: 25 }, (_, i) => {
       phone: '+91 98112 33490',
       email: 'ananya.deshmukh@fortiscare.org',
       dealAmount: price,
+      paidAmount: 1500000,
+      balanceAmount: price - 1500000,
+      paymentPlan: 'TOKEN_ADVANCE',
+      bookingDate: '01 Nov 2026',
       saleDate: '01 Nov 2026',
       paymentStatus: 'TOKEN_PAID',
-      paymentStatusLabel: 'Token Advance Received (₹15 Lakh)',
+      paymentStatusLabel: 'Token Advance Received (₹15 Lakh Paid • Balance on Agreement)',
+      emiDetails: { tokenAmount: 1500000, nextDueDate: '15 Nov 2026' },
       assignedAgent: 'Rohit Verma (Manager)',
       notes: 'Token received for 3 BHK Duplex. Financing approval in progress.'
     };
@@ -66,9 +71,14 @@ export const DEFAULT_25_APARTMENTS = Array.from({ length: 25 }, (_, i) => {
       phone: '+91 98201 44521',
       email: 'vikram.singhania@apexcapital.in',
       dealAmount: 31250000,
+      paidAmount: 28125000,
+      balanceAmount: 3125000,
+      paymentPlan: 'EMI_PLAN',
+      bookingDate: '26 Oct 2026',
       saleDate: '26 Oct 2026',
       paymentStatus: 'PARTIALLY_PAID',
-      paymentStatusLabel: 'Agreement Signed (90% Paid)',
+      paymentStatusLabel: 'Active EMI Plan (90% Paid • ₹31.25 L Balance)',
+      emiDetails: { monthlyEmi: 312500, paidInstallments: 9, totalInstallments: 10, nextDueDate: '15 Nov 2026' },
       assignedAgent: 'Super Admin',
       notes: 'Bespoke travertine finishes requested. Final registry scheduled next month.'
     };
@@ -79,9 +89,14 @@ export const DEFAULT_25_APARTMENTS = Array.from({ length: 25 }, (_, i) => {
       phone: '+91 98220 88711',
       email: 'dr.harsh@cardiohealth.in',
       dealAmount: 35000000,
+      paidAmount: 17500000,
+      balanceAmount: 17500000,
+      paymentPlan: 'EMI_PLAN',
+      bookingDate: '29 Oct 2026',
       saleDate: '29 Oct 2026',
       paymentStatus: 'PARTIALLY_PAID',
-      paymentStatusLabel: 'Agreement Executed (50% Milestone)',
+      paymentStatusLabel: 'Milestone / EMI Plan (50% Paid • ₹1.75 Cr Balance)',
+      emiDetails: { monthlyEmi: 350000, nextMilestone: 'Structure Complete (5th Floor Slab)', nextDueDate: '20 Dec 2026' },
       assignedAgent: 'Pooja Sharma (Sales Agent)',
       notes: 'Car parking slot P-14 allocated in basement B1.'
     };
@@ -92,9 +107,14 @@ export const DEFAULT_25_APARTMENTS = Array.from({ length: 25 }, (_, i) => {
       phone: '+91 98330 99812',
       email: 'sunil.mittal@mittalgroup.com',
       dealAmount: 48750000,
+      paidAmount: 48750000,
+      balanceAmount: 0,
+      paymentPlan: 'FULL_PAYMENT',
+      bookingDate: '02 Nov 2026',
       saleDate: '02 Nov 2026',
       paymentStatus: 'FULLY_PAID',
-      paymentStatusLabel: '100% Payment Cleared (Registry Complete)',
+      paymentStatusLabel: '100% Full Payment Cleared (Zero Balance Due)',
+      emiDetails: null,
       assignedAgent: 'Super Admin',
       notes: 'All dues cleared. Possession letter and key handover scheduled.'
     };
@@ -508,6 +528,22 @@ export const dataStore = {
                 ...item,
                 apartmentNumber: newNum,
                 title: item.title ? item.title.replace(/№0?\d+/g, newNum).replace(/NO\.\s*\d+/gi, newNum) : item.title
+              };
+            }
+            // Ensure buyer financial breakdown is always present
+            if (item.buyer && item.buyer.name) {
+              const deal = item.buyer.dealAmount || item.price || 30000000;
+              const isFull = item.buyer.paymentStatus === 'FULLY_PAID' || item.buyer.paymentPlan === 'FULL_PAYMENT';
+              const paid = item.buyer.paidAmount !== undefined ? item.buyer.paidAmount : (isFull ? deal : (item.status === 'RESERVED' ? 1500000 : Math.round(deal * 0.9)));
+              const balance = item.buyer.balanceAmount !== undefined ? item.buyer.balanceAmount : Math.max(0, deal - paid);
+              const plan = item.buyer.paymentPlan || (balance === 0 ? 'FULL_PAYMENT' : (item.status === 'RESERVED' ? 'TOKEN_ADVANCE' : 'EMI_PLAN'));
+              item.buyer = {
+                ...item.buyer,
+                dealAmount: deal,
+                paidAmount: paid,
+                balanceAmount: balance,
+                paymentPlan: plan,
+                bookingDate: item.buyer.bookingDate || item.buyer.saleDate || '26 Oct 2026'
               };
             }
             // Auto-hydrate buyer on sold/reserved units if missing
