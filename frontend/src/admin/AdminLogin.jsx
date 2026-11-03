@@ -32,14 +32,14 @@ export default function AdminLogin({ onLoginSuccess }) {
     setSuccessMsg('');
     setForgotMsg('');
 
-    if (!email.trim() || !password.trim()) {
+    if (!email.trim() || !password) {
       setError('Please enter both email and password.');
       return;
     }
 
     setLoading(true);
     try {
-      const res = await authService.login(email.trim(), password.trim(), rememberMe);
+      const res = await authService.login(email.trim(), password, rememberMe);
       setSuccessMsg(`Welcome back, ${res.user.name} (${res.user.role})! Redirecting...`);
       setTimeout(() => {
         if (onLoginSuccess) {
@@ -426,8 +426,8 @@ export default function AdminLogin({ onLoginSuccess }) {
               <div>
                 <strong style={{ display: 'block', fontSize: '13.5px', marginBottom: '2px' }}>
                   {error.toLowerCase().includes('password') 
-                    ? '⚠️ Password Galat Hai' 
-                    : (error.toLowerCase().includes('email') ? '⚠️ Email Galat Hai' : '⚠️ Authentication Error')}
+                    ? '⚠️ Incorrect Password' 
+                    : (error.toLowerCase().includes('email') ? '⚠️ Unrecognized Email' : '⚠️ Authentication Error')}
                 </strong>
                 <span>{error}</span>
               </div>
@@ -493,7 +493,7 @@ export default function AdminLogin({ onLoginSuccess }) {
                 </label>
                 {error && error.toLowerCase().includes('email') && (
                   <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: 600 }}>
-                    Email registered nahi hai
+                    Email is not registered
                   </span>
                 )}
               </div>
@@ -532,7 +532,7 @@ export default function AdminLogin({ onLoginSuccess }) {
                 </label>
                 {error && error.toLowerCase().includes('password') && (
                   <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: 600 }}>
-                    Password galat hai
+                    Incorrect password
                   </span>
                 )}
               </div>

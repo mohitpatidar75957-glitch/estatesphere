@@ -434,7 +434,7 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
             <div className="detail-content-columns">
               {/* Left Column: Floor Plans */}
               <div className="detail-floorplans-column">
-                <FloorPlanSVG typology={selectedApartment.typology} />
+                <FloorPlanSVG typology={selectedApartment.typology} bedrooms={selectedApartment.bedrooms} apartment={selectedApartment} />
               </div>
 
               {/* Right Column: Specs */}
@@ -744,7 +744,7 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
 
                   {/* Vector Floor Plan Visualizer */}
                   <div className="card-floorplan-visual">
-                    <FloorPlanSVG typology={item.typology} />
+                    <FloorPlanSVG typology={item.typology} bedrooms={item.bedrooms} apartment={item} />
                   </div>
 
                   {/* Card Middle Info */}

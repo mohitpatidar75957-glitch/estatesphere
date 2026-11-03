@@ -178,6 +178,11 @@ export default function AdminDashboard() {
     });
   };
 
+  const handlePhoneKeyDown = (e) => {
+    if (e.key === 'Backspace' || e.key === 'Delete' || e.key === 'Tab' || e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'Enter' || e.ctrlKey || e.metaKey) return;
+    if (!/^[0-9+\s\-()]$/.test(e.key)) e.preventDefault();
+  };
+
   const handleSaveBuyerModal = (e) => {
     if (e && e.preventDefault) e.preventDefault();
     if (!buyerModal.name.trim()) {
@@ -310,22 +315,22 @@ export default function AdminDashboard() {
   const [toastMsg, setToastMsg] = useState('');
   const [copiedId, setCopiedId] = useState(null);
 
-  // New Apartment Form State (With all requested fields)
+  // New Apartment Form State (Starts completely blank so admin fills own data)
   const [formApt, setFormApt] = useState({
     apartmentNumber: '',
     title: '',
-    headline: 'Elevated luxury residence with sunset horizon views.',
-    description: 'Custom architectural finishes, expansive terrace deck, stone travertine floors, underfloor heating and designer European fittings.',
+    headline: '',
+    description: '',
     block: 'Block B1',
-    floor: '1st Floor',
-    typology: '3 Bed Luxury Home',
+    floor: 'Ground Floor',
+    typology: 'Garden Residence',
     bedrooms: 3,
     bathrooms: 3,
-    areaSqft: 1850,
-    terraceArea: 28,
-    price: 32500000,
+    areaSqft: '',
+    terraceArea: '',
+    price: '',
     status: 'AVAILABLE',
-    imageUrl: '/assets/estate-boutique-lounge.png'
+    imageUrl: ''
   });
 
   // New Team Member Form State
@@ -493,11 +498,15 @@ export default function AdminDashboard() {
     }
 
     const userName = user?.name || 'Super Admin';
+    const areaSqftNum = Number(formApt.areaSqft) || 1200;
     const newUnit = dataStore.addApartment({
       ...formApt,
       apartmentNumber: formApt.apartmentNumber.trim(),
       title: formApt.title || `${formApt.bedrooms} BHK ${formApt.typology}`,
-      areaSqm: Math.round(formApt.areaSqft / 10.764)
+      areaSqft: areaSqftNum,
+      terraceArea: Number(formApt.terraceArea) || 0,
+      price: Number(formApt.price) || 0,
+      areaSqm: Math.round(areaSqftNum / 10.764)
     }, userName);
 
     setApartments(dataStore.getApartments());
@@ -506,20 +515,45 @@ export default function AdminDashboard() {
     setFormApt({
       apartmentNumber: '',
       title: '',
-      headline: 'Elevated luxury residence with sunset horizon views.',
-      description: 'Custom architectural finishes, expansive terrace deck, stone travertine floors, underfloor heating and designer European fittings.',
+      headline: '',
+      description: '',
       block: 'Block B1',
-      floor: '1st Floor',
-      typology: '3 Bed Luxury Home',
+      floor: 'Ground Floor',
+      typology: 'Garden Residence',
       bedrooms: 3,
       bathrooms: 3,
-      areaSqft: 1850,
-      terraceArea: 28,
-      price: 32500000,
+      areaSqft: '',
+      terraceArea: '',
+      price: '',
       status: 'AVAILABLE',
-      imageUrl: '/assets/estate-boutique-lounge.png'
+      imageUrl: ''
     });
     triggerToast(`Unit ${newUnit.apartmentNumber} registered and live on website!`);
+  };
+
+  const openAddApartmentModal = () => {
+    const maxNum = apartments.reduce((max, a) => {
+      const n = parseInt((a.apartmentNumber || '').replace(/[^\d]/g, ''), 10);
+      return !isNaN(n) && n > max ? n : max;
+    }, 0);
+    const nextUnitStr = maxNum > 0 ? `No-${maxNum + 1 < 10 ? '0' + (maxNum + 1) : maxNum + 1}` : '';
+    setFormApt({
+      apartmentNumber: nextUnitStr,
+      title: '',
+      headline: '',
+      description: '',
+      block: 'Block B1',
+      floor: 'Ground Floor',
+      typology: 'Garden Residence',
+      bedrooms: 3,
+      bathrooms: 3,
+      areaSqft: '',
+      terraceArea: '',
+      price: '',
+      status: 'AVAILABLE',
+      imageUrl: ''
+    });
+    setShowAddModal(true);
   };
 
   // Handle Editing Apartment
@@ -2127,7 +2161,7 @@ export default function AdminDashboard() {
             {userPermissions.canAddApartment && (
               <button 
                 className="btn-primary-action"
-                onClick={() => setShowAddModal(true)}
+                onClick={openAddApartmentModal}
               >
                 <Plus size={16} />
                 <span>Add New Apartment</span>
@@ -2266,7 +2300,7 @@ export default function AdminDashboard() {
                 {userPermissions.canAddApartment && (
                   <button 
                     className="btn-primary-action"
-                    onClick={() => setShowAddModal(true)}
+                    onClick={openAddApartmentModal}
                   >
                     <Plus size={16} />
                     <span>Add New Apartment</span>
@@ -2710,6 +2744,20 @@ export default function AdminDashboard() {
                     >
                       🟡 Reserved Only ({reservedCount})
                     </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const target = apartments.find(a => a.status === 'AVAILABLE') || apartments[0];
+                        if (target) openEditBuyerModal(target);
+                      }}
+                      className="btn-primary-action"
+                      style={{ padding: '6px 14px', fontSize: '12.5px', borderRadius: '20px', gap: '5px' }}
+                      title="Create new buyer allotment bill for any apartment"
+                    >
+                      <Plus size={14} />
+                      <span>Create Allotment Bill</span>
+                    </button>
                   </div>
 
                 </div>
@@ -2735,21 +2783,21 @@ export default function AdminDashboard() {
                   ) : (
                     <table className="admin-table" style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'separate', borderSpacing: 0 }}>
                       <colgroup>
-                        <col style={{ width: '22%' }} />
-                        <col style={{ width: '10%' }} />
+                        <col style={{ width: '25%' }} />
+                        <col style={{ width: '9%' }} />
                         <col style={{ width: '23%' }} />
-                        <col style={{ width: '14%' }} />
                         <col style={{ width: '15%' }} />
-                        <col style={{ width: '16%' }} />
+                        <col style={{ width: '14%' }} />
+                        <col style={{ width: '14%' }} />
                       </colgroup>
                       <thead>
                         <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-                          <th style={{ width: '22%', padding: '14px 14px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', whiteSpace: 'nowrap' }}>Unit & Typology</th>
-                          <th style={{ width: '10%', padding: '14px 6px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center', whiteSpace: 'nowrap' }}>Status</th>
+                          <th style={{ width: '25%', padding: '14px 14px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', whiteSpace: 'nowrap' }}>Unit & Typology</th>
+                          <th style={{ width: '9%', padding: '14px 6px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center', whiteSpace: 'nowrap' }}>Status</th>
                           <th style={{ width: '23%', padding: '14px 14px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', whiteSpace: 'nowrap' }}>Buyer Profile & Contact</th>
-                          <th style={{ width: '14%', padding: '14px 14px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', whiteSpace: 'nowrap' }}>Transaction Value</th>
-                          <th style={{ width: '15%', padding: '14px 14px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', whiteSpace: 'nowrap' }}>Payment Schedule</th>
-                          <th style={{ width: '16%', padding: '14px 12px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
+                          <th style={{ width: '15%', padding: '14px 14px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', whiteSpace: 'nowrap' }}>Transaction Value</th>
+                          <th style={{ width: '14%', padding: '14px 14px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', whiteSpace: 'nowrap' }}>Payment Schedule</th>
+                          <th style={{ width: '14%', padding: '14px 12px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2799,10 +2847,10 @@ export default function AdminDashboard() {
                                         {apt.block}
                                       </span>
                                     </div>
-                                    <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#1e293b', marginTop: '2px', lineHeight: 1.25 }}>
+                                    <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#1e293b', marginTop: '2px', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={apt.title || `${apt.bedrooms} BHK Residence`}>
                                       {apt.title || `${apt.bedrooms} BHK Residence`}
                                     </div>
-                                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '1px' }}>
+                                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '1px', whiteSpace: 'nowrap' }}>
                                       {apt.floor} &bull; {apt.areaSqft} sq.ft
                                     </div>
                                   </div>
@@ -4134,7 +4182,7 @@ export default function AdminDashboard() {
                     👑 Super Admin Access Only
                   </h3>
                   <p style={{ fontSize: '13px', color: '#64748b', maxWidth: '480px', margin: '0 auto 20px', lineHeight: 1.5 }}>
-                    Yeh page sirf <b>Super Admin</b> ke liye reserved hai. Yahan se naye users banana, 3-tier roles assign karna aur kisi employee ka access 1 second me deactivate/delete karna manage hota hai.
+                    This management console is reserved for <b>Super Admin</b> only. Manage staff accounts, assign 3-tier roles, and instantly configure user access permissions.
                   </p>
                   <div style={{ display: 'inline-flex', gap: '10px' }}>
                     <button 
@@ -4535,9 +4583,11 @@ export default function AdminDashboard() {
                     <div className="form-group-clean">
                       <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>Admin Contact / Phone</label>
                       <input
-                        type="text"
+                        type="tel"
+                        inputMode="tel"
                         value={profileForm.phone}
-                        onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                        onKeyDown={handlePhoneKeyDown}
+                        onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value.replace(/[^0-9+\s\-()]/g, '') })}
                         className="input-clean"
                         placeholder="Enter contact phone number"
                       />
@@ -4681,9 +4731,11 @@ export default function AdminDashboard() {
                         <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>Public Phone (Footer Call)</label>
                         <div style={{ position: 'relative' }}>
                           <input
-                            type="text"
+                            type="tel"
+                            inputMode="tel"
                             value={settings.supportPhone || ''}
-                            onChange={(e) => setSettings({ ...settings, supportPhone: e.target.value })}
+                            onKeyDown={handlePhoneKeyDown}
+                            onChange={(e) => setSettings({ ...settings, supportPhone: e.target.value.replace(/[^0-9+\s\-()]/g, '') })}
                             className="input-clean"
                             placeholder="Enter public phone number"
                           />
@@ -4695,9 +4747,11 @@ export default function AdminDashboard() {
                         <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>Official WhatsApp Number</label>
                         <div style={{ position: 'relative' }}>
                           <input
-                            type="text"
+                            type="tel"
+                            inputMode="tel"
                             value={settings.whatsappNumber || ''}
-                            onChange={(e) => setSettings({ ...settings, whatsappNumber: e.target.value })}
+                            onKeyDown={handlePhoneKeyDown}
+                            onChange={(e) => setSettings({ ...settings, whatsappNumber: e.target.value.replace(/[^0-9+\s\-()]/g, '') })}
                             className="input-clean"
                             placeholder="Enter WhatsApp number"
                           />
@@ -4756,7 +4810,7 @@ export default function AdminDashboard() {
                       <span>Website Text & Content CMS</span>
                     </h3>
                     <p style={{ margin: '4px 0 0', fontSize: '12.5px', color: '#64748b' }}>
-                      Website ke har ek section ke text, headline, sub-headline aur button label ko yahan se edit karein.
+                      Customize headline text, sub-headings, and button labels across all website sections.
                     </p>
                   </div>
 
@@ -4799,7 +4853,7 @@ export default function AdminDashboard() {
                         </h4>
                       </div>
                       <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#64748b' }}>
-                        Website load hone par sabse upar dikhne wala main brand name, tagline aur statement title.
+                        Primary brand title, tagline, and introductory statement displayed at the very top of the website.
                       </p>
                     </div>
                     <span style={{ fontSize: '11.5px', color: '#059669', background: '#ecfdf5', padding: '3px 8px', borderRadius: '12px', fontWeight: 600 }}>
@@ -4819,7 +4873,7 @@ export default function AdminDashboard() {
                         onChange={(e) => setContentForm({ ...contentForm, heroTitle: e.target.value })}
                         placeholder="Dwellora"
                       />
-                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>Center me bada display name jo scroll pe animated rehta hai</span>
+                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>Prominent brand display title animated smoothly on page scroll</span>
                     </div>
 
                     <div className="form-group-clean">
@@ -4833,7 +4887,7 @@ export default function AdminDashboard() {
                         onChange={(e) => setContentForm({ ...contentForm, heroSubtitle: e.target.value })}
                         placeholder="A place by day — by night to return to"
                       />
-                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>Day / Night toggle ke saath text caption</span>
+                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>Text caption accompanying the Day / Night architecture lighting toggle</span>
                     </div>
                   </div>
 
@@ -4947,7 +5001,7 @@ export default function AdminDashboard() {
                         </h4>
                       </div>
                       <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#64748b' }}>
-                        Badi exterior photo ke upar aane wali headline aur description text.
+                        Architectural reveal banner headline and editorial description text.
                       </p>
                     </div>
                   </div>
@@ -5088,7 +5142,7 @@ export default function AdminDashboard() {
                         </h4>
                       </div>
                       <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#64748b' }}>
-                        Apartment cards section ke upar aane wale main intro texts aur statement headline.
+                        Introductory header text and statement headline for residential listings.
                       </p>
                     </div>
                     <span style={{ fontSize: '11.5px', color: '#be185d', background: '#fdf2f8', padding: '3px 8px', borderRadius: '12px', fontWeight: 600 }}>
@@ -5196,7 +5250,7 @@ export default function AdminDashboard() {
                         </h4>
                       </div>
                       <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#64748b' }}>
-                        3D Architecture model section aur interior specification copy text.
+                        3D Architectural model overview and interior specification narrative copy.
                       </p>
                     </div>
                     <span style={{ fontSize: '11.5px', color: '#0f766e', background: '#f0fdfa', padding: '3px 8px', borderRadius: '12px', fontWeight: 600 }}>
@@ -5274,7 +5328,7 @@ export default function AdminDashboard() {
                         </h4>
                       </div>
                       <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#64748b' }}>
-                        Website footer ke just upar aane wala call to action banner jahan se customer call book karta hai.
+                        Call-to-action consultation banner positioned directly above the footer.
                       </p>
                     </div>
                     <span style={{ fontSize: '11.5px', color: '#92400e', background: '#fef3c7', padding: '3px 8px', borderRadius: '12px', fontWeight: 600 }}>
@@ -5519,8 +5573,9 @@ export default function AdminDashboard() {
                       <label>Super Built-up Area (Sqft)</label>
                       <input
                         type="number"
+                        placeholder="Enter super built-up area in sqft"
                         value={formApt.areaSqft}
-                        onChange={(e) => setFormApt({ ...formApt, areaSqft: Number(e.target.value) })}
+                        onChange={(e) => setFormApt({ ...formApt, areaSqft: e.target.value === '' ? '' : Number(e.target.value) })}
                         className="input-clean"
                         style={{ height: '38px', fontSize: '13px' }}
                       />
@@ -5530,8 +5585,9 @@ export default function AdminDashboard() {
                       <label>Terrace Area (Sqm)</label>
                       <input
                         type="number"
+                        placeholder="Enter terrace area in sqm"
                         value={formApt.terraceArea}
-                        onChange={(e) => setFormApt({ ...formApt, terraceArea: Number(e.target.value) })}
+                        onChange={(e) => setFormApt({ ...formApt, terraceArea: e.target.value === '' ? '' : Number(e.target.value) })}
                         className="input-clean"
                         style={{ height: '38px', fontSize: '13px' }}
                       />
@@ -5544,8 +5600,9 @@ export default function AdminDashboard() {
                       <input
                         type="number"
                         step="500000"
+                        placeholder="Enter price in ₹"
                         value={formApt.price}
-                        onChange={(e) => setFormApt({ ...formApt, price: Number(e.target.value) })}
+                        onChange={(e) => setFormApt({ ...formApt, price: e.target.value === '' ? '' : Number(e.target.value) })}
                         className="input-clean"
                         style={{ height: '38px', fontSize: '13px', fontWeight: 700 }}
                       />
@@ -5590,7 +5647,7 @@ export default function AdminDashboard() {
                     <label>Full Apartment Description</label>
                     <textarea
                       rows={4}
-                      placeholder="Provide property details, natural stone finishes, terrace specs..."
+                      placeholder="Enter apartment specifications, natural finishes, terrace specs..."
                       value={formApt.description}
                       onChange={(e) => setFormApt({ ...formApt, description: e.target.value })}
                       className="input-clean"
@@ -5602,7 +5659,7 @@ export default function AdminDashboard() {
                     <label>Cover Photo Image URL</label>
                     <input
                       type="text"
-                      placeholder="/assets/estate-boutique-lounge.png"
+                      placeholder="Enter photo image URL (e.g. /assets/estate-boutique-lounge.png)"
                       value={formApt.imageUrl}
                       onChange={(e) => setFormApt({ ...formApt, imageUrl: e.target.value })}
                       className="input-clean"
@@ -5881,10 +5938,12 @@ export default function AdminDashboard() {
                     <div className="form-group-clean">
                       <label>Phone / WhatsApp</label>
                       <input
-                        type="text"
+                        type="tel"
+                        inputMode="tel"
                         placeholder="Enter phone number"
                         value={formTeam.phone}
-                        onChange={(e) => setFormTeam({ ...formTeam, phone: e.target.value })}
+                        onKeyDown={handlePhoneKeyDown}
+                        onChange={(e) => setFormTeam({ ...formTeam, phone: e.target.value.replace(/[^0-9+\s\-()]/g, '') })}
                         className="input-clean"
                         style={{ height: '38px', fontSize: '13px' }}
                       />
@@ -6537,10 +6596,12 @@ export default function AdminDashboard() {
                     <label>Phone Number *</label>
                     <input
                       type="tel"
+                      inputMode="tel"
                       required
-                      placeholder="+91 98..."
+                      placeholder="Enter phone number"
                       value={formInquiry.phone}
-                      onChange={(e) => setFormInquiry({ ...formInquiry, phone: e.target.value })}
+                      onKeyDown={handlePhoneKeyDown}
+                      onChange={(e) => setFormInquiry({ ...formInquiry, phone: e.target.value.replace(/[^0-9+\s\-()]/g, '') })}
                       className="input-clean"
                     />
                   </div>
@@ -7009,11 +7070,13 @@ export default function AdminDashboard() {
                         Contact Phone Number *
                       </label>
                       <input
-                        type="text"
+                        type="tel"
+                        inputMode="tel"
                         required
                         placeholder="Enter contact phone number"
                         value={buyerModal.phone}
-                        onChange={(e) => setBuyerModal(prev => ({ ...prev, phone: e.target.value }))}
+                        onKeyDown={handlePhoneKeyDown}
+                        onChange={(e) => setBuyerModal(prev => ({ ...prev, phone: e.target.value.replace(/[^0-9+\s\-()]/g, '') }))}
                         className="input-clean"
                         style={{ width: '100%', height: '40px', fontSize: '13px' }}
                       />

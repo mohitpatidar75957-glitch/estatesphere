@@ -9,13 +9,14 @@ const DEMO_FALLBACK_USERS = [
 export const authService = {
   async login(email, password, rememberMe = false) {
     const cleanEmail = (email || '').trim();
-    const cleanPass = (password || '').trim();
+    const rawPass = password !== undefined && password !== null ? String(password) : '';
+    const cleanPass = rawPass.trim();
 
     if (!cleanEmail) {
-      throw new Error('Email address enter karein.');
+      throw new Error('Please enter your email address.');
     }
-    if (!cleanPass) {
-      throw new Error('Password enter karein.');
+    if (!cleanPass && !rawPass) {
+      throw new Error('Please enter your password.');
     }
 
     // 1. First check dataStore team database (UI created staff/agents)
@@ -34,10 +35,14 @@ export const authService = {
 
     if (teamMember) {
       if (teamMember.status === 'DEACTIVATED') {
-        throw new Error('Account Deactivated: Yeh account Super Admin dwara deactivate kiya gaya hai.');
+        throw new Error('Account Deactivated: This account has been deactivated by Super Admin.');
       }
-      if (teamMember.password && teamMember.password !== cleanPass) {
-        throw new Error('Password galat hai: Email sahi hai, lekin password galat enter kiya gaya hai.');
+      const memberPass = String(teamMember.password || '');
+      const passMatches = memberPass === rawPass || 
+                          memberPass.trim() === cleanPass || 
+                          memberPass.replace(/\s+/g, '') === rawPass.replace(/\s+/g, '');
+      if (memberPass && !passMatches) {
+        throw new Error('Incorrect Password: The password entered does not match.');
       }
       const teamSession = {
         token: `team-session-${Date.now()}`,
@@ -60,8 +65,12 @@ export const authService = {
     );
 
     if (fallbackUser) {
-      if (fallbackUser.pass !== cleanPass) {
-        throw new Error('Password galat hai: Email sahi hai, lekin password galat enter kiya gaya hai.');
+      const fbPass = String(fallbackUser.pass || '');
+      const passMatches = fbPass === rawPass || 
+                          fbPass.trim() === cleanPass || 
+                          fbPass.replace(/\s+/g, '') === rawPass.replace(/\s+/g, '');
+      if (!passMatches) {
+        throw new Error('Incorrect Password: The password entered does not match.');
       }
 
       const mockData = {

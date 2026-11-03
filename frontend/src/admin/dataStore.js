@@ -582,10 +582,15 @@ export const dataStore = {
             }
             return item;
           });
+          const sorted = [...normalized].sort((a, b) => {
+            const numA = parseInt((a.apartmentNumber || '').replace(/[^\d]/g, ''), 10) || a.id || 0;
+            const numB = parseInt((b.apartmentNumber || '').replace(/[^\d]/g, ''), 10) || b.id || 0;
+            return numA - numB;
+          });
           if (needsUpdate) {
-            safeSetItem(STORAGE_KEYS.APARTMENTS, JSON.stringify(normalized));
+            safeSetItem(STORAGE_KEYS.APARTMENTS, JSON.stringify(sorted));
           }
-          return normalized;
+          return sorted;
         }
       } catch (_) {}
     }
@@ -660,7 +665,11 @@ export const dataStore = {
         panorama360: '/assets/cayley-interior-8k.jpg'
       }
     };
-    const updated = [newApt, ...current];
+    const updated = [...current, newApt].sort((a, b) => {
+      const numA = parseInt((a.apartmentNumber || '').replace(/[^\d]/g, ''), 10) || a.id || 0;
+      const numB = parseInt((b.apartmentNumber || '').replace(/[^\d]/g, ''), 10) || b.id || 0;
+      return numA - numB;
+    });
     localStorage.setItem(STORAGE_KEYS.APARTMENTS, JSON.stringify(updated));
     this.addActivity(`${userName} registered new Unit ${newApt.apartmentNumber} (${newApt.title})`, 'add');
     this.notifyUpdate();
@@ -835,7 +844,7 @@ export const dataStore = {
       id: `team-${Date.now()}`,
       name: memberData.name.trim(),
       email: memberData.email.trim(),
-      password: memberData.password ? memberData.password.trim() : 'Sphere@2026',
+      password: memberData.password !== undefined && memberData.password !== '' ? String(memberData.password) : 'Sphere@2026',
       role: roleKey,
       roleLabel,
       roleBadge,
