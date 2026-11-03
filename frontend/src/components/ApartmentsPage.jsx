@@ -246,7 +246,7 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
           }))
           const localApts = (typeof dataStore?.getApartments === 'function') ? dataStore.getApartments() : []
           const merged = parsed.map(item => {
-            const localMatch = localApts.find(la => la.id === item.id || la.apartmentNumber === item.apartmentNumber)
+            const localMatch = localApts.find(la => String(la.id) === String(item.id) || la.apartmentNumber === item.apartmentNumber)
             if (localMatch) {
               return {
                 ...item,
@@ -257,7 +257,16 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
             }
             return item
           })
-          setProperties(merged)
+
+          // CRITICAL: Preserve all newly added apartments (e.g. No-26, No-27) created in admin panel
+          const extraLocal = localApts.filter(la => !merged.some(m => String(m.id) === String(la.id) || m.apartmentNumber === la.apartmentNumber))
+          const allProperties = [...merged, ...extraLocal].sort((a, b) => {
+            const numA = parseInt((a.apartmentNumber || '').replace(/[^\d]/g, ''), 10) || a.id || 0
+            const numB = parseInt((b.apartmentNumber || '').replace(/[^\d]/g, ''), 10) || b.id || 0
+            return numA - numB
+          })
+
+          setProperties(allProperties)
         }
       })
       .catch(() => {
@@ -349,9 +358,11 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
     const matchBeds = bedroomsFilter === 'ALL' || String(p.bedrooms) === String(bedroomsFilter)
     return matchTypo && matchBeds
   }).sort((a, b) => {
-    if (sortBy === 'AREA_ASC') return a.areaSqm - b.areaSqm // SMALLEST AREA
-    if (sortBy === 'AREA_DESC') return b.areaSqm - a.areaSqm // LARGEST AREA
-    return a.id - b.id // RELEVANT (default)
+    if (sortBy === 'AREA_ASC') return (a.areaSqm || 0) - (b.areaSqm || 0) // SMALLEST AREA
+    if (sortBy === 'AREA_DESC') return (b.areaSqm || 0) - (a.areaSqm || 0) // LARGEST AREA
+    const numA = parseInt((a.apartmentNumber || '').replace(/[^\d]/g, ''), 10) || a.id || 0
+    const numB = parseInt((b.apartmentNumber || '').replace(/[^\d]/g, ''), 10) || b.id || 0
+    return numA - numB
   })
 
   return (
