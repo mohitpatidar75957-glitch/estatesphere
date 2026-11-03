@@ -913,40 +913,57 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   margin-top: 18px;
   pointer-events: auto !important;
+  width: 100%;
 }
 
 .rail-home-btn,
-.rail-apartments-btn {
+.rail-apartments-btn,
+.rail-all-apartments-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  background: rgba(255, 255, 255, 0.9);
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(37, 40, 34, 0.22);
   border-radius: 20px;
-  padding: 6px 12px;
+  padding: 6px 14px;
   font-family: inherit;
   font-size: 9.5px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   color: #252822;
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
   backdrop-filter: blur(8px);
-  transition: all 0.2s ease;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
+  text-decoration: none;
+}
+
+.rail-all-apartments-btn {
+  font-size: 8.5px;
+  padding: 6px 10px;
+  letter-spacing: 0.1em;
 }
 
 .rail-home-btn:hover,
-.rail-apartments-btn:hover {
+.rail-apartments-btn:hover,
+.rail-all-apartments-btn:hover {
   background: #252822;
   color: #ffffff;
   border-color: #252822;
-  transform: scale(1.05);
+  transform: translateY(-1px) scale(1.03);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.rail-home-btn:active,
+.rail-apartments-btn:active,
+.rail-all-apartments-btn:active {
+  transform: scale(0.97);
 }
 
 /* Detail Page Back Navigation Row */

@@ -399,15 +399,27 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
           </button>
 
           {selectedApartment && (
-            <button
-              type="button"
-              className="rail-apartments-btn"
-              onClick={() => { setSelectedApartment(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              title="Back to All Apartments"
-            >
-              <ArrowLeft size={11} strokeWidth={2.2} />
-              <span>UNITS</span>
-            </button>
+            <>
+              <button
+                type="button"
+                className="rail-apartments-btn"
+                onClick={() => { setSelectedApartment(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                title="Back to Units"
+              >
+                <ArrowLeft size={11} strokeWidth={2.2} />
+                <span>UNITS</span>
+              </button>
+
+              <button
+                type="button"
+                className="rail-all-apartments-btn"
+                onClick={() => { setSelectedApartment(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                title="Back to All Apartments"
+              >
+                <ArrowLeft size={11} strokeWidth={2.2} />
+                <span>ALL APARTMENTS</span>
+              </button>
+            </>
           )}
         </div>
 
@@ -468,22 +480,6 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
           {/* Detailed View Section */}
           <section className="apartment-detail-intro-sec">
             <div className="apartment-detail-header">
-              {/* Back to All Apartments Button */}
-              <div className="detail-back-navigation-row">
-                <button
-                  type="button"
-                  className="detail-back-btn"
-                  onClick={() => {
-                    setSelectedApartment(null);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  title="Back to All Apartments"
-                >
-                  <ArrowLeft size={13} strokeWidth={2.2} />
-                  <span>ALL APARTMENTS</span>
-                </button>
-              </div>
-
               <h1 className="detail-serif-title">{selectedApartment.apartmentNumber}</h1>
               <div className="detail-typology-row">
                 <span>{selectedApartment.typology}</span>
