@@ -4226,7 +4226,7 @@ export default function AdminDashboard() {
                           </span>
                         </div>
                         <div style={{ fontSize: '11px', color: '#64748b', marginTop: '3px' }}>
-                          Sirf Inventory view & Leads calling updates (No deletes)
+                          View inventory & lead calling updates (No delete access)
                         </div>
                       </div>
 
@@ -4237,14 +4237,22 @@ export default function AdminDashboard() {
                   <div className="white-panel" style={{ padding: 0, overflow: 'hidden' }}>
                     <div style={{ width: '100%', overflow: 'hidden' }}>
                       <table className="clean-table" style={{ width: '100%', tableLayout: 'fixed' }}>
+                        <colgroup>
+                          <col style={{ width: '20%' }} />
+                          <col style={{ width: '21%' }} />
+                          <col style={{ width: '18%' }} />
+                          <col style={{ width: '19%' }} />
+                          <col style={{ width: '9%' }} />
+                          <col style={{ width: '13%' }} />
+                        </colgroup>
                         <thead>
                           <tr>
-                            <th style={{ width: '22%' }}>Team Member</th>
-                            <th style={{ width: '22%' }}>Login Credentials</th>
-                            <th style={{ width: '20%' }}>Assign Role (3 Roles)</th>
-                            <th style={{ width: '18%' }}>Access Scope</th>
-                            <th style={{ width: '10%' }}>Status</th>
-                            <th style={{ width: '8%', textAlign: 'center' }}>Actions</th>
+                            <th style={{ width: '20%' }}>Team Member</th>
+                            <th style={{ width: '21%' }}>Login Credentials</th>
+                            <th style={{ width: '18%' }}>Assign Role (3 Roles)</th>
+                            <th style={{ width: '19%' }}>Access Scope</th>
+                            <th style={{ width: '9%' }}>Status</th>
+                            <th style={{ width: '13%', textAlign: 'center' }}>Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -4408,8 +4416,8 @@ export default function AdminDashboard() {
                                 </td>
 
                                 {/* 6. Actions (Configure Access, Reset Password & Delete User) */}
-                                <td style={{ textAlign: 'center' }}>
-                                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                                <td style={{ textAlign: 'center', padding: '10px 4px' }}>
+                                  <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                                     {/* Configure Granular Permissions Button */}
                                     <button
                                       type="button"
