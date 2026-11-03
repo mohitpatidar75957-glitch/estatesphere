@@ -225,18 +225,26 @@ export default function AdminDashboard() {
       notes: buyerModal.notes.trim()
     };
 
+    const targetApt = apartments.find(a => a.id === Number(buyerModal.apartmentId));
+    const isNewBill = !targetApt?.buyer?.name;
+    const actor = user?.name || 'Super Admin';
+    const activityMsg = isNewBill
+      ? `${actor} created new buyer allotment bill for Unit ${buyerModal.apartmentNumber} (${updatedBuyerObj.name})`
+      : `${actor} updated buyer bill & payment schedule for Unit ${buyerModal.apartmentNumber} (${updatedBuyerObj.name})`;
+    dataStore.addActivity(activityMsg, 'sale');
+
     const updatedApts = dataStore.updateApartment(
       buyerModal.apartmentId,
       {
         status: computedStatus,
         buyer: updatedBuyerObj
       },
-      user?.name || 'Super Admin'
+      actor
     );
     setApartments(updatedApts);
     setActivityFeed(dataStore.getActivityFeed());
     setBuyerModal(prev => ({ ...prev, isOpen: false }));
-    triggerToast(`Buyer details & payment record for Unit ${buyerModal.apartmentNumber} saved!`);
+    triggerToast(`Buyer details & bill record for Unit ${buyerModal.apartmentNumber} saved!`);
   };
 
   const filteredSalesApartments = useMemo(() => {
@@ -2704,9 +2712,9 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Buyers & Properties Table */}
-                <div style={{ marginTop: '20px', overflowX: 'auto' }}>
+                <div style={{ marginTop: '20px', overflowX: 'auto', background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 4px 16px rgba(0,0,0,0.03)' }}>
                   {filteredSalesApartments.length === 0 ? (
-                    <div style={{ padding: '48px 24px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
+                    <div style={{ padding: '48px 24px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px' }}>
                       <UserCheck size={40} style={{ color: '#94a3b8', margin: '0 auto 12px' }} />
                       <h4 style={{ margin: '0 0 6px', fontSize: '16px', fontWeight: 700, color: '#334155' }}>No matching property sales found</h4>
                       <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#64748b' }}>
@@ -2724,13 +2732,13 @@ export default function AdminDashboard() {
                   ) : (
                     <table className="admin-table" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
                       <thead>
-                        <tr>
-                          <th style={{ width: '22%' }}>Unit & Typology</th>
-                          <th style={{ width: '12%' }}>Status</th>
-                          <th style={{ width: '24%' }}>Buyer Contact Details</th>
-                          <th style={{ width: '14%' }}>Deal Value</th>
-                          <th style={{ width: '14%' }}>Payment Status</th>
-                          <th style={{ width: '14%', textAlign: 'right' }}>Actions</th>
+                        <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                          <th style={{ width: '23%', padding: '14px 18px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Unit & Typology</th>
+                          <th style={{ width: '11%', padding: '14px 18px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Status</th>
+                          <th style={{ width: '24%', padding: '14px 18px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Buyer Profile & Contact</th>
+                          <th style={{ width: '15%', padding: '14px 18px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Transaction Value</th>
+                          <th style={{ width: '15%', padding: '14px 18px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Payment Schedule</th>
+                          <th style={{ width: '12%', padding: '14px 18px', textAlign: 'right', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2747,30 +2755,43 @@ export default function AdminDashboard() {
                             notes: 'Allotment in progress.'
                           };
 
+                          const initials = (buyer.name || 'Private Client')
+                            .split(' ')
+                            .filter(Boolean)
+                            .slice(0, 2)
+                            .map(w => w[0].toUpperCase())
+                            .join('') || 'ES';
+
+                          const dealVal = Number(buyer.dealAmount) || apt.price || 1;
+                          const paidVal = buyer.paidAmount !== undefined ? Number(buyer.paidAmount) : (buyer.paymentStatus === 'FULLY_PAID' ? dealVal : Math.round(dealVal * 0.9));
+                          const balVal = buyer.balanceAmount !== undefined ? Number(buyer.balanceAmount) : Math.max(0, dealVal - paidVal);
+                          const percentCleared = Math.min(100, Math.max(0, Math.round((paidVal / dealVal) * 100)));
+                          const isCleared = balVal <= 0 || buyer.paymentStatus === 'FULLY_PAID';
+
                           return (
-                            <tr key={apt.id} style={{ transition: 'background 0.15s ease' }}>
+                            <tr key={apt.id} style={{ transition: 'background 0.15s ease', borderBottom: '1px solid #f1f5f9' }}>
                               
                               {/* 1. Unit & Typology */}
-                              <td>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <td style={{ padding: '16px 18px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                                   <img
                                     src={apt.imageUrl || '/assets/estate-boutique-lounge.png'}
                                     alt={apt.apartmentNumber}
-                                    style={{ width: '46px', height: '46px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #e2e8f0', flexShrink: 0 }}
+                                    style={{ width: '52px', height: '52px', borderRadius: '10px', objectFit: 'cover', border: '1.5px solid #e2e8f0', flexShrink: 0, boxShadow: '0 2px 6px rgba(0,0,0,0.05)' }}
                                   />
                                   <div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                      <b style={{ color: '#0f172a', fontSize: '14.5px', letterSpacing: '-0.01em' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                                      <b style={{ color: '#0f172a', fontSize: '15px', letterSpacing: '-0.01em' }}>
                                         {apt.apartmentNumber}
                                       </b>
-                                      <span style={{ fontSize: '11px', fontWeight: 600, color: '#475569', background: '#f1f5f9', padding: '1px 6px', borderRadius: '4px' }}>
+                                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#1e40af', background: '#eff6ff', border: '1px solid #dbeafe', padding: '1px 7px', borderRadius: '4px' }}>
                                         {apt.block}
                                       </span>
                                     </div>
-                                    <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#334155', marginTop: '2px' }}>
+                                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginTop: '2px' }}>
                                       {apt.title || `${apt.bedrooms} BHK Residence`}
                                     </div>
-                                    <div style={{ fontSize: '11px', color: '#64748b' }}>
+                                    <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '1px' }}>
                                       {apt.floor} &bull; {apt.areaSqft} sq.ft
                                     </div>
                                   </div>
@@ -2778,14 +2799,14 @@ export default function AdminDashboard() {
                               </td>
 
                               {/* 2. Status Badge */}
-                              <td>
+                              <td style={{ padding: '16px 18px' }}>
                                 {apt.status === 'SOLD' ? (
                                   <span style={{
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     gap: '6px',
-                                    padding: '4px 10px',
-                                    borderRadius: '16px',
+                                    padding: '5px 12px',
+                                    borderRadius: '20px',
                                     fontSize: '11.5px',
                                     fontWeight: 700,
                                     background: '#fef2f2',
@@ -2800,8 +2821,8 @@ export default function AdminDashboard() {
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     gap: '6px',
-                                    padding: '4px 10px',
-                                    borderRadius: '16px',
+                                    padding: '5px 12px',
+                                    borderRadius: '20px',
                                     fontSize: '11.5px',
                                     fontWeight: 700,
                                     background: '#fffbeb',
@@ -2815,98 +2836,111 @@ export default function AdminDashboard() {
                               </td>
 
                               {/* 3. Buyer Details */}
-                              <td>
+                              <td style={{ padding: '16px 18px' }}>
                                 <div>
-                                  <div style={{ fontWeight: 700, fontSize: '13.5px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <UserCheck size={14} style={{ color: '#2563eb' }} />
-                                    <span>{buyer.name}</span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#eff6ff', color: '#2563eb', fontWeight: 700, fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid #bfdbfe' }}>
+                                      {initials}
+                                    </div>
+                                    <div style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                      <span>{buyer.name}</span>
+                                      <UserCheck size={14} style={{ color: '#2563eb' }} />
+                                    </div>
                                   </div>
                                   
                                   {buyer.phone && (
-                                    <div style={{ marginTop: '3px' }}>
+                                    <div style={{ marginTop: '5px' }}>
                                       <a
                                         href={`tel:${buyer.phone}`}
                                         style={{ fontSize: '12px', color: '#475569', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
                                         title="Click to call buyer"
                                       >
-                                        <Phone size={11} style={{ color: '#64748b' }} />
+                                        <Phone size={12} style={{ color: '#64748b' }} />
                                         <span>{buyer.phone}</span>
                                       </a>
                                     </div>
                                   )}
 
                                   {buyer.email && (
-                                    <div style={{ marginTop: '2px' }}>
+                                    <div style={{ marginTop: '3px' }}>
                                       <a
                                         href={`mailto:${buyer.email}`}
-                                        style={{ fontSize: '11.5px', color: '#2563eb', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                                        style={{ fontSize: '12px', color: '#2563eb', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
                                         title="Click to email buyer"
                                       >
-                                        <Mail size={11} />
+                                        <Mail size={12} />
                                         <span>{buyer.email}</span>
                                       </a>
                                     </div>
                                   )}
 
                                   {buyer.assignedAgent && (
-                                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '3px' }}>
-                                      Handled by: <b>{buyer.assignedAgent}</b>
+                                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+                                      Handled by: <b style={{ color: '#334155' }}>{buyer.assignedAgent}</b>
                                     </div>
                                   )}
                                 </div>
                               </td>
 
                               {/* 4. Deal Value & Payment Breakdown */}
-                              <td>
+                              <td style={{ padding: '16px 18px' }}>
                                 <div>
-                                  <div style={{ fontSize: '14.5px', fontWeight: 800, color: '#0f172a' }}>
-                                    {formatINR(buyer.dealAmount || apt.price)}
+                                  <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.01em' }}>
+                                    {formatINR(dealVal)}
                                   </div>
-                                  <div style={{ fontSize: '11.5px', color: '#059669', fontWeight: 600, marginTop: '2px' }}>
-                                    Paid: {formatINR(buyer.paidAmount !== undefined ? buyer.paidAmount : (buyer.paymentStatus === 'FULLY_PAID' ? (buyer.dealAmount || apt.price) : Math.round((buyer.dealAmount || apt.price) * 0.9)))}
+                                  <div style={{ fontSize: '12px', color: '#059669', fontWeight: 600, marginTop: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <CheckCircle2 size={12} />
+                                    <span>Paid: {formatINR(paidVal)}</span>
                                   </div>
-                                  <div style={{ fontSize: '11px', color: (buyer.balanceAmount === 0 || buyer.paymentStatus === 'FULLY_PAID') ? '#059669' : '#dc2626', fontWeight: 600 }}>
-                                    Balance: {(buyer.balanceAmount === 0 || buyer.paymentStatus === 'FULLY_PAID') ? '₹0 (Cleared)' : formatINR(buyer.balanceAmount !== undefined ? buyer.balanceAmount : Math.round((buyer.dealAmount || apt.price) * 0.1))}
+                                  <div style={{ fontSize: '11.5px', color: isCleared ? '#059669' : '#dc2626', fontWeight: 600, marginTop: '2px' }}>
+                                    Balance: {isCleared ? '₹0 (Fully Cleared)' : formatINR(balVal)}
                                   </div>
                                 </div>
                               </td>
 
                               {/* 5. Payment Status & Booking Date */}
-                              <td>
+                              <td style={{ padding: '16px 18px' }}>
                                 <div>
                                   <span style={{
                                     display: 'inline-block',
-                                    padding: '3px 9px',
+                                    padding: '4px 10px',
                                     borderRadius: '12px',
                                     fontSize: '11px',
                                     fontWeight: 700,
-                                    background: (buyer.balanceAmount === 0 || buyer.paymentStatus === 'FULLY_PAID') ? '#ecfdf5' : (buyer.paymentPlan === 'TOKEN_ADVANCE' || buyer.paymentStatus === 'TOKEN_PAID' ? '#fffbeb' : '#eff6ff'),
-                                    color: (buyer.balanceAmount === 0 || buyer.paymentStatus === 'FULLY_PAID') ? '#047857' : (buyer.paymentPlan === 'TOKEN_ADVANCE' || buyer.paymentStatus === 'TOKEN_PAID' ? '#b45309' : '#1d4ed8'),
-                                    border: `1px solid ${(buyer.balanceAmount === 0 || buyer.paymentStatus === 'FULLY_PAID') ? '#a7f3d0' : (buyer.paymentPlan === 'TOKEN_ADVANCE' || buyer.paymentStatus === 'TOKEN_PAID' ? '#fde68a' : '#bfdbfe')}`
+                                    background: isCleared ? '#ecfdf5' : (buyer.paymentPlan === 'TOKEN_ADVANCE' || buyer.paymentStatus === 'TOKEN_PAID' ? '#fffbeb' : '#eff6ff'),
+                                    color: isCleared ? '#047857' : (buyer.paymentPlan === 'TOKEN_ADVANCE' || buyer.paymentStatus === 'TOKEN_PAID' ? '#b45309' : '#1d4ed8'),
+                                    border: `1px solid ${isCleared ? '#a7f3d0' : (buyer.paymentPlan === 'TOKEN_ADVANCE' || buyer.paymentStatus === 'TOKEN_PAID' ? '#fde68a' : '#bfdbfe')}`
                                   }}>
-                                    {(buyer.balanceAmount === 0 || buyer.paymentStatus === 'FULLY_PAID') ? '✅ Full Payment' : (buyer.paymentPlan === 'TOKEN_ADVANCE' || buyer.paymentStatus === 'TOKEN_PAID' ? '🟡 Token Advance' : '🔵 EMI / Installments')}
+                                    {isCleared ? '✅ 100% Full Payment' : (buyer.paymentPlan === 'TOKEN_ADVANCE' || buyer.paymentStatus === 'TOKEN_PAID' ? '🟡 Token Advance' : '🔵 Active EMI Plan')}
                                   </span>
 
-                                  <div style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
-                                    <Calendar size={11} style={{ color: '#64748b' }} />
-                                    <span>Booked: <b>{buyer.bookingDate || buyer.saleDate || 'Recently'}</b></span>
+                                  {/* Progress bar */}
+                                  <div style={{ marginTop: '6px', maxWidth: '140px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10.5px', fontWeight: 600, color: '#64748b', marginBottom: '3px' }}>
+                                      <span>Cleared</span>
+                                      <span style={{ color: isCleared ? '#059669' : '#2563eb' }}>{percentCleared}%</span>
+                                    </div>
+                                    <div style={{ width: '100%', height: '5px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                                      <div style={{ width: `${percentCleared}%`, height: '100%', background: isCleared ? '#10b981' : '#3b82f6', borderRadius: '3px' }} />
+                                    </div>
                                   </div>
 
-                                  <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px', fontWeight: 500, lineHeight: 1.3 }}>
-                                    {buyer.paymentStatusLabel || 'Details recorded'}
+                                  <div style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '6px' }}>
+                                    <Calendar size={11} style={{ color: '#64748b' }} />
+                                    <span>Booked: <b>{buyer.bookingDate || buyer.saleDate || 'Recently'}</b></span>
                                   </div>
                                 </div>
                               </td>
 
                               {/* 6. Actions */}
-                              <td style={{ textAlign: 'right' }}>
+                              <td style={{ padding: '16px 18px', textAlign: 'right' }}>
                                 <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center' }}>
                                   <button
                                     type="button"
                                     onClick={() => openEditBuyerModal(apt)}
                                     className="btn-secondary-action"
-                                    style={{ padding: '6px 11px', fontSize: '12px', gap: '5px' }}
-                                    title="Edit buyer details"
+                                    style={{ padding: '7px 12px', fontSize: '12.5px', gap: '5px', borderRadius: '8px' }}
+                                    title="Edit buyer details & payment schedule"
                                   >
                                     <Edit3 size={13} />
                                     <span>Edit</span>
@@ -2914,12 +2948,29 @@ export default function AdminDashboard() {
 
                                   <button
                                     type="button"
-                                    onClick={() => setSaleReceiptModal({ isOpen: true, apt })}
-                                    className="btn-secondary-action"
-                                    style={{ padding: '6px 11px', fontSize: '12px', gap: '5px', background: '#f8fafc' }}
-                                    title="View luxury allotment receipt / booking certificate"
+                                    onClick={() => {
+                                      const actor = user?.name || 'Super Admin';
+                                      dataStore.addActivity(`${actor} generated official allotment invoice & slip for Unit ${apt.apartmentNumber} (${buyer.name || 'Allottee'})`, 'invoice');
+                                      setActivityFeed(dataStore.getActivityFeed());
+                                      setSaleReceiptModal({ isOpen: true, apt });
+                                    }}
+                                    style={{
+                                      padding: '7px 14px',
+                                      fontSize: '12.5px',
+                                      fontWeight: 600,
+                                      background: '#002b80',
+                                      color: '#ffffff',
+                                      border: '1px solid #002b80',
+                                      borderRadius: '8px',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '5px',
+                                      cursor: 'pointer',
+                                      boxShadow: '0 2px 6px rgba(0,43,128,0.2)'
+                                    }}
+                                    title="View luxury allotment receipt / tax invoice"
                                   >
-                                    <FileText size={13} style={{ color: '#2563eb' }} />
+                                    <FileText size={13} style={{ color: '#ffffff' }} />
                                     <span>Slip</span>
                                   </button>
                                 </div>
@@ -2955,17 +3006,51 @@ export default function AdminDashboard() {
                     <span style={{ fontSize: '11.5px', color: '#64748b' }}>Live Event Stream</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {activityFeed.slice(0, 6).map((act, idx) => (
-                      <div key={act.id || idx} style={{ display: 'flex', gap: '12px', padding: '12px 14px', background: '#f8fafc', borderRadius: '10px' }}>
-                        <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: act.type === 'sold' ? '#fee2e2' : '#dbeafe', color: act.type === 'sold' ? '#ef4444' : '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          {act.type === 'sold' ? <ShieldCheck size={14} /> : <CheckCircle2 size={14} />}
+                    {activityFeed.slice(0, 8).map((act, idx) => {
+                      const isSold = act.type === 'sold';
+                      const isSale = act.type === 'sale';
+                      const isInvoice = act.type === 'invoice';
+                      const isLead = act.type === 'lead';
+                      const isMedia = act.type === 'media';
+
+                      let iconBg = '#dbeafe';
+                      let iconColor = '#2563eb';
+                      let IconComp = CheckCircle2;
+
+                      if (isSold) {
+                        iconBg = '#fee2e2';
+                        iconColor = '#ef4444';
+                        IconComp = ShieldCheck;
+                      } else if (isSale) {
+                        iconBg = '#dcfce7';
+                        iconColor = '#16a34a';
+                        IconComp = UserCheck;
+                      } else if (isInvoice) {
+                        iconBg = '#f3e8ff';
+                        iconColor = '#7e22ce';
+                        IconComp = FileText;
+                      } else if (isLead) {
+                        iconBg = '#fef3c7';
+                        iconColor = '#d97706';
+                        IconComp = Phone;
+                      } else if (isMedia) {
+                        iconBg = '#e0f2fe';
+                        iconColor = '#0284c7';
+                        IconComp = ImageIcon;
+                      }
+
+                      return (
+                        <div key={act.id || idx} style={{ display: 'flex', gap: '12px', padding: '12px 14px', background: '#f8fafc', borderRadius: '10px', alignItems: 'center', transition: 'background 0.15s ease' }}>
+                          <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: iconBg, color: iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <IconComp size={15} />
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ margin: '0 0 3px', fontSize: '13px', fontWeight: 500, color: '#1e293b', lineHeight: 1.4 }}>{act.text}</p>
+                            <span style={{ fontSize: '11px', color: '#94a3b8' }}>{act.time || 'Recently'}</span>
+                          </div>
                         </div>
-                        <div>
-                          <p style={{ margin: '0 0 3px', fontSize: '13px', fontWeight: 500, color: '#1e293b' }}>{act.text}</p>
-                          <span style={{ fontSize: '11px', color: '#94a3b8' }}>{act.time || 'Recently'}</span>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -6841,9 +6926,9 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* Unit Status & Staff Manager */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
-                    <div className="form-group-clean">
-                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px', alignItems: 'start' }}>
+                    <div className="form-group-clean" style={{ marginBottom: 0 }}>
+                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', height: '18px', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', marginBottom: '6px' }}>
                         Unit Inventory Status
                       </label>
                       <select
@@ -6858,9 +6943,9 @@ export default function AdminDashboard() {
                       </select>
                     </div>
 
-                    <div className="form-group-clean">
-                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
-                        Assigned Relationship Manager / Staff
+                    <div className="form-group-clean" style={{ marginBottom: 0 }}>
+                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', height: '18px', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', marginBottom: '6px' }}>
+                        Assigned Relationship Manager
                       </label>
                       <input
                         type="text"
@@ -6875,7 +6960,7 @@ export default function AdminDashboard() {
 
                   {/* Buyer Full Name */}
                   <div className="form-group-clean" style={{ marginBottom: '16px' }}>
-                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
                       Buyer / Allottee Full Name *
                     </label>
                     <input
@@ -6890,9 +6975,9 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* Phone & Email */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
-                    <div className="form-group-clean">
-                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px', alignItems: 'start' }}>
+                    <div className="form-group-clean" style={{ marginBottom: 0 }}>
+                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', height: '18px', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', marginBottom: '6px' }}>
                         Contact Phone Number *
                       </label>
                       <input
@@ -6906,8 +6991,8 @@ export default function AdminDashboard() {
                       />
                     </div>
 
-                    <div className="form-group-clean">
-                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                    <div className="form-group-clean" style={{ marginBottom: 0 }}>
+                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', height: '18px', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', marginBottom: '6px' }}>
                         Email Address *
                       </label>
                       <input
@@ -6951,9 +7036,9 @@ export default function AdminDashboard() {
                   </h4>
 
                   {/* Deal Amount & Amount Paid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
-                    <div className="form-group-clean">
-                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px', alignItems: 'start' }}>
+                    <div className="form-group-clean" style={{ marginBottom: 0 }}>
+                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', height: '18px', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', marginBottom: '6px' }}>
                         Total Agreed Price (INR) *
                       </label>
                       <input
@@ -6972,8 +7057,8 @@ export default function AdminDashboard() {
                       <span style={{ fontSize: '11px', color: '#64748b' }}>{formatINR(Number(buyerModal.dealAmount))}</span>
                     </div>
 
-                    <div className="form-group-clean">
-                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#059669' }}>
+                    <div className="form-group-clean" style={{ marginBottom: 0 }}>
+                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#059669', height: '18px', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', marginBottom: '6px' }}>
                         Amount Paid (Received) *
                       </label>
                       <input
@@ -6995,7 +7080,7 @@ export default function AdminDashboard() {
 
                   {/* Payment Plan Category - Generous Full Width */}
                   <div className="form-group-clean" style={{ marginBottom: '16px' }}>
-                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', letterSpacing: '0.04em' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', letterSpacing: '0.04em', marginBottom: '6px' }}>
                       Payment Plan Category
                     </label>
                     <select
@@ -7011,9 +7096,9 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* Balance / Monthly EMI & Booking Date */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
-                    <div className="form-group-clean">
-                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px', alignItems: 'start' }}>
+                    <div className="form-group-clean" style={{ marginBottom: 0 }}>
+                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', height: '18px', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', marginBottom: '6px' }}>
                         {buyerModal.paymentPlan === 'EMI_PLAN' ? 'Monthly EMI (INR)' : 'Balance Status'}
                       </label>
                       {buyerModal.paymentPlan === 'EMI_PLAN' ? (
@@ -7032,8 +7117,8 @@ export default function AdminDashboard() {
                       )}
                     </div>
 
-                    <div className="form-group-clean">
-                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                    <div className="form-group-clean" style={{ marginBottom: 0 }}>
+                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', height: '18px', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', marginBottom: '6px' }}>
                         Booking / Token Date *
                       </label>
                       <input
@@ -7157,7 +7242,12 @@ export default function AdminDashboard() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <button
                   type="button"
-                  onClick={() => window.print()}
+                  onClick={() => {
+                    const actor = user?.name || 'Super Admin';
+                    dataStore.addActivity(`${actor} printed official allotment invoice for Unit ${apt.apartmentNumber} (${buyer.name})`, 'invoice');
+                    setActivityFeed(dataStore.getActivityFeed());
+                    window.print();
+                  }}
                   className="btn-primary-action"
                   style={{ background: '#002b80', borderColor: '#002b80', padding: '7px 16px', fontSize: '13px' }}
                 >
