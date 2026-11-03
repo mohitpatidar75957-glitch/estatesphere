@@ -5,7 +5,7 @@ import {
   Trash2, Edit3, ExternalLink, Calendar, Check, X, 
   Layers, Mail, Phone, TrendingUp, AlertCircle, Inbox, 
   UserCheck, ArrowRight, ArrowLeft, Activity, Eye, Copy, LayoutDashboard,
-  Image as ImageIcon, Settings as SettingsIcon, UploadCloud,
+  Image as ImageIcon, Settings as SettingsIcon, UploadCloud, Upload,
   CheckCircle, UserPlus, Lock, Key, Shield, HelpCircle, Save,
   XCircle, SlidersHorizontal, Sparkles, MessageSquare, PhoneCall,
   MapPin, Type, FileText, AlignLeft
