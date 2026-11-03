@@ -109,10 +109,69 @@
 }
 
 .era-title i {
-    font-family: 'DM Sans';
+    font-family: 'DM Sans', -apple-system, sans-serif;
     font-style: normal;
-    font-size: 7px;
-    letter-spacing: .16em
+    font-size: 11px;
+    letter-spacing: .14em;
+}
+
+.hero-day-night-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: rgba(10, 20, 35, 0.52);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    border-radius: 26px;
+    padding: 3px 8px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.38);
+    margin: 0 auto;
+    user-select: none;
+    pointer-events: auto;
+    position: relative;
+    z-index: 9999;
+}
+
+.hero-toggle-btn {
+    all: unset;
+    cursor: pointer;
+    padding: 5px 12px;
+    border-radius: 18px;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    font-weight: 600;
+    color: #ffffff;
+    opacity: 0.85;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    transition: all 0.25s ease;
+    border: 1px solid transparent;
+    pointer-events: auto;
+}
+
+.hero-toggle-btn:hover {
+    opacity: 1;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.16);
+}
+
+.hero-toggle-btn.active {
+    opacity: 1;
+    font-weight: 700;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.28);
+    border-color: rgba(255, 255, 255, 0.65);
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.22);
+}
+
+.hero-toggle-sep {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 11px;
+    padding: 0 2px;
+    user-select: none;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
 .select-apartment {

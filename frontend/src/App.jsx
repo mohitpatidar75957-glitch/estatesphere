@@ -35,10 +35,30 @@ const communityFeatures = [
   { title: 'LANDSCAPING', image: '/assets/community_landscaping_1787305205295.jpg', copy: 'MEDITERRANEAN GARDENS SOFTEN EVERY\nARCHITECTURAL LINE, INTERTWINING LUSH\nFOLIAGE WITH OUTDOOR LIVING SPACES.' }
 ]
 
+// Determine default theme mode based on Indian Standard Time (IST, UTC+5:30)
+// Day mode: 06:00 to 18:59 IST | Night mode: 19:00 to 05:59 IST
+export const getIndianTimeOfDay = () => {
+  try {
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Kolkata',
+      hour: 'numeric',
+      hour12: false
+    });
+    const hour = parseInt(formatter.format(now), 10);
+    return (hour >= 6 && hour < 19) ? 'DAY' : 'NIGHT';
+  } catch (e) {
+    const now = new Date();
+    const utcHours = now.getUTCHours() + (now.getUTCMinutes() / 60);
+    const istHours = (utcHours + 5.5 + 24) % 24;
+    return (istHours >= 6 && istHours < 19) ? 'DAY' : 'NIGHT';
+  }
+};
+
 export default function App() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname)
   const [activeHotspot, setActiveHotspot] = useState(null)
-  const [heroTime, setHeroTime] = useState('NIGHT')
+  const [heroTime, setHeroTime] = useState(getIndianTimeOfDay)
   const [siteContent, setSiteContent] = useState(() => (typeof dataStore?.getSiteContent === 'function' ? dataStore.getSiteContent() : null))
   const [apartmentsList, setApartmentsList] = useState(() => (typeof dataStore?.getApartments === 'function' ? dataStore.getApartments() : []))
 
@@ -322,7 +342,7 @@ export default function App() {
     <header className={`era-nav ${navOnDark ? 'nav-on-dark nav-on-hero' : 'nav-on-light'}`}><a href="#top" className="era-mark" onClick={e => { e.preventDefault(); navigateTo('/') }}><span>Dwellora</span></a><div className="nav-actions"><a href="/apartments" onClick={e => { e.preventDefault(); navigateTo('/apartments') }}>Select an apartment</a><button onClick={openForm}>Book a call</button><a className="nav-contact" href="/contact" onClick={e => { e.preventDefault(); navigateTo('/contact') }}>Contact</a><button className="era-menu" onClick={() => setMenu(!menu)}><Menu /></button></div></header>
     {menu && <div className="menu-panel"><button onClick={() => setMenu(false)}><X /></button><p>THE MENU</p>{['Home', 'Concept', 'Location', 'Residences', 'Amenities', 'Architecture', 'Contact'].map(x => <a key={x} href={`#${x.toLowerCase()}`} onClick={() => setMenu(false)}>{x}</a>)}<a href="/admin/login" onClick={e => { e.preventDefault(); setMenu(false); navigateTo('/admin/login') }} style={{ color: '#d4af37', marginTop: '16px', borderTop: '1px solid rgba(212, 175, 55, 0.25)', paddingTop: '16px' }}>🔐 Admin Portal</a></div>}
 
-    <section className="era-hero-scroll" id="top"><div className="era-hero" style={{ '--mx': `${cursor.nx * 18}px`, '--my': `${cursor.ny * 12}px` }}><img className="pool-stage day-image" src={heroDayPhoto} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'opacity 1.2s ease-in-out', opacity: heroTime === 'DAY' ? 1 : 0, transform: `scale(${1.035 - heroProgress * .035})` }} /><img className="pool-stage night-image" src={siteContent?.heroNightImage || "/assets/luxury_villa_night.jpg"} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'opacity 1.2s ease-in-out', opacity: heroTime === 'NIGHT' ? 1 : 0, transform: `scale(${1.035 - heroProgress * .035})` }} /><div className="era-emblem"><svg className="emblem-ring" viewBox="0 0 120 120" aria-hidden="true" style={{ transform: `rotate(${heroProgress * 720}deg)` }}><defs><path id="emblemPath" d="M60,60 m-43,0 a43,43 0 1,1 86,0 a43,43 0 1,1 -86,0" /></defs><text><textPath href="#emblemPath" startOffset="0%" textLength="270">D W E L L O R A　•　R E S I D E N C E　•　</textPath></text></svg><span className="emblem-core">✣</span></div><div className="era-title" style={{ opacity: Math.max(0, 1 - heroProgress * 3.2), transform: `translateY(${-heroProgress * 70}px)` }}><h1>{siteContent?.heroTitle || 'Dwellora'}</h1><div><span>A PLACE</span><i style={{ pointerEvents: 'auto', position: 'relative', zIndex: 9999, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><button style={{ all: 'unset', cursor: 'pointer', opacity: heroTime === 'DAY' ? 1 : 0.4, transition: 'opacity 0.3s', padding: '10px 5px', pointerEvents: 'auto' }} onClick={() => setHeroTime('DAY')}>BY DAY</button><span style={{ padding: '0 8px', opacity: 0.7 }}>—</span><button style={{ all: 'unset', cursor: 'pointer', opacity: heroTime === 'NIGHT' ? 1 : 0.4, transition: 'opacity 0.3s', padding: '10px 5px', pointerEvents: 'auto' }} onClick={() => setHeroTime('NIGHT')}>BY NIGHT</button></i><span>TO RETURN TO</span></div></div><button className="select-apartment" onClick={() => navigateTo('/apartments')}>SELECT<br />AN APARTMENT</button><div className="hero-links">BOOK A CALL<br />CONTACT</div><div className="hero-index">{String(Math.round(heroProgress * 16)).padStart(2, '0')}</div>
+    <section className="era-hero-scroll" id="top"><div className="era-hero" style={{ '--mx': `${cursor.nx * 18}px`, '--my': `${cursor.ny * 12}px` }}><img className="pool-stage day-image" src={heroDayPhoto} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'opacity 1.2s ease-in-out', opacity: heroTime === 'DAY' ? 1 : 0, transform: `scale(${1.035 - heroProgress * .035})` }} /><img className="pool-stage night-image" src={siteContent?.heroNightImage || "/assets/luxury_villa_night.jpg"} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'opacity 1.2s ease-in-out', opacity: heroTime === 'NIGHT' ? 1 : 0, transform: `scale(${1.035 - heroProgress * .035})` }} /><div className="era-emblem"><svg className="emblem-ring" viewBox="0 0 120 120" aria-hidden="true" style={{ transform: `rotate(${heroProgress * 720}deg)` }}><defs><path id="emblemPath" d="M60,60 m-43,0 a43,43 0 1,1 86,0 a43,43 0 1,1 -86,0" /></defs><text><textPath href="#emblemPath" startOffset="0%" textLength="270">D W E L L O R A　•　R E S I D E N C E　•　</textPath></text></svg><span className="emblem-core">✣</span></div><div className="era-title" style={{ opacity: Math.max(0, 1 - heroProgress * 3.2), transform: `translateY(${-heroProgress * 70}px)` }}><h1>{siteContent?.heroTitle || 'Dwellora'}</h1><div><span>A PLACE</span><i className="hero-day-night-toggle"><button type="button" className={`hero-toggle-btn ${heroTime === 'DAY' ? 'active' : ''}`} onClick={() => setHeroTime('DAY')} title="Switch to Day View">BY DAY</button><span className="hero-toggle-sep">—</span><button type="button" className={`hero-toggle-btn ${heroTime === 'NIGHT' ? 'active' : ''}`} onClick={() => setHeroTime('NIGHT')} title="Switch to Night View">BY NIGHT</button></i><span>TO RETURN TO</span></div></div><button className="select-apartment" onClick={() => navigateTo('/apartments')}>SELECT<br />AN APARTMENT</button><div className="hero-links">BOOK A CALL<br />CONTACT</div><div className="hero-index">{String(Math.round(heroProgress * 16)).padStart(2, '0')}</div>
       <div className="pool-hotspots" style={{ opacity: Math.max(0, Math.min(1, (heroProgress - .15) * 5)) }}>
         <button onMouseEnter={() => setActiveHotspot(0)} onMouseLeave={() => setActiveHotspot(null)} />
         <button onMouseEnter={() => setActiveHotspot(1)} onMouseLeave={() => setActiveHotspot(null)} />
