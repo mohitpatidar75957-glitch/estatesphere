@@ -572,15 +572,25 @@ export default function AdminDashboard() {
     e.preventDefault();
     if (!editingApt) return;
     const userName = user?.name || 'Super Admin';
+    const finalCover = editingApt.imageUrl || '/assets/estate-boutique-lounge.png';
+    const finalPano = editingApt.panorama360 || editingApt.roomGallery?.panorama360 || '/assets/cayley-interior-8k.jpg';
+
     const updated = dataStore.updateApartment(editingApt.id, {
       ...editingApt,
-      areaSqm: Math.round(editingApt.areaSqft / 10.764)
+      imageUrl: finalCover,
+      panorama360: finalPano,
+      roomGallery: {
+        ...(editingApt.roomGallery || {}),
+        cover: finalCover,
+        panorama360: finalPano
+      },
+      areaSqm: Math.round(Number(editingApt.areaSqft || 0) / 10.764)
     }, userName);
     setApartments(updated);
     setActivityFeed(dataStore.getActivityFeed());
     setShowEditModal(false);
     setEditingApt(null);
-    triggerToast(`Unit ${editingApt.apartmentNumber} details updated successfully!`);
+    triggerToast(`Unit ${editingApt.apartmentNumber} details and 360° tour updated live!`);
   };
 
   // Handle Changing Showcase Photo for an Apartment
@@ -5822,7 +5832,7 @@ export default function AdminDashboard() {
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              const compressed = await compressImageForWeb(file, 2400, 0.88);
+                              const compressed = await compressImageForWeb(file, 1600, 0.78);
                               if (compressed) {
                                 setFormApt(prev => ({ ...prev, panorama360: compressed }));
                                 triggerToast('360° Panorama loaded from PC!');
@@ -5864,6 +5874,20 @@ export default function AdminDashboard() {
                         </button>
                       ))}
                     </div>
+
+                    {/* Live 360 Preview Card */}
+                    {(formApt.panorama360 || '/assets/cayley-interior-8k.jpg') && (
+                      <div style={{ marginTop: '8px', height: '110px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #bfdbfe', position: 'relative' }}>
+                        <img 
+                          src={formApt.panorama360 || '/assets/cayley-interior-8k.jpg'} 
+                          alt="360 Panorama Preview" 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        />
+                        <span style={{ position: 'absolute', bottom: '6px', left: '6px', background: 'rgba(2, 132, 199, 0.9)', color: '#fff', fontSize: '10px', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                          🌐 360° Panorama Tour Loaded
+                        </span>
+                      </div>
+                    )}
 
                     {/* Pro Tip note */}
                     <div style={{ marginTop: '10px', padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '11.5px', color: '#475569', lineHeight: 1.4 }}>
@@ -6155,7 +6179,7 @@ export default function AdminDashboard() {
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              const compressed = await compressImageForWeb(file, 2400, 0.88);
+                              const compressed = await compressImageForWeb(file, 1600, 0.78);
                               if (compressed) {
                                 setEditingApt(prev => ({
                                   ...prev,
@@ -6204,6 +6228,20 @@ export default function AdminDashboard() {
                         );
                       })}
                     </div>
+
+                    {/* Live 360 Preview Card */}
+                    {(editingApt.panorama360 || editingApt.roomGallery?.panorama360) && (
+                      <div style={{ marginTop: '8px', height: '110px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #bfdbfe', position: 'relative' }}>
+                        <img 
+                          src={editingApt.panorama360 || editingApt.roomGallery?.panorama360} 
+                          alt="360 Panorama Preview" 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        />
+                        <span style={{ position: 'absolute', bottom: '6px', left: '6px', background: 'rgba(2, 132, 199, 0.9)', color: '#fff', fontSize: '10px', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                          🌐 360° Panorama Tour Loaded
+                        </span>
+                      </div>
+                    )}
 
                     <div style={{ marginTop: '10px', padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '11.5px', color: '#475569', lineHeight: 1.4 }}>
                       💡 <b>Room Photos Note:</b> Har specific room (Bedroom, Kitchen, Living, Terrace) ki photos badalne ke liye sidebar me <b>"🖼️ Media & Photos Studio"</b> tab use karein.

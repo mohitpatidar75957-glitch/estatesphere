@@ -514,7 +514,7 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
                 <div
                   className="detail-room-image-wrap"
                   onClick={() => setActivePanorama({
-                    url: selectedApartment.roomGallery?.panorama360 || '/assets/cayley-interior-8k.jpg',
+                    url: selectedApartment.panorama360 || selectedApartment.roomGallery?.panorama360 || '/assets/cayley-interior-8k.jpg',
                     thumbnail: selectedApartment.roomGallery?.livingHall || '/assets/interior-living-hall.png'
                   })}
                 >
@@ -531,7 +531,7 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
                 <div
                   className="detail-room-image-wrap"
                   onClick={() => setActivePanorama({
-                    url: selectedApartment.roomGallery?.panorama360 || '/assets/kiara-interior-8k.jpg',
+                    url: selectedApartment.panorama360 || selectedApartment.roomGallery?.panorama360 || '/assets/kiara-interior-8k.jpg',
                     thumbnail: selectedApartment.roomGallery?.kitchen || '/assets/interior-kitchen.png'
                   })}
                 >
@@ -548,7 +548,7 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
                 <div
                   className="detail-room-image-wrap"
                   onClick={() => setActivePanorama({
-                    url: selectedApartment.roomGallery?.panorama360 || '/assets/bedroom-interior-8k.png',
+                    url: selectedApartment.panorama360 || selectedApartment.roomGallery?.panorama360 || '/assets/bedroom-interior-8k.png',
                     thumbnail: selectedApartment.roomGallery?.bedroom || '/assets/interior-master-bedroom.png'
                   })}
                 >
@@ -565,7 +565,7 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
                 <div
                   className="detail-room-image-wrap"
                   onClick={() => setActivePanorama({
-                    url: selectedApartment.roomGallery?.panorama360 || '/assets/cayley-interior-8k.jpg',
+                    url: selectedApartment.panorama360 || selectedApartment.roomGallery?.panorama360 || '/assets/cayley-interior-8k.jpg',
                     thumbnail: selectedApartment.roomGallery?.terrace || '/assets/estate-private-terrace.png'
                   })}
                 >

@@ -600,9 +600,9 @@ export const dataStore = {
 
   updateApartmentStatus(id, newStatus, userName = 'Admin') {
     const current = this.getApartments();
-    const target = current.find(a => a.id === id);
-    const updated = current.map(a => a.id === id ? { ...a, status: newStatus } : a);
-    localStorage.setItem(STORAGE_KEYS.APARTMENTS, JSON.stringify(updated));
+    const target = current.find(a => String(a.id) === String(id));
+    const updated = current.map(a => String(a.id) === String(id) ? { ...a, status: newStatus } : a);
+    safeSetItem(STORAGE_KEYS.APARTMENTS, JSON.stringify(updated));
 
     if (target) {
       const statusLabel = newStatus === 'SOLD' ? 'SOLD OUT' : (newStatus === 'RESERVED' ? 'RESERVED' : 'AVAILABLE');
@@ -618,8 +618,23 @@ export const dataStore = {
 
   updateApartment(id, updatedFields, userName = 'Admin') {
     const current = this.getApartments();
-    const updated = current.map(a => a.id === id ? { ...a, ...updatedFields } : a);
-    localStorage.setItem(STORAGE_KEYS.APARTMENTS, JSON.stringify(updated));
+    const updated = current.map(a => {
+      if (String(a.id) === String(id)) {
+        const nextRoomGallery = {
+          ...(a.roomGallery || {}),
+          ...(updatedFields.roomGallery || {}),
+          ...(updatedFields.panorama360 ? { panorama360: updatedFields.panorama360 } : {}),
+          ...(updatedFields.imageUrl ? { cover: updatedFields.imageUrl } : {})
+        };
+        return {
+          ...a,
+          ...updatedFields,
+          roomGallery: nextRoomGallery
+        };
+      }
+      return a;
+    });
+    safeSetItem(STORAGE_KEYS.APARTMENTS, JSON.stringify(updated));
     this.addActivity(`${userName} updated details for Unit ${updatedFields.apartmentNumber || id}`, 'edit');
     this.notifyUpdate();
     return updated;
@@ -670,7 +685,7 @@ export const dataStore = {
       const numB = parseInt((b.apartmentNumber || '').replace(/[^\d]/g, ''), 10) || b.id || 0;
       return numA - numB;
     });
-    localStorage.setItem(STORAGE_KEYS.APARTMENTS, JSON.stringify(updated));
+    safeSetItem(STORAGE_KEYS.APARTMENTS, JSON.stringify(updated));
     this.addActivity(`${userName} registered new Unit ${newApt.apartmentNumber} (${newApt.title})`, 'add');
     this.notifyUpdate();
     return newApt;
@@ -678,9 +693,9 @@ export const dataStore = {
 
   deleteApartment(id, userName = 'Admin') {
     const current = this.getApartments();
-    const target = current.find(a => a.id === id);
-    const updated = current.filter(a => a.id !== id);
-    localStorage.setItem(STORAGE_KEYS.APARTMENTS, JSON.stringify(updated));
+    const target = current.find(a => String(a.id) === String(id));
+    const updated = current.filter(a => String(a.id) !== String(id));
+    safeSetItem(STORAGE_KEYS.APARTMENTS, JSON.stringify(updated));
     if (target) {
       this.addActivity(`${userName} removed Unit ${target.apartmentNumber} from inventory`, 'delete');
     }
