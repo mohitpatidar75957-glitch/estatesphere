@@ -452,3 +452,22 @@
         font-size: 12px;
     }
 }
+
+/* Thin elegant scrollbar for invoice & allotment modals */
+.invoice-modal-card {
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 transparent;
+}
+.invoice-modal-card::-webkit-scrollbar {
+  width: 5px;
+}
+.invoice-modal-card::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.invoice-modal-card::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+.invoice-modal-card::-webkit-scrollbar-track {
+  background: transparent;
+}
