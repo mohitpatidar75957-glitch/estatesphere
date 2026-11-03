@@ -921,8 +921,7 @@
 }
 
 .rail-home-btn,
-.rail-apartments-btn,
-.rail-all-apartments-btn {
+.rail-apartments-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -944,25 +943,17 @@
   text-decoration: none;
 }
 
-.rail-all-apartments-btn {
-  font-size: 8.5px;
-  padding: 6px 10px;
-  letter-spacing: 0.1em;
-}
-
 .rail-home-btn:hover,
-.rail-apartments-btn:hover,
-.rail-all-apartments-btn:hover {
+.rail-apartments-btn:hover {
   background: #252822;
   color: #ffffff;
   border-color: #252822;
-  transform: translateY(-1px) scale(1.03);
+  transform: translateY(-1px) scale(1.04);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .rail-home-btn:active,
-.rail-apartments-btn:active,
-.rail-all-apartments-btn:active {
+.rail-apartments-btn:active {
   transform: scale(0.97);
 }
 
