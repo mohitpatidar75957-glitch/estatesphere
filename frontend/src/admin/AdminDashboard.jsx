@@ -5733,15 +5733,15 @@ export default function AdminDashboard() {
                     />
                   </div>
 
-                  {/* 1. Exterior / Cover Photo Selection (Bahar ki Photo) */}
+                  {/* 1. Building Exterior & Cover Photo */}
                   <div className="form-group-clean" style={{ background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                       <div>
                         <label style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>
-                          🏢 1. Bahar ki Cover Photo (Exterior / Listing Card)
+                          🏢 1. Building Exterior & Cover Photo
                         </label>
                         <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#64748b' }}>
-                          Listing cards aur website main overview pe bahar se yeh main photo dikhegi.
+                          Primary façade photo displayed on the listing cards and website exterior view.
                         </p>
                       </div>
                       <label
@@ -5760,7 +5760,7 @@ export default function AdminDashboard() {
                         }}
                       >
                         <Upload size={12} />
-                        <span>📁 Upload from PC</span>
+                        <span>Upload Photo</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -5775,7 +5775,7 @@ export default function AdminDashboard() {
                                   imageUrl: compressed,
                                   roomGallery: { ...(prev.roomGallery || {}), cover: compressed }
                                 }));
-                                triggerToast('Cover / Exterior photo loaded from PC!');
+                                triggerToast('Exterior photo loaded from PC!');
                               }
                             }
                           }}
@@ -5786,10 +5786,10 @@ export default function AdminDashboard() {
                     {/* Presets */}
                     <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '6px', marginBottom: '8px' }}>
                       {[
-                        { label: '🏢 Villa Day', url: '/assets/luxury_villa_day.jpg' },
-                        { label: '🛋️ Living Salon', url: '/assets/estate-boutique-lounge.png' },
-                        { label: '🏊 Community Pool', url: '/assets/community_pool_1787305166324.jpg' },
-                        { label: '🌿 Solarium Deck', url: '/assets/estate-private-terrace.png' }
+                        { label: 'Villa Day', url: '/assets/luxury_villa_day.jpg' },
+                        { label: 'Living Salon', url: '/assets/estate-boutique-lounge.png' },
+                        { label: 'Community Pool', url: '/assets/community_pool_1787305166324.jpg' },
+                        { label: 'Solarium Deck', url: '/assets/estate-private-terrace.png' }
                       ].map(preset => (
                         <button
                           key={preset.url}
@@ -5819,7 +5819,7 @@ export default function AdminDashboard() {
                     <div style={{ position: 'relative' }}>
                       <input
                         type="text"
-                        placeholder="Cover image URL or uploaded file path..."
+                        placeholder="Exterior image URL or uploaded file path..."
                         value={formApt.imageUrl || ''}
                         onChange={(e) => setFormApt(prev => ({
                           ...prev,
@@ -5842,108 +5842,196 @@ export default function AdminDashboard() {
 
                     {formApt.imageUrl && (
                       <div style={{ marginTop: '8px', height: '110px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0', position: 'relative' }}>
-                        <img src={formApt.imageUrl} alt="Cover Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={formApt.imageUrl} alt="Exterior Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         <span style={{ position: 'absolute', bottom: '6px', left: '6px', background: 'rgba(0,0,0,0.65)', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
-                          🏢 Bahar ki Photo Preview
+                          Building Exterior Preview
                         </span>
                       </div>
                     )}
                   </div>
 
-                  {/* 2. Andar ke Sabhi Rooms ki Photos (Interior Gallery) */}
-                  <div className="form-group-clean" style={{ background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
+                  {/* 2. Interior Room Gallery & 360° Walkthrough */}
+                  <div className="form-group-clean" style={{ background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '8px' }}>
                     <div style={{ marginBottom: '10px' }}>
                       <label style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>
-                        🚪 2. Andar ki Room Photos (Individual Room Gallery)
+                        🚪 2. Interior Room Gallery & 360° Virtual Tour
                       </label>
                       <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#64748b' }}>
-                        Apartment detail page par neeche scroll karne par har room ki alag photo dikhegi:
+                        Individual photos and immersive 360° virtual tour for each room:
                       </p>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
-                      {/* Room 1: Living Hall */}
-                      <div style={{ background: '#ffffff', padding: '10px 12px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                          <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>
-                            🛋️ Living Hall (Living Room / Hall ki Photo)
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '14px' }}>
+                      {/* Room 1: Living Hall & 360° Walkthrough */}
+                      <div style={{ background: '#ffffff', padding: '12px 14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1e293b' }}>
+                            🛋️ Living Hall & 360° Virtual Walkthrough
                           </span>
-                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '5px', fontSize: '10.5px', fontWeight: 600, cursor: 'pointer' }}>
-                            <Upload size={11} />
-                            <span>Upload Hall</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              style={{ display: 'none' }}
-                              onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  const compressed = await compressImageForWeb(file, 2560, 0.90);
-                                  if (compressed) {
-                                    setFormApt(prev => ({
-                                      ...prev,
-                                      roomGallery: { ...(prev.roomGallery || {}), livingHall: compressed }
-                                    }));
-                                    triggerToast('Living Hall photo loaded!');
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '5px', fontSize: '10.5px', fontWeight: 600, cursor: 'pointer' }}>
+                              <Upload size={11} />
+                              <span>Upload Photo</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                style={{ display: 'none' }}
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const compressed = await compressImageForWeb(file, 2560, 0.90);
+                                    if (compressed) {
+                                      setFormApt(prev => ({
+                                        ...prev,
+                                        roomGallery: { ...(prev.roomGallery || {}), livingHall: compressed }
+                                      }));
+                                      triggerToast('Living Hall photo loaded!');
+                                    }
                                   }
-                                }
-                              }}
-                            />
-                          </label>
+                                }}
+                              />
+                            </label>
+                            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '5px', fontSize: '10.5px', fontWeight: 700, cursor: 'pointer' }}>
+                              <Upload size={11} />
+                              <span>Upload 360° VR</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                style={{ display: 'none' }}
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const compressed = await compressImageForWeb(file, 4096, 0.95);
+                                    if (compressed) {
+                                      setFormApt(prev => ({
+                                        ...prev,
+                                        panorama360: compressed,
+                                        roomGallery: { ...(prev.roomGallery || {}), panorama360: compressed }
+                                      }));
+                                      triggerToast('360° Walkthrough VR loaded!');
+                                    }
+                                  }
+                                }}
+                              />
+                            </label>
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
-                          {[
-                            { label: 'Classic Living', url: '/assets/interior-living-hall.png' },
-                            { label: 'Modern Lounge', url: '/assets/estate-boutique-lounge.png' }
-                          ].map(preset => (
-                            <button
-                              key={preset.url}
-                              type="button"
-                              onClick={() => setFormApt(prev => ({
+
+                        {/* Living Hall Standard Photo Input */}
+                        <div style={{ marginBottom: '10px' }}>
+                          <span style={{ fontSize: '11px', color: '#64748b', display: 'block', marginBottom: '4px' }}>Standard Room Photo:</span>
+                          <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+                            {[
+                              { label: 'Classic Living', url: '/assets/interior-living-hall.png' },
+                              { label: 'Modern Lounge', url: '/assets/estate-boutique-lounge.png' }
+                            ].map(preset => (
+                              <button
+                                key={preset.url}
+                                type="button"
+                                onClick={() => setFormApt(prev => ({
+                                  ...prev,
+                                  roomGallery: { ...(prev.roomGallery || {}), livingHall: preset.url }
+                                }))}
+                                style={{
+                                  padding: '3px 6px',
+                                  borderRadius: '4px',
+                                  border: (formApt.roomGallery?.livingHall || '/assets/interior-living-hall.png') === preset.url ? '1px solid #2563eb' : '1px solid #cbd5e1',
+                                  background: (formApt.roomGallery?.livingHall || '/assets/interior-living-hall.png') === preset.url ? '#eff6ff' : '#ffffff',
+                                  color: (formApt.roomGallery?.livingHall || '/assets/interior-living-hall.png') === preset.url ? '#1d4ed8' : '#475569',
+                                  fontSize: '10.5px',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                {preset.label}
+                              </button>
+                            ))}
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <input
+                              type="text"
+                              placeholder="Living Hall image URL..."
+                              value={formApt.roomGallery?.livingHall || ''}
+                              onChange={(e) => setFormApt(prev => ({
                                 ...prev,
-                                roomGallery: { ...(prev.roomGallery || {}), livingHall: preset.url }
+                                roomGallery: { ...(prev.roomGallery || {}), livingHall: e.target.value }
                               }))}
-                              style={{
-                                padding: '3px 6px',
-                                borderRadius: '4px',
-                                border: (formApt.roomGallery?.livingHall || '/assets/interior-living-hall.png') === preset.url ? '1px solid #2563eb' : '1px solid #cbd5e1',
-                                background: (formApt.roomGallery?.livingHall || '/assets/interior-living-hall.png') === preset.url ? '#eff6ff' : '#ffffff',
-                                color: (formApt.roomGallery?.livingHall || '/assets/interior-living-hall.png') === preset.url ? '#1d4ed8' : '#475569',
-                                fontSize: '10.5px',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              {preset.label}
-                            </button>
-                          ))}
-                        </div>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          <input
-                            type="text"
-                            placeholder="Living Hall Image URL..."
-                            value={formApt.roomGallery?.livingHall || ''}
-                            onChange={(e) => setFormApt(prev => ({
-                              ...prev,
-                              roomGallery: { ...(prev.roomGallery || {}), livingHall: e.target.value }
-                            }))}
-                            className="input-clean"
-                            style={{ height: '32px', fontSize: '12px', flex: 1 }}
-                          />
-                          {(formApt.roomGallery?.livingHall || '/assets/interior-living-hall.png') && (
-                            <img
-                              src={formApt.roomGallery?.livingHall || '/assets/interior-living-hall.png'}
-                              alt="Living Hall"
-                              style={{ width: '48px', height: '32px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                              className="input-clean"
+                              style={{ height: '32px', fontSize: '12px', flex: 1 }}
                             />
-                          )}
+                            {(formApt.roomGallery?.livingHall || '/assets/interior-living-hall.png') && (
+                              <img
+                                src={formApt.roomGallery?.livingHall || '/assets/interior-living-hall.png'}
+                                alt="Living Hall"
+                                style={{ width: '48px', height: '32px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                              />
+                            )}
+                          </div>
+                        </div>
+
+                        {/* 360 Virtual Tour Input */}
+                        <div style={{ background: '#f8fafc', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 600, color: '#166534', display: 'block', marginBottom: '4px' }}>
+                            🌐 360° Virtual Walkthrough Panorama (360° VR):
+                          </span>
+                          <div style={{ display: 'flex', gap: '6px', marginBottom: '6px', overflowX: 'auto' }}>
+                            {[
+                              { label: 'Cayley Suite (8K)', url: '/assets/cayley-interior-8k.jpg' },
+                              { label: 'Kiara Luxury (8K)', url: '/assets/kiara-interior-8k.jpg' },
+                              { label: 'Bedroom Suite (8K)', url: '/assets/bedroom-interior-8k.png' }
+                            ].map(p360 => (
+                              <button
+                                key={p360.url}
+                                type="button"
+                                onClick={() => setFormApt(prev => ({
+                                  ...prev,
+                                  panorama360: p360.url,
+                                  roomGallery: { ...(prev.roomGallery || {}), panorama360: p360.url }
+                                }))}
+                                style={{
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  border: (formApt.panorama360 || '/assets/cayley-interior-8k.jpg') === p360.url ? '1px solid #16a34a' : '1px solid #cbd5e1',
+                                  background: (formApt.panorama360 || '/assets/cayley-interior-8k.jpg') === p360.url ? '#dcfce7' : '#ffffff',
+                                  color: (formApt.panorama360 || '/assets/cayley-interior-8k.jpg') === p360.url ? '#15803d' : '#475569',
+                                  fontSize: '10px',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  whiteSpace: 'nowrap'
+                                }}
+                              >
+                                {p360.label}
+                              </button>
+                            ))}
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <input
+                              type="text"
+                              placeholder="360° Panorama URL..."
+                              value={formApt.panorama360 || ''}
+                              onChange={(e) => setFormApt(prev => ({
+                                ...prev,
+                                panorama360: e.target.value,
+                                roomGallery: { ...(prev.roomGallery || {}), panorama360: e.target.value }
+                              }))}
+                              className="input-clean"
+                              style={{ height: '30px', fontSize: '11.5px', flex: 1 }}
+                            />
+                            {(formApt.panorama360 || '/assets/cayley-interior-8k.jpg') && (
+                              <img
+                                src={formApt.panorama360 || '/assets/cayley-interior-8k.jpg'}
+                                alt="360 Panorama"
+                                style={{ width: '48px', height: '30px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #86efac' }}
+                              />
+                            )}
+                          </div>
                         </div>
                       </div>
 
-                      {/* Room 2: Kitchen */}
+                      {/* Room 2: European Kitchen */}
                       <div style={{ background: '#ffffff', padding: '10px 12px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                           <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>
-                            🍳 European Kitchen (Kitchen ki Photo)
+                            🍳 European Kitchen
                           </span>
                           <label style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '5px', fontSize: '10.5px', fontWeight: 600, cursor: 'pointer' }}>
                             <Upload size={11} />
@@ -5996,7 +6084,7 @@ export default function AdminDashboard() {
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                           <input
                             type="text"
-                            placeholder="Kitchen Image URL..."
+                            placeholder="Kitchen image URL..."
                             value={formApt.roomGallery?.kitchen || ''}
                             onChange={(e) => setFormApt(prev => ({
                               ...prev,
@@ -6019,7 +6107,7 @@ export default function AdminDashboard() {
                       <div style={{ background: '#ffffff', padding: '10px 12px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                           <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>
-                            🛏️ Master Bedroom (Bedroom ki Photo)
+                            🛏️ Master Bedroom
                           </span>
                           <label style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '5px', fontSize: '10.5px', fontWeight: 600, cursor: 'pointer' }}>
                             <Upload size={11} />
@@ -6073,7 +6161,7 @@ export default function AdminDashboard() {
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                           <input
                             type="text"
-                            placeholder="Bedroom Image URL..."
+                            placeholder="Bedroom image URL..."
                             value={formApt.roomGallery?.bedroom || ''}
                             onChange={(e) => setFormApt(prev => ({
                               ...prev,
@@ -6096,7 +6184,7 @@ export default function AdminDashboard() {
                       <div style={{ background: '#ffffff', padding: '10px 12px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                           <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>
-                            🌿 Private Terrace / Balcony (Terrace ki Photo)
+                            🌿 Private Terrace / Balcony
                           </span>
                           <label style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '5px', fontSize: '10.5px', fontWeight: 600, cursor: 'pointer' }}>
                             <Upload size={11} />
@@ -6150,7 +6238,7 @@ export default function AdminDashboard() {
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                           <input
                             type="text"
-                            placeholder="Terrace Image URL..."
+                            placeholder="Terrace image URL..."
                             value={formApt.roomGallery?.terrace || ''}
                             onChange={(e) => setFormApt(prev => ({
                               ...prev,
@@ -6169,120 +6257,6 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                     </div>
-                  </div>
-
-                  {/* 3. 360° Virtual Walkthrough Panorama Section */}
-                  <div className="form-group-clean" style={{ background: '#f0fdf4', padding: '14px', borderRadius: '8px', border: '1px solid #bbf7d0', marginBottom: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <label style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#166534' }}>
-                          🌐 3. 360° Virtual Walkthrough Panorama (High-Res 360° VR Tour)
-                        </label>
-                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#15803d', background: '#dcfce7', padding: '1px 6px', borderRadius: '4px' }}>
-                          Crisp HD VR
-                        </span>
-                      </div>
-                      <label
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '5px',
-                          padding: '5px 10px',
-                          background: '#15803d',
-                          color: '#ffffff',
-                          border: 'none',
-                          borderRadius: '6px',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <Upload size={12} />
-                        <span>📁 Upload 360° from PC</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          style={{ display: 'none' }}
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              const compressed = await compressImageForWeb(file, 4096, 0.95);
-                              if (compressed) {
-                                setFormApt(prev => ({
-                                  ...prev,
-                                  panorama360: compressed,
-                                  roomGallery: { ...(prev.roomGallery || {}), panorama360: compressed }
-                                }));
-                                triggerToast('Ultra-Crisp 360° Panorama loaded from PC!');
-                              }
-                            }
-                          }}
-                        />
-                      </label>
-                    </div>
-
-                    <p style={{ margin: '0 0 8px', fontSize: '11.5px', color: '#166534' }}>
-                      Website pe client jab <b>"+ ENTER 360° VIEW"</b> dabayega toh yeh 360° interactive room rotate hoga.
-                    </p>
-
-                    {/* 360 Preset Chips */}
-                    <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '6px', marginBottom: '8px' }}>
-                      {[
-                        { label: '🌐 Cayley Suite (8K)', url: '/assets/cayley-interior-8k.jpg' },
-                        { label: '🌐 Kiara Luxury (8K)', url: '/assets/kiara-interior-8k.jpg' },
-                        { label: '🌐 Bedroom Suite (8K)', url: '/assets/bedroom-interior-8k.png' }
-                      ].map(p360 => (
-                        <button
-                          key={p360.url}
-                          type="button"
-                          onClick={() => setFormApt(prev => ({
-                            ...prev,
-                            panorama360: p360.url,
-                            roomGallery: { ...(prev.roomGallery || {}), panorama360: p360.url }
-                          }))}
-                          style={{
-                            padding: '4px 8px',
-                            borderRadius: '6px',
-                            border: (formApt.panorama360 || '/assets/cayley-interior-8k.jpg') === p360.url ? '1.5px solid #16a34a' : '1px solid #cbd5e1',
-                            background: (formApt.panorama360 || '/assets/cayley-interior-8k.jpg') === p360.url ? '#dcfce7' : '#ffffff',
-                            color: (formApt.panorama360 || '/assets/cayley-interior-8k.jpg') === p360.url ? '#15803d' : '#334155',
-                            fontSize: '11px',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            whiteSpace: 'nowrap'
-                          }}
-                        >
-                          <span>{p360.label}</span>
-                        </button>
-                      ))}
-                    </div>
-
-                    <input
-                      type="text"
-                      placeholder="360° Panorama URL..."
-                      value={formApt.panorama360 || ''}
-                      onChange={(e) => setFormApt(prev => ({
-                        ...prev,
-                        panorama360: e.target.value,
-                        roomGallery: { ...(prev.roomGallery || {}), panorama360: e.target.value }
-                      }))}
-                      className="input-clean"
-                      style={{ height: '36px', fontSize: '12.5px' }}
-                    />
-
-                    {/* Live 360 Preview Card */}
-                    {(formApt.panorama360 || '/assets/cayley-interior-8k.jpg') && (
-                      <div style={{ marginTop: '8px', height: '110px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #86efac', position: 'relative' }}>
-                        <img 
-                          src={formApt.panorama360 || '/assets/cayley-interior-8k.jpg'} 
-                          alt="360 Panorama Preview" 
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                        />
-                        <span style={{ position: 'absolute', bottom: '6px', left: '6px', background: 'rgba(21, 128, 61, 0.92)', color: '#fff', fontSize: '10px', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                          🌐 360° High-Definition Panorama Tour Loaded
-                        </span>
-                      </div>
-                    )}
                   </div>
                 </div>
 
@@ -6443,15 +6417,15 @@ export default function AdminDashboard() {
                     />
                   </div>
 
-                  {/* 1. Exterior / Cover Photo Selection (Bahar ki Photo) */}
+                  {/* 1. Building Exterior & Cover Photo */}
                   <div className="form-group-clean" style={{ background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                       <div>
                         <label style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>
-                          🏢 1. Bahar ki Cover Photo (Exterior / Listing Card)
+                          🏢 1. Building Exterior & Cover Photo
                         </label>
                         <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#64748b' }}>
-                          Listing cards aur website main overview pe bahar se yeh main photo dikhegi.
+                          Primary façade photo displayed on the listing cards and website exterior view.
                         </p>
                       </div>
                       <label
@@ -6470,7 +6444,7 @@ export default function AdminDashboard() {
                         }}
                       >
                         <Upload size={12} />
-                        <span>📁 Upload from PC</span>
+                        <span>Upload Photo</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -6485,7 +6459,7 @@ export default function AdminDashboard() {
                                   imageUrl: compressed,
                                   roomGallery: { ...(prev.roomGallery || {}), cover: compressed }
                                 }));
-                                triggerToast('Cover / Exterior photo updated from PC!');
+                                triggerToast('Exterior photo updated from PC!');
                               }
                             }
                           }}
@@ -6496,10 +6470,10 @@ export default function AdminDashboard() {
                     {/* Presets */}
                     <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '6px', marginBottom: '8px' }}>
                       {[
-                        { label: '🏢 Villa Day', url: '/assets/luxury_villa_day.jpg' },
-                        { label: '🛋️ Living Salon', url: '/assets/estate-boutique-lounge.png' },
-                        { label: '🏊 Community Pool', url: '/assets/community_pool_1787305166324.jpg' },
-                        { label: '🌿 Solarium Deck', url: '/assets/estate-private-terrace.png' }
+                        { label: 'Villa Day', url: '/assets/luxury_villa_day.jpg' },
+                        { label: 'Living Salon', url: '/assets/estate-boutique-lounge.png' },
+                        { label: 'Community Pool', url: '/assets/community_pool_1787305166324.jpg' },
+                        { label: 'Solarium Deck', url: '/assets/estate-private-terrace.png' }
                       ].map(preset => (
                         <button
                           key={preset.url}
@@ -6529,7 +6503,7 @@ export default function AdminDashboard() {
                     <div style={{ position: 'relative' }}>
                       <input
                         type="text"
-                        placeholder="Cover image URL or uploaded file path..."
+                        placeholder="Exterior image URL or uploaded file path..."
                         value={editingApt.imageUrl || ''}
                         onChange={(e) => setEditingApt(prev => ({
                           ...prev,
@@ -6552,108 +6526,199 @@ export default function AdminDashboard() {
 
                     {editingApt.imageUrl && (
                       <div style={{ marginTop: '8px', height: '110px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0', position: 'relative' }}>
-                        <img src={editingApt.imageUrl} alt="Cover Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={editingApt.imageUrl} alt="Exterior Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         <span style={{ position: 'absolute', bottom: '6px', left: '6px', background: 'rgba(0,0,0,0.65)', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
-                          🏢 Bahar ki Photo Preview
+                          Building Exterior Preview
                         </span>
                       </div>
                     )}
                   </div>
 
-                  {/* 2. Andar ke Sabhi Rooms ki Photos (Interior Gallery) */}
-                  <div className="form-group-clean" style={{ background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
+                  {/* 2. Interior Room Gallery & 360° Walkthrough */}
+                  <div className="form-group-clean" style={{ background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '8px' }}>
                     <div style={{ marginBottom: '10px' }}>
                       <label style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>
-                        🚪 2. Andar ki Room Photos (Individual Room Gallery)
+                        🚪 2. Interior Room Gallery & 360° Virtual Tour
                       </label>
                       <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#64748b' }}>
-                        Apartment detail page par neeche scroll karne par har room ki alag photo dikhegi:
+                        Individual photos and immersive 360° virtual tour for each room:
                       </p>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
-                      {/* Room 1: Living Hall */}
-                      <div style={{ background: '#ffffff', padding: '10px 12px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                          <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>
-                            🛋️ Living Hall (Living Room / Hall ki Photo)
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '14px' }}>
+                      {/* Room 1: Living Hall & 360° Walkthrough */}
+                      <div style={{ background: '#ffffff', padding: '12px 14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#1e293b' }}>
+                            🛋️ Living Hall & 360° Virtual Walkthrough
                           </span>
-                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '5px', fontSize: '10.5px', fontWeight: 600, cursor: 'pointer' }}>
-                            <Upload size={11} />
-                            <span>Upload Hall</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              style={{ display: 'none' }}
-                              onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  const compressed = await compressImageForWeb(file, 2560, 0.90);
-                                  if (compressed) {
-                                    setEditingApt(prev => ({
-                                      ...prev,
-                                      roomGallery: { ...(prev.roomGallery || {}), livingHall: compressed }
-                                    }));
-                                    triggerToast('Living Hall photo updated!');
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '5px', fontSize: '10.5px', fontWeight: 600, cursor: 'pointer' }}>
+                              <Upload size={11} />
+                              <span>Upload Photo</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                style={{ display: 'none' }}
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const compressed = await compressImageForWeb(file, 2560, 0.90);
+                                    if (compressed) {
+                                      setEditingApt(prev => ({
+                                        ...prev,
+                                        roomGallery: { ...(prev.roomGallery || {}), livingHall: compressed }
+                                      }));
+                                      triggerToast('Living Hall photo updated!');
+                                    }
                                   }
-                                }
-                              }}
-                            />
-                          </label>
+                                }}
+                              />
+                            </label>
+                            <label style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '5px', fontSize: '10.5px', fontWeight: 700, cursor: 'pointer' }}>
+                              <Upload size={11} />
+                              <span>Upload 360° VR</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                style={{ display: 'none' }}
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const compressed = await compressImageForWeb(file, 4096, 0.95);
+                                    if (compressed) {
+                                      setEditingApt(prev => ({
+                                        ...prev,
+                                        panorama360: compressed,
+                                        roomGallery: { ...(prev.roomGallery || {}), panorama360: compressed }
+                                      }));
+                                      triggerToast('360° Walkthrough VR updated!');
+                                    }
+                                  }
+                                }}
+                              />
+                            </label>
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
-                          {[
-                            { label: 'Classic Living', url: '/assets/interior-living-hall.png' },
-                            { label: 'Modern Lounge', url: '/assets/estate-boutique-lounge.png' }
-                          ].map(preset => (
-                            <button
-                              key={preset.url}
-                              type="button"
-                              onClick={() => setEditingApt(prev => ({
+
+                        {/* Living Hall Standard Photo Input */}
+                        <div style={{ marginBottom: '10px' }}>
+                          <span style={{ fontSize: '11px', color: '#64748b', display: 'block', marginBottom: '4px' }}>Standard Room Photo:</span>
+                          <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+                            {[
+                              { label: 'Classic Living', url: '/assets/interior-living-hall.png' },
+                              { label: 'Modern Lounge', url: '/assets/estate-boutique-lounge.png' }
+                            ].map(preset => (
+                              <button
+                                key={preset.url}
+                                type="button"
+                                onClick={() => setEditingApt(prev => ({
+                                  ...prev,
+                                  roomGallery: { ...(prev.roomGallery || {}), livingHall: preset.url }
+                                }))}
+                                style={{
+                                  padding: '3px 6px',
+                                  borderRadius: '4px',
+                                  border: (editingApt.roomGallery?.livingHall || '/assets/interior-living-hall.png') === preset.url ? '1px solid #2563eb' : '1px solid #cbd5e1',
+                                  background: (editingApt.roomGallery?.livingHall || '/assets/interior-living-hall.png') === preset.url ? '#eff6ff' : '#ffffff',
+                                  color: (editingApt.roomGallery?.livingHall || '/assets/interior-living-hall.png') === preset.url ? '#1d4ed8' : '#475569',
+                                  fontSize: '10.5px',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                {preset.label}
+                              </button>
+                            ))}
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <input
+                              type="text"
+                              placeholder="Living Hall image URL..."
+                              value={editingApt.roomGallery?.livingHall || ''}
+                              onChange={(e) => setEditingApt(prev => ({
                                 ...prev,
-                                roomGallery: { ...(prev.roomGallery || {}), livingHall: preset.url }
+                                roomGallery: { ...(prev.roomGallery || {}), livingHall: e.target.value }
                               }))}
-                              style={{
-                                padding: '3px 6px',
-                                borderRadius: '4px',
-                                border: (editingApt.roomGallery?.livingHall || '/assets/interior-living-hall.png') === preset.url ? '1px solid #2563eb' : '1px solid #cbd5e1',
-                                background: (editingApt.roomGallery?.livingHall || '/assets/interior-living-hall.png') === preset.url ? '#eff6ff' : '#ffffff',
-                                color: (editingApt.roomGallery?.livingHall || '/assets/interior-living-hall.png') === preset.url ? '#1d4ed8' : '#475569',
-                                fontSize: '10.5px',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              {preset.label}
-                            </button>
-                          ))}
-                        </div>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          <input
-                            type="text"
-                            placeholder="Living Hall Image URL..."
-                            value={editingApt.roomGallery?.livingHall || ''}
-                            onChange={(e) => setEditingApt(prev => ({
-                              ...prev,
-                              roomGallery: { ...(prev.roomGallery || {}), livingHall: e.target.value }
-                            }))}
-                            className="input-clean"
-                            style={{ height: '32px', fontSize: '12px', flex: 1 }}
-                          />
-                          {(editingApt.roomGallery?.livingHall || '/assets/interior-living-hall.png') && (
-                            <img
-                              src={editingApt.roomGallery?.livingHall || '/assets/interior-living-hall.png'}
-                              alt="Living Hall"
-                              style={{ width: '48px', height: '32px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                              className="input-clean"
+                              style={{ height: '32px', fontSize: '12px', flex: 1 }}
                             />
-                          )}
+                            {(editingApt.roomGallery?.livingHall || '/assets/interior-living-hall.png') && (
+                              <img
+                                src={editingApt.roomGallery?.livingHall || '/assets/interior-living-hall.png'}
+                                alt="Living Hall"
+                                style={{ width: '48px', height: '32px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                              />
+                            )}
+                          </div>
+                        </div>
+
+                        {/* 360 Virtual Tour Input */}
+                        <div style={{ background: '#f8fafc', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 600, color: '#166534', display: 'block', marginBottom: '4px' }}>
+                            🌐 360° Virtual Walkthrough Panorama (360° VR):
+                          </span>
+                          <div style={{ display: 'flex', gap: '6px', marginBottom: '6px', overflowX: 'auto' }}>
+                            {[
+                              { label: 'Cayley Suite (8K)', url: '/assets/cayley-interior-8k.jpg' },
+                              { label: 'Kiara Luxury (8K)', url: '/assets/kiara-interior-8k.jpg' },
+                              { label: 'Bedroom Suite (8K)', url: '/assets/bedroom-interior-8k.png' }
+                            ].map(p360 => {
+                              const currentPano = editingApt.panorama360 || editingApt.roomGallery?.panorama360 || '/assets/cayley-interior-8k.jpg';
+                              return (
+                                <button
+                                  key={p360.url}
+                                  type="button"
+                                  onClick={() => setEditingApt(prev => ({
+                                    ...prev,
+                                    panorama360: p360.url,
+                                    roomGallery: { ...(prev.roomGallery || {}), panorama360: p360.url }
+                                  }))}
+                                  style={{
+                                    padding: '2px 6px',
+                                    borderRadius: '4px',
+                                    border: currentPano === p360.url ? '1px solid #16a34a' : '1px solid #cbd5e1',
+                                    background: currentPano === p360.url ? '#dcfce7' : '#ffffff',
+                                    color: currentPano === p360.url ? '#15803d' : '#475569',
+                                    fontSize: '10px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  {p360.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <input
+                              type="text"
+                              placeholder="360° Panorama URL..."
+                              value={editingApt.panorama360 || ''}
+                              onChange={(e) => setEditingApt(prev => ({
+                                ...prev,
+                                panorama360: e.target.value,
+                                roomGallery: { ...(prev.roomGallery || {}), panorama360: e.target.value }
+                              }))}
+                              className="input-clean"
+                              style={{ height: '30px', fontSize: '11.5px', flex: 1 }}
+                            />
+                            {(editingApt.panorama360 || editingApt.roomGallery?.panorama360 || '/assets/cayley-interior-8k.jpg') && (
+                              <img
+                                src={editingApt.panorama360 || editingApt.roomGallery?.panorama360 || '/assets/cayley-interior-8k.jpg'}
+                                alt="360 Panorama"
+                                style={{ width: '48px', height: '30px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #86efac' }}
+                              />
+                            )}
+                          </div>
                         </div>
                       </div>
 
-                      {/* Room 2: Kitchen */}
+                      {/* Room 2: European Kitchen */}
                       <div style={{ background: '#ffffff', padding: '10px 12px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                           <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>
-                            🍳 European Kitchen (Kitchen ki Photo)
+                            🍳 European Kitchen
                           </span>
                           <label style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '5px', fontSize: '10.5px', fontWeight: 600, cursor: 'pointer' }}>
                             <Upload size={11} />
@@ -6706,7 +6771,7 @@ export default function AdminDashboard() {
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                           <input
                             type="text"
-                            placeholder="Kitchen Image URL..."
+                            placeholder="Kitchen image URL..."
                             value={editingApt.roomGallery?.kitchen || ''}
                             onChange={(e) => setEditingApt(prev => ({
                               ...prev,
@@ -6729,7 +6794,7 @@ export default function AdminDashboard() {
                       <div style={{ background: '#ffffff', padding: '10px 12px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                           <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>
-                            🛏️ Master Bedroom (Bedroom ki Photo)
+                            🛏️ Master Bedroom
                           </span>
                           <label style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '5px', fontSize: '10.5px', fontWeight: 600, cursor: 'pointer' }}>
                             <Upload size={11} />
@@ -6783,7 +6848,7 @@ export default function AdminDashboard() {
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                           <input
                             type="text"
-                            placeholder="Bedroom Image URL..."
+                            placeholder="Bedroom image URL..."
                             value={editingApt.roomGallery?.bedroom || ''}
                             onChange={(e) => setEditingApt(prev => ({
                               ...prev,
@@ -6806,7 +6871,7 @@ export default function AdminDashboard() {
                       <div style={{ background: '#ffffff', padding: '10px 12px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                           <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>
-                            🌿 Private Terrace / Balcony (Terrace ki Photo)
+                            🌿 Private Terrace / Balcony
                           </span>
                           <label style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '5px', fontSize: '10.5px', fontWeight: 600, cursor: 'pointer' }}>
                             <Upload size={11} />
@@ -6860,7 +6925,7 @@ export default function AdminDashboard() {
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                           <input
                             type="text"
-                            placeholder="Terrace Image URL..."
+                            placeholder="Terrace image URL..."
                             value={editingApt.roomGallery?.terrace || ''}
                             onChange={(e) => setEditingApt(prev => ({
                               ...prev,
@@ -6879,119 +6944,6 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                     </div>
-                  </div>
-
-                  {/* 3. 360° Virtual Walkthrough Panorama Section */}
-                  <div className="form-group-clean" style={{ background: '#f0fdf4', padding: '14px', borderRadius: '8px', border: '1px solid #bbf7d0', marginBottom: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <label style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: '#166534' }}>
-                          🌐 3. 360° Virtual Walkthrough Panorama (High-Res 360° VR Tour)
-                        </label>
-                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#15803d', background: '#dcfce7', padding: '1px 6px', borderRadius: '4px' }}>
-                          Crisp HD VR
-                        </span>
-                      </div>
-                      <label
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '5px',
-                          padding: '5px 10px',
-                          background: '#15803d',
-                          color: '#ffffff',
-                          border: 'none',
-                          borderRadius: '6px',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <Upload size={12} />
-                        <span>📁 Upload 360° from PC</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          style={{ display: 'none' }}
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              const compressed = await compressImageForWeb(file, 4096, 0.95);
-                              if (compressed) {
-                                setEditingApt(prev => ({
-                                  ...prev,
-                                  panorama360: compressed,
-                                  roomGallery: { ...(prev.roomGallery || {}), panorama360: compressed }
-                                }));
-                                triggerToast('Ultra-Crisp 360° Panorama updated from PC!');
-                              }
-                            }
-                          }}
-                        />
-                      </label>
-                    </div>
-
-                    {/* 360 Preset Chips */}
-                    <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '6px', marginBottom: '8px' }}>
-                      {[
-                        { label: '🌐 Cayley Suite (8K)', url: '/assets/cayley-interior-8k.jpg' },
-                        { label: '🌐 Kiara Luxury (8K)', url: '/assets/kiara-interior-8k.jpg' },
-                        { label: '🌐 Bedroom Suite (8K)', url: '/assets/bedroom-interior-8k.png' }
-                      ].map(p360 => {
-                        const currentPano = editingApt.panorama360 || editingApt.roomGallery?.panorama360 || '/assets/cayley-interior-8k.jpg';
-                        return (
-                          <button
-                            key={p360.url}
-                            type="button"
-                            onClick={() => setEditingApt(prev => ({
-                              ...prev,
-                              panorama360: p360.url,
-                              roomGallery: { ...(prev.roomGallery || {}), panorama360: p360.url }
-                            }))}
-                            style={{
-                              padding: '4px 8px',
-                              borderRadius: '6px',
-                              border: currentPano === p360.url ? '1.5px solid #16a34a' : '1px solid #cbd5e1',
-                              background: currentPano === p360.url ? '#dcfce7' : '#ffffff',
-                              color: currentPano === p360.url ? '#15803d' : '#334155',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                              whiteSpace: 'nowrap'
-                            }}
-                          >
-                            <span>{p360.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <input
-                      type="text"
-                      placeholder="360° Panorama URL..."
-                      value={editingApt.panorama360 || ''}
-                      onChange={(e) => setEditingApt(prev => ({
-                        ...prev,
-                        panorama360: e.target.value,
-                        roomGallery: { ...(prev.roomGallery || {}), panorama360: e.target.value }
-                      }))}
-                      className="input-clean"
-                      style={{ height: '36px', fontSize: '12.5px' }}
-                    />
-
-                    {/* Live 360 Preview Card */}
-                    {(editingApt.panorama360 || editingApt.roomGallery?.panorama360) && (
-                      <div style={{ marginTop: '8px', height: '110px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #86efac', position: 'relative' }}>
-                        <img 
-                          src={editingApt.panorama360 || editingApt.roomGallery?.panorama360} 
-                          alt="360 Panorama Preview" 
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                        />
-                        <span style={{ position: 'absolute', bottom: '6px', left: '6px', background: 'rgba(21, 128, 61, 0.92)', color: '#fff', fontSize: '10px', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                          🌐 360° High-Definition Panorama Tour Loaded
-                        </span>
-                      </div>
-                    )}
                   </div>
                 </div>
 
