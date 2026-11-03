@@ -1817,8 +1817,8 @@ export default function AdminDashboard() {
         }
 
         .fullscreen-content-container {
-          max-width: 1120px;
-          width: 100%;
+          max-width: 1440px;
+          width: 95%;
           margin: 28px auto 60px;
           padding: 0 24px;
           box-sizing: border-box;
@@ -6816,31 +6816,32 @@ export default function AdminDashboard() {
                     <span>1. Unit Assignment & Buyer Profile</span>
                   </h4>
 
-                  {/* Apartment Unit & Status */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '14px', marginBottom: '16px' }}>
-                    <div className="form-group-clean">
-                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
-                        Selected Apartment Unit
-                      </label>
-                      <select
-                        className="input-clean"
-                        value={buyerModal.apartmentId}
-                        onChange={(e) => {
-                          const selected = apartments.find(a => a.id === Number(e.target.value));
-                          if (selected) {
-                            openEditBuyerModal(selected);
-                          }
-                        }}
-                        style={{ width: '100%', height: '38px', fontSize: '13px' }}
-                      >
-                        {apartments.map(a => (
-                          <option key={a.id} value={a.id}>
-                            {a.apartmentNumber} — {a.title} ({a.status})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                  {/* Selected Apartment Unit - Generous Full Width */}
+                  <div className="form-group-clean" style={{ marginBottom: '16px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', letterSpacing: '0.04em' }}>
+                      Selected Apartment Unit
+                    </label>
+                    <select
+                      className="input-clean"
+                      value={buyerModal.apartmentId}
+                      onChange={(e) => {
+                        const selected = apartments.find(a => a.id === Number(e.target.value));
+                        if (selected) {
+                          openEditBuyerModal(selected);
+                        }
+                      }}
+                      style={{ width: '100%', height: '42px', fontSize: '13.5px', padding: '8px 14px', fontWeight: 500 }}
+                    >
+                      {apartments.map(a => (
+                        <option key={a.id} value={a.id}>
+                          {a.apartmentNumber} — {a.title} ({a.status})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
+                  {/* Unit Status & Staff Manager */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
                     <div className="form-group-clean">
                       <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
                         Unit Inventory Status
@@ -6849,12 +6850,26 @@ export default function AdminDashboard() {
                         className="input-clean"
                         value={buyerModal.status}
                         onChange={(e) => setBuyerModal(prev => ({ ...prev, status: e.target.value }))}
-                        style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                        style={{ width: '100%', height: '40px', fontSize: '13px' }}
                       >
                         <option value="SOLD">🔴 SOLD OUT (Purchased)</option>
                         <option value="RESERVED">🟡 RESERVED (Under Token)</option>
                         <option value="AVAILABLE">🟢 AVAILABLE</option>
                       </select>
+                    </div>
+
+                    <div className="form-group-clean">
+                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                        Assigned Relationship Manager / Staff
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Super Admin or Rohit Verma"
+                        value={buyerModal.assignedAgent}
+                        onChange={(e) => setBuyerModal(prev => ({ ...prev, assignedAgent: e.target.value }))}
+                        className="input-clean"
+                        style={{ width: '100%', height: '40px', fontSize: '13px' }}
+                      />
                     </div>
                   </div>
 
@@ -6870,7 +6885,7 @@ export default function AdminDashboard() {
                       value={buyerModal.name}
                       onChange={(e) => setBuyerModal(prev => ({ ...prev, name: e.target.value }))}
                       className="input-clean"
-                      style={{ width: '100%', height: '38px', fontSize: '13.5px' }}
+                      style={{ width: '100%', height: '40px', fontSize: '13.5px' }}
                     />
                   </div>
 
@@ -6887,7 +6902,7 @@ export default function AdminDashboard() {
                         value={buyerModal.phone}
                         onChange={(e) => setBuyerModal(prev => ({ ...prev, phone: e.target.value }))}
                         className="input-clean"
-                        style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                        style={{ width: '100%', height: '40px', fontSize: '13px' }}
                       />
                     </div>
 
@@ -6902,24 +6917,9 @@ export default function AdminDashboard() {
                         value={buyerModal.email}
                         onChange={(e) => setBuyerModal(prev => ({ ...prev, email: e.target.value }))}
                         className="input-clean"
-                        style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                        style={{ width: '100%', height: '40px', fontSize: '13px' }}
                       />
                     </div>
-                  </div>
-
-                  {/* Assigned Relationship Manager */}
-                  <div className="form-group-clean" style={{ marginBottom: '16px' }}>
-                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
-                      Assigned Relationship Manager / Staff
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Super Admin or Rohit Verma (Manager)"
-                      value={buyerModal.assignedAgent}
-                      onChange={(e) => setBuyerModal(prev => ({ ...prev, assignedAgent: e.target.value }))}
-                      className="input-clean"
-                      style={{ width: '100%', height: '38px', fontSize: '13px' }}
-                    />
                   </div>
 
                   {/* Special Terms & Customizations */}
@@ -6967,7 +6967,7 @@ export default function AdminDashboard() {
                           setBuyerModal(prev => ({ ...prev, dealAmount: newDeal, balanceAmount: Math.max(0, newDeal - newPaid) }));
                         }}
                         className="input-clean"
-                        style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                        style={{ width: '100%', height: '40px', fontSize: '13px' }}
                       />
                       <span style={{ fontSize: '11px', color: '#64748b' }}>{formatINR(Number(buyerModal.dealAmount))}</span>
                     </div>
@@ -6987,30 +6987,31 @@ export default function AdminDashboard() {
                           setBuyerModal(prev => ({ ...prev, paidAmount: newPaid, balanceAmount: Math.max(0, newDeal - newPaid) }));
                         }}
                         className="input-clean"
-                        style={{ width: '100%', height: '38px', fontSize: '13px', borderColor: '#a7f3d0' }}
+                        style={{ width: '100%', height: '40px', fontSize: '13px', borderColor: '#a7f3d0' }}
                       />
                       <span style={{ fontSize: '11px', color: '#059669', fontWeight: 600 }}>{formatINR(Number(buyerModal.paidAmount))}</span>
                     </div>
                   </div>
 
-                  {/* Payment Plan Type */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '14px', marginBottom: '16px' }}>
-                    <div className="form-group-clean">
-                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
-                        Payment Plan Category
-                      </label>
-                      <select
-                        className="input-clean"
-                        value={buyerModal.paymentPlan}
-                        onChange={(e) => setBuyerModal(prev => ({ ...prev, paymentPlan: e.target.value }))}
-                        style={{ width: '100%', height: '38px', fontSize: '13px' }}
-                      >
-                        <option value="FULL_PAYMENT">✅ 100% Full Payment (Zero Balance)</option>
-                        <option value="EMI_PLAN">🔵 Active EMI / Installments Schedule</option>
-                        <option value="TOKEN_ADVANCE">🟡 Token Booking Advance (Under Hold)</option>
-                      </select>
-                    </div>
+                  {/* Payment Plan Category - Generous Full Width */}
+                  <div className="form-group-clean" style={{ marginBottom: '16px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', letterSpacing: '0.04em' }}>
+                      Payment Plan Category
+                    </label>
+                    <select
+                      className="input-clean"
+                      value={buyerModal.paymentPlan}
+                      onChange={(e) => setBuyerModal(prev => ({ ...prev, paymentPlan: e.target.value }))}
+                      style={{ width: '100%', height: '42px', fontSize: '13.5px', padding: '8px 14px', fontWeight: 500 }}
+                    >
+                      <option value="FULL_PAYMENT">✅ 100% Full Payment (Zero Balance)</option>
+                      <option value="EMI_PLAN">🔵 Active EMI / Installments Schedule</option>
+                      <option value="TOKEN_ADVANCE">🟡 Token Booking Advance (Under Hold)</option>
+                    </select>
+                  </div>
 
+                  {/* Balance / Monthly EMI & Booking Date */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
                     <div className="form-group-clean">
                       <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
                         {buyerModal.paymentPlan === 'EMI_PLAN' ? 'Monthly EMI (INR)' : 'Balance Status'}
@@ -7022,18 +7023,15 @@ export default function AdminDashboard() {
                           value={buyerModal.monthlyEmi}
                           onChange={(e) => setBuyerModal(prev => ({ ...prev, monthlyEmi: e.target.value }))}
                           className="input-clean"
-                          style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                          style={{ width: '100%', height: '40px', fontSize: '13px' }}
                         />
                       ) : (
-                        <div style={{ height: '38px', display: 'flex', alignItems: 'center', padding: '0 12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: 700, color: buyerModal.paymentPlan === 'FULL_PAYMENT' ? '#059669' : '#d97706' }}>
+                        <div style={{ height: '40px', display: 'flex', alignItems: 'center', padding: '0 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: 700, color: buyerModal.paymentPlan === 'FULL_PAYMENT' ? '#059669' : '#d97706' }}>
                           {buyerModal.paymentPlan === 'FULL_PAYMENT' ? 'Zero Dues Outstanding' : 'Balance on Agreement'}
                         </div>
                       )}
                     </div>
-                  </div>
 
-                  {/* Booking Date & Next Due Date */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
                     <div className="form-group-clean">
                       <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
                         Booking / Token Date *
@@ -7045,23 +7043,24 @@ export default function AdminDashboard() {
                         value={buyerModal.bookingDate}
                         onChange={(e) => setBuyerModal(prev => ({ ...prev, bookingDate: e.target.value, saleDate: e.target.value }))}
                         className="input-clean"
-                        style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                        style={{ width: '100%', height: '40px', fontSize: '13px' }}
                       />
                     </div>
+                  </div>
 
-                    <div className="form-group-clean">
-                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
-                        Next Due Date / Milestone
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. 15 Nov 2026"
-                        value={buyerModal.nextDueDate}
-                        onChange={(e) => setBuyerModal(prev => ({ ...prev, nextDueDate: e.target.value }))}
-                        className="input-clean"
-                        style={{ width: '100%', height: '38px', fontSize: '13px' }}
-                      />
-                    </div>
+                  {/* Next Due Date / Milestone */}
+                  <div className="form-group-clean" style={{ marginBottom: '20px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                      Next Due Date / Milestone
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 15 Nov 2026"
+                      value={buyerModal.nextDueDate}
+                      onChange={(e) => setBuyerModal(prev => ({ ...prev, nextDueDate: e.target.value }))}
+                      className="input-clean"
+                      style={{ width: '100%', height: '40px', fontSize: '13px' }}
+                    />
                   </div>
 
                   {/* Visual Progress Bar */}
@@ -7176,7 +7175,7 @@ export default function AdminDashboard() {
             </header>
 
             {/* Printable Invoice Sheet (Exact Layout matching Screenshot 2) */}
-            <div className="fullscreen-content-container">
+            <div className="fullscreen-content-container" style={{ maxWidth: '1060px' }}>
               <div style={{ background: '#ffffff', padding: '36px 40px', borderRadius: '10px', border: '1.5px solid #002b80', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
                 
                 {/* 1. Header Title Banner (Matching Screenshot 2) */}
