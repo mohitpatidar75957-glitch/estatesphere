@@ -295,11 +295,20 @@ export default function FloorPlanSVG({ typology, bedrooms, apartment }) {
     </svg>
   )
 
-  const isPenthouse = typology === 'PENTHOUSE DUPLEX'
-  const isBasementPlus = typology === 'GROUND FLOOR + BASEMENT'
+  const isPenthouse = (typology || '').toUpperCase().includes('PENTHOUSE')
+  const isBasementPlus = (typology || '').toUpperCase().includes('BASEMENT')
 
-  // Pick floorplan based on bedrooms count
+  // Pick floorplan based on custom image or bedrooms count
   const renderCurrentResidenceFloor = () => {
+    if (apartment?.floorPlanUrl) {
+      return (
+        <img
+          src={apartment.floorPlanUrl}
+          alt="Architectural Floor Plan"
+          style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#f8f6f0' }}
+        />
+      )
+    }
     if (bedCount >= 4) {
       return renderFourBedroomFloor()
     } else if (bedCount === 3) {

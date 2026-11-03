@@ -518,35 +518,14 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
               </div>
             </div>
 
-            {/* Scrolled Sections: Exterior, Living Room, Kitchen, Bedroom, Terrace, Gated Community */}
+            {/* Scrolled Sections: Living Room, Kitchen, Bedroom, Terrace, Gated Community */}
             <div className="apartment-detail-rooms-sec">
-              {/* 0. Building Exterior & Façade */}
-              <div className="detail-room-row">
-                <div
-                  className="detail-room-image-wrap"
-                  onClick={() => setActivePanorama({
-                    url: selectedApartment.panorama360 || selectedApartment.roomGallery?.panorama360 || '/assets/cayley-interior-8k.jpg',
-                    thumbnail: selectedApartment.imageUrl || selectedApartment.roomGallery?.cover || '/assets/luxury_villa_day.jpg'
-                  })}
-                >
-                  <img
-                    src={selectedApartment.imageUrl || selectedApartment.roomGallery?.cover || '/assets/luxury_villa_day.jpg'}
-                    alt="Building Exterior & Façade"
-                    onError={(e) => { e.target.src = '/assets/luxury_villa_day.jpg' }}
-                  />
-                  <div className="detail-room-overlay-info">
-                    <span>BUILDING FAÇADE & EXTERIOR ARCHITECTURE</span>
-                    <button className="detail-pano-btn"><span>+</span> ENTER 360° VIEW</button>
-                  </div>
-                </div>
-              </div>
-
               {/* 1. Living Hall */}
               <div className="detail-room-row">
                 <div
                   className="detail-room-image-wrap"
                   onClick={() => setActivePanorama({
-                    url: selectedApartment.panorama360 || selectedApartment.roomGallery?.panorama360 || '/assets/cayley-interior-8k.jpg',
+                    url: selectedApartment.roomGallery?.livingHall360 || selectedApartment.panorama360 || selectedApartment.roomGallery?.panorama360 || '/assets/cayley-interior-8k.jpg',
                     thumbnail: selectedApartment.roomGallery?.livingHall || '/assets/interior-living-hall.png'
                   })}
                 >
@@ -563,7 +542,7 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
                 <div
                   className="detail-room-image-wrap"
                   onClick={() => setActivePanorama({
-                    url: selectedApartment.panorama360 || selectedApartment.roomGallery?.panorama360 || '/assets/kiara-interior-8k.jpg',
+                    url: selectedApartment.roomGallery?.kitchen360 || selectedApartment.panorama360 || selectedApartment.roomGallery?.panorama360 || '/assets/kiara-interior-8k.jpg',
                     thumbnail: selectedApartment.roomGallery?.kitchen || '/assets/interior-kitchen.png'
                   })}
                 >
@@ -580,7 +559,7 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
                 <div
                   className="detail-room-image-wrap"
                   onClick={() => setActivePanorama({
-                    url: selectedApartment.panorama360 || selectedApartment.roomGallery?.panorama360 || '/assets/bedroom-interior-8k.png',
+                    url: selectedApartment.roomGallery?.bedroom360 || selectedApartment.panorama360 || selectedApartment.roomGallery?.panorama360 || '/assets/bedroom-interior-8k.png',
                     thumbnail: selectedApartment.roomGallery?.bedroom || '/assets/interior-master-bedroom.png'
                   })}
                 >
@@ -597,7 +576,7 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
                 <div
                   className="detail-room-image-wrap"
                   onClick={() => setActivePanorama({
-                    url: selectedApartment.panorama360 || selectedApartment.roomGallery?.panorama360 || '/assets/cayley-interior-8k.jpg',
+                    url: selectedApartment.roomGallery?.terrace360 || selectedApartment.panorama360 || selectedApartment.roomGallery?.panorama360 || '/assets/cayley-interior-8k.jpg',
                     thumbnail: selectedApartment.roomGallery?.terrace || '/assets/estate-private-terrace.png'
                   })}
                 >

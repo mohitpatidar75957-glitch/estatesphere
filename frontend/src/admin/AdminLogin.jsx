@@ -33,7 +33,7 @@ export default function AdminLogin({ onLoginSuccess }) {
     setForgotMsg('');
 
     const cleanEmail = email.trim();
-    const cleanPass = password.trim();
+    const cleanPass = password.replace(/\s+/g, '');
     if (!cleanEmail || !cleanPass) {
       setError('Please enter both email and password.');
       return;
@@ -548,7 +548,8 @@ export default function AdminLogin({ onLoginSuccess }) {
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
-                  onChange={(e) => { setPassword(e.target.value); setError(''); }}
+                  onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
+                  onChange={(e) => { setPassword(e.target.value.replace(/\s+/g, '')); setError(''); }}
                   placeholder="Enter your password"
                   className="login-input"
                   style={{
