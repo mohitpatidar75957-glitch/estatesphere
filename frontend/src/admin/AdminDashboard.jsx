@@ -146,11 +146,12 @@ export default function AdminDashboard() {
     if (!apt) return;
     const todayFormatted = new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date());
     const existingBuyer = apt.buyer || {};
-    const deal = existingBuyer.dealAmount || apt.price || 30000000;
-    const isFull = existingBuyer.paymentStatus === 'FULLY_PAID' || existingBuyer.paymentPlan === 'FULL_PAYMENT';
-    const paid = existingBuyer.paidAmount !== undefined ? existingBuyer.paidAmount : (isFull ? deal : (apt.status === 'RESERVED' ? 1500000 : Math.round(deal * 0.9)));
-    const balance = Math.max(0, deal - paid);
-    const plan = existingBuyer.paymentPlan || (balance === 0 ? 'FULL_PAYMENT' : (apt.status === 'RESERVED' ? 'TOKEN_ADVANCE' : 'EMI_PLAN'));
+    const hasBuyer = Boolean(existingBuyer && existingBuyer.name);
+
+    const deal = hasBuyer && existingBuyer.dealAmount !== undefined ? existingBuyer.dealAmount : (apt.price || '');
+    const paid = hasBuyer && existingBuyer.paidAmount !== undefined ? existingBuyer.paidAmount : '';
+    const balance = deal !== '' ? Math.max(0, Number(deal) - (paid !== '' ? Number(paid) : 0)) : 0;
+    const plan = hasBuyer && existingBuyer.paymentPlan ? existingBuyer.paymentPlan : 'FULL_PAYMENT';
 
     setBuyerModal({
       isOpen: true,
@@ -159,21 +160,21 @@ export default function AdminDashboard() {
       unitTitle: apt.title || `${apt.bedrooms || 3} BHK ${apt.typology || 'Residence'}`,
       price: apt.price || 0,
       status: apt.status === 'AVAILABLE' ? 'SOLD' : apt.status,
-      name: existingBuyer.name || '',
-      phone: existingBuyer.phone || '',
-      email: existingBuyer.email || '',
+      name: hasBuyer ? (existingBuyer.name || '') : '',
+      phone: hasBuyer ? (existingBuyer.phone || '') : '',
+      email: hasBuyer ? (existingBuyer.email || '') : '',
       dealAmount: deal,
       paidAmount: paid,
       balanceAmount: balance,
       paymentPlan: plan,
-      monthlyEmi: existingBuyer.emiDetails?.monthlyEmi || (plan === 'EMI_PLAN' ? Math.round(balance / 10) : ''),
-      nextDueDate: existingBuyer.emiDetails?.nextDueDate || '15 Nov 2026',
-      bookingDate: existingBuyer.bookingDate || existingBuyer.saleDate || todayFormatted,
-      saleDate: existingBuyer.saleDate || todayFormatted,
-      paymentStatus: existingBuyer.paymentStatus || (balance === 0 ? 'FULLY_PAID' : (apt.status === 'RESERVED' ? 'TOKEN_PAID' : 'PARTIALLY_PAID')),
-      paymentStatusLabel: existingBuyer.paymentStatusLabel || (balance === 0 ? '100% Full Payment Cleared' : (apt.status === 'RESERVED' ? 'Token Advance Received' : 'Active EMI Schedule')),
-      assignedAgent: existingBuyer.assignedAgent || user?.name || 'Super Admin',
-      notes: existingBuyer.notes || ''
+      monthlyEmi: hasBuyer && existingBuyer.emiDetails?.monthlyEmi ? existingBuyer.emiDetails.monthlyEmi : '',
+      nextDueDate: hasBuyer && existingBuyer.emiDetails?.nextDueDate ? existingBuyer.emiDetails.nextDueDate : '',
+      bookingDate: hasBuyer ? (existingBuyer.bookingDate || existingBuyer.saleDate || todayFormatted) : todayFormatted,
+      saleDate: hasBuyer ? (existingBuyer.saleDate || todayFormatted) : todayFormatted,
+      paymentStatus: hasBuyer ? (existingBuyer.paymentStatus || '') : '',
+      paymentStatusLabel: hasBuyer ? (existingBuyer.paymentStatusLabel || '') : '',
+      assignedAgent: hasBuyer ? (existingBuyer.assignedAgent || user?.name || '') : (user?.name || ''),
+      notes: hasBuyer ? (existingBuyer.notes || '') : ''
     });
   };
 
@@ -215,13 +216,13 @@ export default function AdminDashboard() {
       paymentStatus: paymentStatus,
       paymentStatusLabel: paymentStatusLabel,
       emiDetails: plan === 'EMI_PLAN' ? {
-        monthlyEmi: Number(buyerModal.monthlyEmi) || Math.round(balance / 10),
-        nextDueDate: buyerModal.nextDueDate || '15 Nov 2026'
+        monthlyEmi: buyerModal.monthlyEmi ? Number(buyerModal.monthlyEmi) : 0,
+        nextDueDate: buyerModal.nextDueDate || ''
       } : (plan === 'TOKEN_ADVANCE' ? {
         tokenAmount: paid,
-        nextDueDate: buyerModal.nextDueDate || 'Within 15 Days'
+        nextDueDate: buyerModal.nextDueDate || ''
       } : null),
-      assignedAgent: buyerModal.assignedAgent || user?.name || 'Super Admin',
+      assignedAgent: buyerModal.assignedAgent || user?.name || 'Admin',
       notes: buyerModal.notes.trim()
     };
 
@@ -4476,7 +4477,7 @@ export default function AdminDashboard() {
                         <span>Admin Profile & Security</span>
                       </h3>
                       <p style={{ margin: '4px 0 0', fontSize: '11.5px', color: '#64748b' }}>
-                        Apna naam, official email aur login password yahan se change karein.
+                        Update your name, official email address, and login password here.
                       </p>
                     </div>
                     <span style={{ 
@@ -4505,7 +4506,7 @@ export default function AdminDashboard() {
                         value={profileForm.name}
                         onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
                         className="input-clean"
-                        placeholder="e.g. Super Admin"
+                        placeholder="Enter admin full name"
                         required
                       />
                     </div>
@@ -4517,7 +4518,7 @@ export default function AdminDashboard() {
                         value={profileForm.email}
                         onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
                         className="input-clean"
-                        placeholder="superadmin@estatesphere.com"
+                        placeholder="Enter official email address"
                         required
                       />
                     </div>
@@ -4529,7 +4530,7 @@ export default function AdminDashboard() {
                         value={profileForm.phone}
                         onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
                         className="input-clean"
-                        placeholder="+91 98200 11000"
+                        placeholder="Enter contact phone number"
                       />
                     </div>
 
@@ -4567,7 +4568,7 @@ export default function AdminDashboard() {
                             value={profileForm.newPassword}
                             onChange={(e) => setProfileForm({ ...profileForm, newPassword: e.target.value })}
                             className="input-clean"
-                            placeholder="Naya password likhein (blank to keep same)"
+                            placeholder="Enter new password (leave blank to keep current)"
                             style={{ paddingRight: '40px' }}
                           />
                           <button
@@ -4597,7 +4598,7 @@ export default function AdminDashboard() {
                           value={profileForm.confirmPassword}
                           onChange={(e) => setProfileForm({ ...profileForm, confirmPassword: e.target.value })}
                           className="input-clean"
-                          placeholder="Naye password ko confirm karein"
+                          placeholder="Confirm new password"
                         />
                       </div>
                     </div>
@@ -4620,7 +4621,7 @@ export default function AdminDashboard() {
                         <span>Public Contact Details & Footer Sync</span>
                       </h3>
                       <p style={{ margin: '4px 0 0', fontSize: '11.5px', color: '#64748b' }}>
-                        Website ke footer me dikhne wala Phone, WhatsApp number, aur Office address update karein.
+                        Update the public contact phone, WhatsApp number, and office address displayed in website footer.
                       </p>
                     </div>
                     <span style={{ 
@@ -4650,7 +4651,7 @@ export default function AdminDashboard() {
                           value={settings.projectName || ''}
                           onChange={(e) => setSettings({ ...settings, projectName: e.target.value })}
                           className="input-clean"
-                          placeholder="ESTATESPHERE"
+                          placeholder="Enter project title"
                         />
                       </div>
 
@@ -4661,7 +4662,7 @@ export default function AdminDashboard() {
                           value={settings.tagline || ''}
                           onChange={(e) => setSettings({ ...settings, tagline: e.target.value })}
                           className="input-clean"
-                          placeholder="Luxury Living Redefined"
+                          placeholder="Enter project tagline"
                         />
                       </div>
                     </div>
@@ -4675,7 +4676,7 @@ export default function AdminDashboard() {
                             value={settings.supportPhone || ''}
                             onChange={(e) => setSettings({ ...settings, supportPhone: e.target.value })}
                             className="input-clean"
-                            placeholder="+91 (798) 788-0769"
+                            placeholder="Enter public phone number"
                           />
                           <PhoneCall size={13} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
                         </div>
@@ -4689,7 +4690,7 @@ export default function AdminDashboard() {
                             value={settings.whatsappNumber || ''}
                             onChange={(e) => setSettings({ ...settings, whatsappNumber: e.target.value })}
                             className="input-clean"
-                            placeholder="+91 98765 43210"
+                            placeholder="Enter WhatsApp number"
                           />
                           <MessageSquare size={13} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: '#16a34a' }} />
                         </div>
@@ -4703,7 +4704,7 @@ export default function AdminDashboard() {
                         value={settings.supportEmail || ''}
                         onChange={(e) => setSettings({ ...settings, supportEmail: e.target.value })}
                         className="input-clean"
-                        placeholder="info@estatesphere.com"
+                        placeholder="Enter support email address"
                       />
                     </div>
 
@@ -4714,7 +4715,7 @@ export default function AdminDashboard() {
                         value={settings.officeAddress || ''}
                         onChange={(e) => setSettings({ ...settings, officeAddress: e.target.value })}
                         className="input-clean"
-                        placeholder="302-B, 3RD FLOOR, SWADESH BHAWAN INDORE (452001)"
+                        placeholder="Enter office address"
                         style={{ height: 'auto', padding: '8px 10px', lineHeight: '1.4' }}
                       />
                     </div>
@@ -6965,7 +6966,7 @@ export default function AdminDashboard() {
                       </label>
                       <input
                         type="text"
-                        placeholder="e.g. Super Admin or Rohit Verma"
+                        placeholder="Enter relationship manager name"
                         value={buyerModal.assignedAgent}
                         onChange={(e) => setBuyerModal(prev => ({ ...prev, assignedAgent: e.target.value }))}
                         className="input-clean"
@@ -6982,7 +6983,7 @@ export default function AdminDashboard() {
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Vikramaditya Singhania or Ananya Deshmukh"
+                      placeholder="Enter buyer full name"
                       value={buyerModal.name}
                       onChange={(e) => setBuyerModal(prev => ({ ...prev, name: e.target.value }))}
                       className="input-clean"
@@ -6999,7 +7000,7 @@ export default function AdminDashboard() {
                       <input
                         type="text"
                         required
-                        placeholder="+91 98201 44521"
+                        placeholder="Enter contact phone number"
                         value={buyerModal.phone}
                         onChange={(e) => setBuyerModal(prev => ({ ...prev, phone: e.target.value }))}
                         className="input-clean"
@@ -7014,7 +7015,7 @@ export default function AdminDashboard() {
                       <input
                         type="email"
                         required
-                        placeholder="buyer@domain.com"
+                        placeholder="Enter email address"
                         value={buyerModal.email}
                         onChange={(e) => setBuyerModal(prev => ({ ...prev, email: e.target.value }))}
                         className="input-clean"
@@ -7030,7 +7031,7 @@ export default function AdminDashboard() {
                     </label>
                     <textarea
                       rows={3}
-                      placeholder="e.g. Bespoke travertine finishes requested. Car parking slot P-14 allocated in basement B1."
+                      placeholder="Enter special terms, inclusions, or parking slot details..."
                       value={buyerModal.notes}
                       onChange={(e) => setBuyerModal(prev => ({ ...prev, notes: e.target.value }))}
                       className="input-clean"
@@ -7046,7 +7047,7 @@ export default function AdminDashboard() {
                       <TrendingUp size={16} style={{ color: '#059669' }} />
                       <span>2. Financial Consideration & EMI Schedule</span>
                     </div>
-                    <span style={{ fontSize: '11px', color: (Number(buyerModal.dealAmount) - Number(buyerModal.paidAmount) <= 0) ? '#059669' : '#dc2626', fontWeight: 700 }}>
+                    <span style={{ fontSize: '11px', color: (Number(buyerModal.dealAmount || 0) - Number(buyerModal.paidAmount || 0) <= 0 && buyerModal.paidAmount !== '') ? '#059669' : '#dc2626', fontWeight: 700 }}>
                       Balance Due: {formatINR(Math.max(0, (Number(buyerModal.dealAmount) || 0) - (Number(buyerModal.paidAmount) || 0)))}
                     </span>
                   </h4>
@@ -7060,17 +7061,24 @@ export default function AdminDashboard() {
                       <input
                         type="number"
                         required
-                        placeholder="e.g. 28750000"
+                        placeholder="Enter total agreed price"
                         value={buyerModal.dealAmount}
                         onChange={(e) => {
-                          const newDeal = Number(e.target.value) || 0;
-                          const newPaid = Number(buyerModal.paidAmount) || 0;
-                          setBuyerModal(prev => ({ ...prev, dealAmount: newDeal, balanceAmount: Math.max(0, newDeal - newPaid) }));
+                          const val = e.target.value;
+                          const newDeal = val === '' ? '' : Number(val);
+                          const newPaid = buyerModal.paidAmount === '' ? 0 : Number(buyerModal.paidAmount);
+                          setBuyerModal(prev => ({
+                            ...prev,
+                            dealAmount: newDeal,
+                            balanceAmount: newDeal !== '' ? Math.max(0, newDeal - newPaid) : 0
+                          }));
                         }}
                         className="input-clean"
                         style={{ width: '100%', height: '40px', fontSize: '13px' }}
                       />
-                      <span style={{ fontSize: '11px', color: '#64748b' }}>{formatINR(Number(buyerModal.dealAmount))}</span>
+                      <span style={{ fontSize: '11px', color: '#64748b' }}>
+                        {buyerModal.dealAmount !== '' ? formatINR(Number(buyerModal.dealAmount)) : '₹0'}
+                      </span>
                     </div>
 
                     <div className="form-group-clean" style={{ marginBottom: 0 }}>
@@ -7079,18 +7087,24 @@ export default function AdminDashboard() {
                       </label>
                       <input
                         type="number"
-                        required
-                        placeholder="e.g. 1500000"
+                        placeholder="Enter amount paid"
                         value={buyerModal.paidAmount}
                         onChange={(e) => {
-                          const newPaid = Number(e.target.value) || 0;
-                          const newDeal = Number(buyerModal.dealAmount) || 0;
-                          setBuyerModal(prev => ({ ...prev, paidAmount: newPaid, balanceAmount: Math.max(0, newDeal - newPaid) }));
+                          const val = e.target.value;
+                          const newPaid = val === '' ? '' : Number(val);
+                          const newDeal = buyerModal.dealAmount === '' ? 0 : Number(buyerModal.dealAmount);
+                          setBuyerModal(prev => ({
+                            ...prev,
+                            paidAmount: newPaid,
+                            balanceAmount: Math.max(0, newDeal - (newPaid !== '' ? newPaid : 0))
+                          }));
                         }}
                         className="input-clean"
                         style={{ width: '100%', height: '40px', fontSize: '13px', borderColor: '#a7f3d0' }}
                       />
-                      <span style={{ fontSize: '11px', color: '#059669', fontWeight: 600 }}>{formatINR(Number(buyerModal.paidAmount))}</span>
+                      <span style={{ fontSize: '11px', color: '#059669', fontWeight: 600 }}>
+                        {buyerModal.paidAmount !== '' ? formatINR(Number(buyerModal.paidAmount)) : '₹0'}
+                      </span>
                     </div>
                   </div>
 
@@ -7120,7 +7134,7 @@ export default function AdminDashboard() {
                       {buyerModal.paymentPlan === 'EMI_PLAN' ? (
                         <input
                           type="number"
-                          placeholder="e.g. 312500"
+                          placeholder="Enter monthly EMI"
                           value={buyerModal.monthlyEmi}
                           onChange={(e) => setBuyerModal(prev => ({ ...prev, monthlyEmi: e.target.value }))}
                           className="input-clean"
@@ -7140,7 +7154,7 @@ export default function AdminDashboard() {
                       <input
                         type="text"
                         required
-                        placeholder="e.g. 01 Nov 2026"
+                        placeholder="Enter booking date"
                         value={buyerModal.bookingDate}
                         onChange={(e) => setBuyerModal(prev => ({ ...prev, bookingDate: e.target.value, saleDate: e.target.value }))}
                         className="input-clean"
@@ -7156,7 +7170,7 @@ export default function AdminDashboard() {
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. 15 Nov 2026"
+                      placeholder="Enter next due date / milestone"
                       value={buyerModal.nextDueDate}
                       onChange={(e) => setBuyerModal(prev => ({ ...prev, nextDueDate: e.target.value }))}
                       className="input-clean"
@@ -7168,16 +7182,16 @@ export default function AdminDashboard() {
                   <div style={{ background: '#f8fafc', padding: '14px 16px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
                       <span>Payment Clearance Status</span>
-                      <span style={{ color: Number(buyerModal.dealAmount) - Number(buyerModal.paidAmount) <= 0 ? '#059669' : '#2563eb' }}>
-                        {Math.min(100, Math.round(((Number(buyerModal.paidAmount) || 0) / (Number(buyerModal.dealAmount) || 1)) * 100))}% Cleared
+                      <span style={{ color: (Number(buyerModal.dealAmount || 0) - Number(buyerModal.paidAmount || 0) <= 0 && buyerModal.paidAmount !== '') ? '#059669' : '#2563eb' }}>
+                        {buyerModal.dealAmount > 0 && buyerModal.paidAmount !== '' ? Math.min(100, Math.round(((Number(buyerModal.paidAmount) || 0) / (Number(buyerModal.dealAmount) || 1)) * 100)) : 0}% Cleared
                       </span>
                     </div>
                     <div style={{ width: '100%', height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
                       <div 
                         style={{ 
-                          width: `${Math.min(100, Math.round(((Number(buyerModal.paidAmount) || 0) / (Number(buyerModal.dealAmount) || 1)) * 100))}%`, 
+                          width: `${buyerModal.dealAmount > 0 && buyerModal.paidAmount !== '' ? Math.min(100, Math.round(((Number(buyerModal.paidAmount) || 0) / (Number(buyerModal.dealAmount) || 1)) * 100)) : 0}%`, 
                           height: '100%', 
-                          background: Number(buyerModal.dealAmount) - Number(buyerModal.paidAmount) <= 0 ? '#10b981' : '#3b82f6', 
+                          background: (Number(buyerModal.dealAmount || 0) - Number(buyerModal.paidAmount || 0) <= 0 && buyerModal.paidAmount !== '') ? '#10b981' : '#3b82f6', 
                           borderRadius: '4px',
                           transition: 'width 0.3s' 
                         }} 
