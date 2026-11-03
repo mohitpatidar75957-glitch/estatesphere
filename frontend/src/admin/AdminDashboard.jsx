@@ -2730,15 +2730,23 @@ export default function AdminDashboard() {
                       </button>
                     </div>
                   ) : (
-                    <table className="admin-table" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+                    <table className="admin-table" style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'separate', borderSpacing: 0 }}>
+                      <colgroup>
+                        <col style={{ width: '23%' }} />
+                        <col style={{ width: '12%' }} />
+                        <col style={{ width: '23%' }} />
+                        <col style={{ width: '15%' }} />
+                        <col style={{ width: '15%' }} />
+                        <col style={{ width: '12%' }} />
+                      </colgroup>
                       <thead>
                         <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-                          <th style={{ width: '23%', padding: '14px 18px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Unit & Typology</th>
-                          <th style={{ width: '11%', padding: '14px 18px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Status</th>
-                          <th style={{ width: '24%', padding: '14px 18px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Buyer Profile & Contact</th>
-                          <th style={{ width: '15%', padding: '14px 18px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Transaction Value</th>
-                          <th style={{ width: '15%', padding: '14px 18px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Payment Schedule</th>
-                          <th style={{ width: '12%', padding: '14px 18px', textAlign: 'right', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Actions</th>
+                          <th style={{ width: '23%', padding: '14px 18px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', whiteSpace: 'nowrap' }}>Unit & Typology</th>
+                          <th style={{ width: '12%', padding: '14px 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center', whiteSpace: 'nowrap' }}>Status</th>
+                          <th style={{ width: '23%', padding: '14px 18px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', whiteSpace: 'nowrap' }}>Buyer Profile & Contact</th>
+                          <th style={{ width: '15%', padding: '14px 18px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', whiteSpace: 'nowrap' }}>Transaction Value</th>
+                          <th style={{ width: '15%', padding: '14px 18px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', whiteSpace: 'nowrap' }}>Payment Schedule</th>
+                          <th style={{ width: '12%', padding: '14px 18px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -2772,14 +2780,14 @@ export default function AdminDashboard() {
                             <tr key={apt.id} style={{ transition: 'background 0.15s ease', borderBottom: '1px solid #f1f5f9' }}>
                               
                               {/* 1. Unit & Typology */}
-                              <td style={{ padding: '16px 18px' }}>
+                              <td style={{ padding: '16px 18px', verticalAlign: 'middle', textAlign: 'left' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                                   <img
                                     src={apt.imageUrl || '/assets/estate-boutique-lounge.png'}
                                     alt={apt.apartmentNumber}
                                     style={{ width: '52px', height: '52px', borderRadius: '10px', objectFit: 'cover', border: '1.5px solid #e2e8f0', flexShrink: 0, boxShadow: '0 2px 6px rgba(0,0,0,0.05)' }}
                                   />
-                                  <div>
+                                  <div style={{ minWidth: 0 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
                                       <b style={{ color: '#0f172a', fontSize: '15px', letterSpacing: '-0.01em' }}>
                                         {apt.apartmentNumber}
@@ -2788,7 +2796,7 @@ export default function AdminDashboard() {
                                         {apt.block}
                                       </span>
                                     </div>
-                                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginTop: '2px' }}>
+                                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                       {apt.title || `${apt.bedrooms} BHK Residence`}
                                     </div>
                                     <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '1px' }}>
@@ -2799,50 +2807,54 @@ export default function AdminDashboard() {
                               </td>
 
                               {/* 2. Status Badge */}
-                              <td style={{ padding: '16px 18px' }}>
-                                {apt.status === 'SOLD' ? (
-                                  <span style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    padding: '5px 12px',
-                                    borderRadius: '20px',
-                                    fontSize: '11.5px',
-                                    fontWeight: 700,
-                                    background: '#fef2f2',
-                                    color: '#b91c1c',
-                                    border: '1px solid #fecaca'
-                                  }}>
-                                    <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ef4444' }} />
-                                    Sold Out
-                                  </span>
-                                ) : (
-                                  <span style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '6px',
-                                    padding: '5px 12px',
-                                    borderRadius: '20px',
-                                    fontSize: '11.5px',
-                                    fontWeight: 700,
-                                    background: '#fffbeb',
-                                    color: '#b45309',
-                                    border: '1px solid #fde68a'
-                                  }}>
-                                    <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#f59e0b' }} />
-                                    Reserved
-                                  </span>
-                                )}
+                              <td style={{ padding: '16px 10px', verticalAlign: 'middle', textAlign: 'center' }}>
+                                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                  {apt.status === 'SOLD' ? (
+                                    <span style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      padding: '5px 12px',
+                                      borderRadius: '20px',
+                                      fontSize: '11.5px',
+                                      fontWeight: 700,
+                                      background: '#fef2f2',
+                                      color: '#b91c1c',
+                                      border: '1px solid #fecaca',
+                                      whiteSpace: 'nowrap'
+                                    }}>
+                                      <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ef4444' }} />
+                                      Sold Out
+                                    </span>
+                                  ) : (
+                                    <span style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      padding: '5px 12px',
+                                      borderRadius: '20px',
+                                      fontSize: '11.5px',
+                                      fontWeight: 700,
+                                      background: '#fffbeb',
+                                      color: '#b45309',
+                                      border: '1px solid #fde68a',
+                                      whiteSpace: 'nowrap'
+                                    }}>
+                                      <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#f59e0b' }} />
+                                      Reserved
+                                    </span>
+                                  )}
+                                </div>
                               </td>
 
                               {/* 3. Buyer Details */}
-                              <td style={{ padding: '16px 18px' }}>
+                              <td style={{ padding: '16px 18px', verticalAlign: 'middle', textAlign: 'left' }}>
                                 <div>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#eff6ff', color: '#2563eb', fontWeight: 700, fontSize: '11.5px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid #bfdbfe' }}>
                                       {initials}
                                     </div>
-                                    <div style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    <div style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap' }}>
                                       <span>{buyer.name}</span>
                                       <UserCheck size={14} style={{ color: '#2563eb' }} />
                                     </div>
@@ -2883,23 +2895,23 @@ export default function AdminDashboard() {
                               </td>
 
                               {/* 4. Deal Value & Payment Breakdown */}
-                              <td style={{ padding: '16px 18px' }}>
+                              <td style={{ padding: '16px 18px', verticalAlign: 'middle', textAlign: 'left' }}>
                                 <div>
-                                  <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.01em' }}>
+                                  <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>
                                     {formatINR(dealVal)}
                                   </div>
-                                  <div style={{ fontSize: '12px', color: '#059669', fontWeight: 600, marginTop: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <div style={{ fontSize: '12px', color: '#059669', fontWeight: 600, marginTop: '3px', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
                                     <CheckCircle2 size={12} />
                                     <span>Paid: {formatINR(paidVal)}</span>
                                   </div>
-                                  <div style={{ fontSize: '11.5px', color: isCleared ? '#059669' : '#dc2626', fontWeight: 600, marginTop: '2px' }}>
+                                  <div style={{ fontSize: '11.5px', color: isCleared ? '#059669' : '#dc2626', fontWeight: 600, marginTop: '2px', whiteSpace: 'nowrap' }}>
                                     Balance: {isCleared ? '₹0 (Fully Cleared)' : formatINR(balVal)}
                                   </div>
                                 </div>
                               </td>
 
                               {/* 5. Payment Status & Booking Date */}
-                              <td style={{ padding: '16px 18px' }}>
+                              <td style={{ padding: '16px 18px', verticalAlign: 'middle', textAlign: 'left' }}>
                                 <div>
                                   <span style={{
                                     display: 'inline-block',
@@ -2909,7 +2921,8 @@ export default function AdminDashboard() {
                                     fontWeight: 700,
                                     background: isCleared ? '#ecfdf5' : (buyer.paymentPlan === 'TOKEN_ADVANCE' || buyer.paymentStatus === 'TOKEN_PAID' ? '#fffbeb' : '#eff6ff'),
                                     color: isCleared ? '#047857' : (buyer.paymentPlan === 'TOKEN_ADVANCE' || buyer.paymentStatus === 'TOKEN_PAID' ? '#b45309' : '#1d4ed8'),
-                                    border: `1px solid ${isCleared ? '#a7f3d0' : (buyer.paymentPlan === 'TOKEN_ADVANCE' || buyer.paymentStatus === 'TOKEN_PAID' ? '#fde68a' : '#bfdbfe')}`
+                                    border: `1px solid ${isCleared ? '#a7f3d0' : (buyer.paymentPlan === 'TOKEN_ADVANCE' || buyer.paymentStatus === 'TOKEN_PAID' ? '#fde68a' : '#bfdbfe')}`,
+                                    whiteSpace: 'nowrap'
                                   }}>
                                     {isCleared ? '✅ 100% Full Payment' : (buyer.paymentPlan === 'TOKEN_ADVANCE' || buyer.paymentStatus === 'TOKEN_PAID' ? '🟡 Token Advance' : '🔵 Active EMI Plan')}
                                   </span>
@@ -2925,7 +2938,7 @@ export default function AdminDashboard() {
                                     </div>
                                   </div>
 
-                                  <div style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '6px' }}>
+                                  <div style={{ fontSize: '11px', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '6px', whiteSpace: 'nowrap' }}>
                                     <Calendar size={11} style={{ color: '#64748b' }} />
                                     <span>Booked: <b>{buyer.bookingDate || buyer.saleDate || 'Recently'}</b></span>
                                   </div>
@@ -2933,13 +2946,13 @@ export default function AdminDashboard() {
                               </td>
 
                               {/* 6. Actions */}
-                              <td style={{ padding: '16px 18px', textAlign: 'right' }}>
+                              <td style={{ padding: '16px 18px', verticalAlign: 'middle', textAlign: 'right' }}>
                                 <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center' }}>
                                   <button
                                     type="button"
                                     onClick={() => openEditBuyerModal(apt)}
                                     className="btn-secondary-action"
-                                    style={{ padding: '7px 12px', fontSize: '12.5px', gap: '5px', borderRadius: '8px' }}
+                                    style={{ padding: '7px 12px', fontSize: '12.5px', gap: '5px', borderRadius: '8px', whiteSpace: 'nowrap' }}
                                     title="Edit buyer details & payment schedule"
                                   >
                                     <Edit3 size={13} />
@@ -2966,7 +2979,8 @@ export default function AdminDashboard() {
                                       alignItems: 'center',
                                       gap: '5px',
                                       cursor: 'pointer',
-                                      boxShadow: '0 2px 6px rgba(0,43,128,0.2)'
+                                      boxShadow: '0 2px 6px rgba(0,43,128,0.2)',
+                                      whiteSpace: 'nowrap'
                                     }}
                                     title="View luxury allotment receipt / tax invoice"
                                   >
