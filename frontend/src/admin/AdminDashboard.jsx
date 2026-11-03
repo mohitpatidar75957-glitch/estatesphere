@@ -6756,340 +6756,346 @@ export default function AdminDashboard() {
       {/* Custom In-App Logout Modal (No browser alert) */}
       
       {/* ========================================================
-          MODAL 1: RECORD / EDIT BUYER DETAILS & PAYMENT PLAN
+          FULL SCREEN VIEW 1: BUYER PROFILE & PAYMENT SCHEDULE (MATCHING SCREENSHOT 3)
       ======================================================== */}
       {buyerModal.isOpen && (
-        <div 
-          className="modal-overlay" 
-          onClick={() => setBuyerModal(prev => ({ ...prev, isOpen: false }))}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 999999,
-            backgroundColor: 'rgba(15, 23, 42, 0.72)',
-            backdropFilter: 'blur(5px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px',
-            overflowY: 'auto'
-          }}
-        >
-          <div 
-            className="modal-content-card"
-            onClick={(e) => e.stopPropagation()}
-            style={{ 
-              maxWidth: '680px', 
-              width: '100%', 
-              margin: 'auto', 
-              maxHeight: '92vh', 
-              overflowY: 'auto', 
-              background: '#ffffff', 
-              borderRadius: '16px', 
-              padding: '24px 28px', 
-              boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.45)',
-              border: '1px solid #e2e8f0'
-            }}
-          >
-            
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '14px', marginBottom: '18px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <UserCheck size={20} />
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
-                    Buyer Profile & Payment Schedule
-                  </h3>
-                  <span style={{ fontSize: '12px', color: '#64748b' }}>
-                    Unit {buyerModal.apartmentNumber} &bull; {buyerModal.unitTitle}
-                  </span>
-                </div>
-              </div>
-              <button
+        <div className="fullscreen-page-overlay">
+          
+          {/* Top Sticky Bar */}
+          <header className="fullscreen-top-nav">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button 
                 type="button"
+                className="btn-secondary-action"
+                style={{ padding: '7px 14px', fontSize: '13px' }}
                 onClick={() => setBuyerModal(prev => ({ ...prev, isOpen: false }))}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '6px' }}
               >
-                <X size={20} />
+                <ArrowLeft size={16} />
+                <span>Back to Sales Registry</span>
               </button>
+              <div style={{ width: '1px', height: '24px', background: '#cbd5e1' }} />
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <UserCheck size={18} style={{ color: '#2563eb' }} />
+                  <span>Buyer Profile & Payment Schedule: Unit {buyerModal.apartmentNumber}</span>
+                </h3>
+                <span style={{ fontSize: '11.5px', color: '#64748b' }}>
+                  {buyerModal.unitTitle} &bull; Complete Allottee Specs & Financial Schedule Form
+                </span>
+              </div>
             </div>
 
-            <form onSubmit={handleSaveBuyerModal} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              
-              {/* Unit Selection & Status */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
-                    Select Apartment Unit
-                  </label>
-                  <select
-                    className="input-clean"
-                    value={buyerModal.apartmentId}
-                    onChange={(e) => {
-                      const selected = apartments.find(a => a.id === Number(e.target.value));
-                      if (selected) {
-                        openEditBuyerModal(selected);
-                      }
-                    }}
-                    style={{ width: '100%', height: '38px', fontSize: '13px' }}
-                  >
-                    {apartments.map(a => (
-                      <option key={a.id} value={a.id}>
-                        {a.apartmentNumber} — {a.title} ({a.status})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button
+                type="button"
+                className="btn-secondary-action"
+                onClick={() => setBuyerModal(prev => ({ ...prev, isOpen: false }))}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="form-buyer-profile"
+                className="btn-primary-action"
+              >
+                <Save size={15} />
+                <span>Save Buyer Record</span>
+              </button>
+            </div>
+          </header>
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
-                    Unit Inventory Status
-                  </label>
-                  <select
-                    className="input-clean"
-                    value={buyerModal.status}
-                    onChange={(e) => setBuyerModal(prev => ({ ...prev, status: e.target.value }))}
-                    style={{ width: '100%', height: '38px', fontSize: '13px' }}
-                  >
-                    <option value="SOLD">🔴 SOLD OUT (Purchased)</option>
-                    <option value="RESERVED">🟡 RESERVED (Token Paid)</option>
-                    <option value="AVAILABLE">🟢 AVAILABLE</option>
-                  </select>
-                </div>
-              </div>
+          {/* Form Content in Two White Panels (Matching Screenshot 3 Layout) */}
+          <div className="fullscreen-content-container">
+            <form id="form-buyer-profile" onSubmit={handleSaveBuyerModal}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: '24px' }}>
+                
+                {/* Left Panel: Unit & Buyer Identity */}
+                <div className="white-panel" style={{ padding: '24px' }}>
+                  <h4 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Layers size={16} style={{ color: '#2563eb' }} />
+                    <span>1. Unit Assignment & Buyer Profile</span>
+                  </h4>
 
-              {/* Buyer Full Name */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
-                  Buyer / Allottee Full Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Vikramaditya Singhania"
-                  value={buyerModal.name}
-                  onChange={(e) => setBuyerModal(prev => ({ ...prev, name: e.target.value }))}
-                  className="input-clean"
-                  style={{ width: '100%', height: '38px', fontSize: '13.5px' }}
-                />
-              </div>
+                  {/* Apartment Unit & Status */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '14px', marginBottom: '16px' }}>
+                    <div className="form-group-clean">
+                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                        Selected Apartment Unit
+                      </label>
+                      <select
+                        className="input-clean"
+                        value={buyerModal.apartmentId}
+                        onChange={(e) => {
+                          const selected = apartments.find(a => a.id === Number(e.target.value));
+                          if (selected) {
+                            openEditBuyerModal(selected);
+                          }
+                        }}
+                        style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                      >
+                        {apartments.map(a => (
+                          <option key={a.id} value={a.id}>
+                            {a.apartmentNumber} — {a.title} ({a.status})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-              {/* Phone & Email */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
-                    Buyer Contact Phone *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="+91 98201 44521"
-                    value={buyerModal.phone}
-                    onChange={(e) => setBuyerModal(prev => ({ ...prev, phone: e.target.value }))}
-                    className="input-clean"
-                    style={{ width: '100%', height: '38px', fontSize: '13px' }}
-                  />
-                </div>
+                    <div className="form-group-clean">
+                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                        Unit Inventory Status
+                      </label>
+                      <select
+                        className="input-clean"
+                        value={buyerModal.status}
+                        onChange={(e) => setBuyerModal(prev => ({ ...prev, status: e.target.value }))}
+                        style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                      >
+                        <option value="SOLD">🔴 SOLD OUT (Purchased)</option>
+                        <option value="RESERVED">🟡 RESERVED (Under Token)</option>
+                        <option value="AVAILABLE">🟢 AVAILABLE</option>
+                      </select>
+                    </div>
+                  </div>
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
-                    Buyer Email Address *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="buyer@domain.com"
-                    value={buyerModal.email}
-                    onChange={(e) => setBuyerModal(prev => ({ ...prev, email: e.target.value }))}
-                    className="input-clean"
-                    style={{ width: '100%', height: '38px', fontSize: '13px' }}
-                  />
-                </div>
-              </div>
-
-              {/* FINANCIAL BREAKDOWN SECTION (Kitna Diya, Kitna Bacha) */}
-              <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span>💰 Financial Settlement & Payment Status</span>
-                  <span style={{ fontSize: '11px', color: (Number(buyerModal.dealAmount) - Number(buyerModal.paidAmount) <= 0) ? '#059669' : '#dc2626', fontWeight: 700 }}>
-                    Balance Due: {formatINR(Math.max(0, (Number(buyerModal.dealAmount) || 0) - (Number(buyerModal.paidAmount) || 0)))}
-                  </span>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                      Total Agreed Deal Amount (₹) *
+                  {/* Buyer Full Name */}
+                  <div className="form-group-clean" style={{ marginBottom: '16px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                      Buyer / Allottee Full Name *
                     </label>
                     <input
-                      type="number"
+                      type="text"
                       required
-                      placeholder="e.g. 31250000"
-                      value={buyerModal.dealAmount}
-                      onChange={(e) => {
-                        const newDeal = Number(e.target.value) || 0;
-                        const newPaid = Number(buyerModal.paidAmount) || 0;
-                        setBuyerModal(prev => ({ ...prev, dealAmount: newDeal, balanceAmount: Math.max(0, newDeal - newPaid) }));
-                      }}
+                      placeholder="e.g. Vikramaditya Singhania or Ananya Deshmukh"
+                      value={buyerModal.name}
+                      onChange={(e) => setBuyerModal(prev => ({ ...prev, name: e.target.value }))}
                       className="input-clean"
-                      style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                      style={{ width: '100%', height: '38px', fontSize: '13.5px' }}
                     />
-                    <span style={{ fontSize: '11px', color: '#64748b' }}>{formatINR(Number(buyerModal.dealAmount))}</span>
                   </div>
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#059669', marginBottom: '4px' }}>
-                      Amount Paid So Far (Kitna Diya) *
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      placeholder="e.g. 28125000"
-                      value={buyerModal.paidAmount}
-                      onChange={(e) => {
-                        const newPaid = Number(e.target.value) || 0;
-                        const newDeal = Number(buyerModal.dealAmount) || 0;
-                        setBuyerModal(prev => ({ ...prev, paidAmount: newPaid, balanceAmount: Math.max(0, newDeal - newPaid) }));
-                      }}
-                      className="input-clean"
-                      style={{ width: '100%', height: '38px', fontSize: '13px', borderColor: '#a7f3d0' }}
-                    />
-                    <span style={{ fontSize: '11px', color: '#059669', fontWeight: 600 }}>{formatINR(Number(buyerModal.paidAmount))}</span>
-                  </div>
-                </div>
-
-                {/* Payment Plan Type */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                      Payment Plan Type
-                    </label>
-                    <select
-                      className="input-clean"
-                      value={buyerModal.paymentPlan}
-                      onChange={(e) => setBuyerModal(prev => ({ ...prev, paymentPlan: e.target.value }))}
-                      style={{ width: '100%', height: '38px', fontSize: '13px' }}
-                    >
-                      <option value="FULL_PAYMENT">✅ 100% Full Payment (Zero Balance)</option>
-                      <option value="EMI_PLAN">🔵 Active EMI / Installments Schedule</option>
-                      <option value="TOKEN_ADVANCE">🟡 Token Booking Advance (Under Hold)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                      {buyerModal.paymentPlan === 'EMI_PLAN' ? 'Monthly EMI Amount (₹)' : 'Balance Status'}
-                    </label>
-                    {buyerModal.paymentPlan === 'EMI_PLAN' ? (
+                  {/* Phone & Email */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
+                    <div className="form-group-clean">
+                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                        Contact Phone Number *
+                      </label>
                       <input
-                        type="number"
-                        placeholder="e.g. 312500"
-                        value={buyerModal.monthlyEmi}
-                        onChange={(e) => setBuyerModal(prev => ({ ...prev, monthlyEmi: e.target.value }))}
+                        type="text"
+                        required
+                        placeholder="+91 98201 44521"
+                        value={buyerModal.phone}
+                        onChange={(e) => setBuyerModal(prev => ({ ...prev, phone: e.target.value }))}
                         className="input-clean"
                         style={{ width: '100%', height: '38px', fontSize: '13px' }}
                       />
-                    ) : (
-                      <div style={{ height: '38px', display: 'flex', alignItems: 'center', padding: '0 12px', background: '#ffffff', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: 700, color: buyerModal.paymentPlan === 'FULL_PAYMENT' ? '#059669' : '#d97706' }}>
-                        {buyerModal.paymentPlan === 'FULL_PAYMENT' ? 'Zero Dues Pending' : 'Balance Due on Agreement'}
-                      </div>
-                    )}
+                    </div>
+
+                    <div className="form-group-clean">
+                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                        Email Address *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        placeholder="buyer@domain.com"
+                        value={buyerModal.email}
+                        onChange={(e) => setBuyerModal(prev => ({ ...prev, email: e.target.value }))}
+                        className="input-clean"
+                        style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Assigned Relationship Manager */}
+                  <div className="form-group-clean" style={{ marginBottom: '16px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                      Assigned Relationship Manager / Staff
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Super Admin or Rohit Verma (Manager)"
+                      value={buyerModal.assignedAgent}
+                      onChange={(e) => setBuyerModal(prev => ({ ...prev, assignedAgent: e.target.value }))}
+                      className="input-clean"
+                      style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                    />
+                  </div>
+
+                  {/* Special Terms & Customizations */}
+                  <div className="form-group-clean">
+                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                      Special Terms, Inclusions & Parking Slot
+                    </label>
+                    <textarea
+                      rows={3}
+                      placeholder="e.g. Bespoke travertine finishes requested. Car parking slot P-14 allocated in basement B1."
+                      value={buyerModal.notes}
+                      onChange={(e) => setBuyerModal(prev => ({ ...prev, notes: e.target.value }))}
+                      className="input-clean"
+                      style={{ width: '100%', fontSize: '13px', resize: 'vertical' }}
+                    />
                   </div>
                 </div>
 
-              </div>
+                {/* Right Panel: Financial Settlement, EMI Schedule & Due Dates */}
+                <div className="white-panel" style={{ padding: '24px' }}>
+                  <h4 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <TrendingUp size={16} style={{ color: '#059669' }} />
+                      <span>2. Financial Consideration & EMI Schedule</span>
+                    </div>
+                    <span style={{ fontSize: '11px', color: (Number(buyerModal.dealAmount) - Number(buyerModal.paidAmount) <= 0) ? '#059669' : '#dc2626', fontWeight: 700 }}>
+                      Balance Due: {formatINR(Math.max(0, (Number(buyerModal.dealAmount) || 0) - (Number(buyerModal.paidAmount) || 0)))}
+                    </span>
+                  </h4>
 
-              {/* Booking Date & Handled By */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
-                    Booking / Token Date *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. 26 Oct 2026"
-                    value={buyerModal.bookingDate}
-                    onChange={(e) => setBuyerModal(prev => ({ ...prev, bookingDate: e.target.value, saleDate: e.target.value }))}
-                    className="input-clean"
-                    style={{ width: '100%', height: '38px', fontSize: '13px' }}
-                  />
+                  {/* Deal Amount & Amount Paid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
+                    <div className="form-group-clean">
+                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                        Total Agreed Price (INR) *
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        placeholder="e.g. 28750000"
+                        value={buyerModal.dealAmount}
+                        onChange={(e) => {
+                          const newDeal = Number(e.target.value) || 0;
+                          const newPaid = Number(buyerModal.paidAmount) || 0;
+                          setBuyerModal(prev => ({ ...prev, dealAmount: newDeal, balanceAmount: Math.max(0, newDeal - newPaid) }));
+                        }}
+                        className="input-clean"
+                        style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                      />
+                      <span style={{ fontSize: '11px', color: '#64748b' }}>{formatINR(Number(buyerModal.dealAmount))}</span>
+                    </div>
+
+                    <div className="form-group-clean">
+                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#059669' }}>
+                        Amount Paid (Received) *
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        placeholder="e.g. 1500000"
+                        value={buyerModal.paidAmount}
+                        onChange={(e) => {
+                          const newPaid = Number(e.target.value) || 0;
+                          const newDeal = Number(buyerModal.dealAmount) || 0;
+                          setBuyerModal(prev => ({ ...prev, paidAmount: newPaid, balanceAmount: Math.max(0, newDeal - newPaid) }));
+                        }}
+                        className="input-clean"
+                        style={{ width: '100%', height: '38px', fontSize: '13px', borderColor: '#a7f3d0' }}
+                      />
+                      <span style={{ fontSize: '11px', color: '#059669', fontWeight: 600 }}>{formatINR(Number(buyerModal.paidAmount))}</span>
+                    </div>
+                  </div>
+
+                  {/* Payment Plan Type */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '14px', marginBottom: '16px' }}>
+                    <div className="form-group-clean">
+                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                        Payment Plan Category
+                      </label>
+                      <select
+                        className="input-clean"
+                        value={buyerModal.paymentPlan}
+                        onChange={(e) => setBuyerModal(prev => ({ ...prev, paymentPlan: e.target.value }))}
+                        style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                      >
+                        <option value="FULL_PAYMENT">✅ 100% Full Payment (Zero Balance)</option>
+                        <option value="EMI_PLAN">🔵 Active EMI / Installments Schedule</option>
+                        <option value="TOKEN_ADVANCE">🟡 Token Booking Advance (Under Hold)</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group-clean">
+                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                        {buyerModal.paymentPlan === 'EMI_PLAN' ? 'Monthly EMI (INR)' : 'Balance Status'}
+                      </label>
+                      {buyerModal.paymentPlan === 'EMI_PLAN' ? (
+                        <input
+                          type="number"
+                          placeholder="e.g. 312500"
+                          value={buyerModal.monthlyEmi}
+                          onChange={(e) => setBuyerModal(prev => ({ ...prev, monthlyEmi: e.target.value }))}
+                          className="input-clean"
+                          style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                        />
+                      ) : (
+                        <div style={{ height: '38px', display: 'flex', alignItems: 'center', padding: '0 12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: 700, color: buyerModal.paymentPlan === 'FULL_PAYMENT' ? '#059669' : '#d97706' }}>
+                          {buyerModal.paymentPlan === 'FULL_PAYMENT' ? 'Zero Dues Outstanding' : 'Balance on Agreement'}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Booking Date & Next Due Date */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
+                    <div className="form-group-clean">
+                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                        Booking / Token Date *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. 01 Nov 2026"
+                        value={buyerModal.bookingDate}
+                        onChange={(e) => setBuyerModal(prev => ({ ...prev, bookingDate: e.target.value, saleDate: e.target.value }))}
+                        className="input-clean"
+                        style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                      />
+                    </div>
+
+                    <div className="form-group-clean">
+                      <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                        Next Due Date / Milestone
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 15 Nov 2026"
+                        value={buyerModal.nextDueDate}
+                        onChange={(e) => setBuyerModal(prev => ({ ...prev, nextDueDate: e.target.value }))}
+                        className="input-clean"
+                        style={{ width: '100%', height: '38px', fontSize: '13px' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Visual Progress Bar */}
+                  <div style={{ background: '#f8fafc', padding: '14px 16px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
+                      <span>Payment Clearance Status</span>
+                      <span style={{ color: Number(buyerModal.dealAmount) - Number(buyerModal.paidAmount) <= 0 ? '#059669' : '#2563eb' }}>
+                        {Math.min(100, Math.round(((Number(buyerModal.paidAmount) || 0) / (Number(buyerModal.dealAmount) || 1)) * 100))}% Cleared
+                      </span>
+                    </div>
+                    <div style={{ width: '100%', height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div 
+                        style={{ 
+                          width: `${Math.min(100, Math.round(((Number(buyerModal.paidAmount) || 0) / (Number(buyerModal.dealAmount) || 1)) * 100))}%`, 
+                          height: '100%', 
+                          background: Number(buyerModal.dealAmount) - Number(buyerModal.paidAmount) <= 0 ? '#10b981' : '#3b82f6', 
+                          borderRadius: '4px',
+                          transition: 'width 0.3s' 
+                        }} 
+                      />
+                    </div>
+                  </div>
+
                 </div>
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
-                    Next Due Date / Milestone
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 15 Nov 2026"
-                    value={buyerModal.nextDueDate}
-                    onChange={(e) => setBuyerModal(prev => ({ ...prev, nextDueDate: e.target.value }))}
-                    className="input-clean"
-                    style={{ width: '100%', height: '38px', fontSize: '13px' }}
-                  />
-                </div>
               </div>
-
-              {/* Assigned Staff */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
-                  Assigned Relationship Manager / Staff
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Super Admin or Rohit Verma"
-                  value={buyerModal.assignedAgent}
-                  onChange={(e) => setBuyerModal(prev => ({ ...prev, assignedAgent: e.target.value }))}
-                  className="input-clean"
-                  style={{ width: '100%', height: '38px', fontSize: '13px' }}
-                />
-              </div>
-
-              {/* Special Terms / Agreement Notes */}
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
-                  Agreement Notes / Special Terms (Parking Slot, Bespoke Customizations)
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="e.g. Bespoke travertine finishes requested. Car parking slot P-14 allocated in basement B1."
-                  value={buyerModal.notes}
-                  onChange={(e) => setBuyerModal(prev => ({ ...prev, notes: e.target.value }))}
-                  className="input-clean"
-                  style={{ width: '100%', fontSize: '13px', resize: 'vertical' }}
-                />
-              </div>
-
-              {/* Footer Actions */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
-                <button
-                  type="button"
-                  className="btn-secondary-action"
-                  onClick={() => setBuyerModal(prev => ({ ...prev, isOpen: false }))}
-                  style={{ padding: '9px 18px' }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn-primary-action"
-                  style={{ padding: '9px 24px' }}
-                >
-                  <Save size={15} />
-                  <span>Save Buyer Record</span>
-                </button>
-              </div>
-
             </form>
-
           </div>
+
         </div>
       )}
 
       {/* ========================================================
-          MODAL 2: OFFICIAL REAL-ESTATE TAX INVOICE & ALLOTMENT SLIP (MATCHING SS 2)
+          FULL SCREEN VIEW 2: OFFICIAL REAL-ESTATE INVOICE (MATCHING SCREENSHOTS 2 & 3)
       ======================================================== */}
       {saleReceiptModal.isOpen && saleReceiptModal.apt && (() => {
         const apt = saleReceiptModal.apt;
@@ -7097,9 +7103,9 @@ export default function AdminDashboard() {
           name: 'Ananya Deshmukh',
           phone: '+91 98112 33490',
           email: 'ananya.deshmukh@fortiscare.org',
-          dealAmount: apt.price || 28800000,
+          dealAmount: apt.price || 28750000,
           paidAmount: 1500000,
-          balanceAmount: (apt.price || 28800000) - 1500000,
+          balanceAmount: (apt.price || 28750000) - 1500000,
           paymentPlan: 'TOKEN_ADVANCE',
           bookingDate: '01 Nov 2026',
           saleDate: '01 Nov 2026',
@@ -7109,7 +7115,7 @@ export default function AdminDashboard() {
           notes: 'Standard residence allotment.'
         };
 
-        const deal = Number(buyer.dealAmount) || apt.price || 28800000;
+        const deal = Number(buyer.dealAmount) || apt.price || 28750000;
         const paid = buyer.paidAmount !== undefined ? Number(buyer.paidAmount) : (buyer.paymentStatus === 'FULLY_PAID' ? deal : Math.round(deal * 0.9));
         const balance = Math.max(0, deal - paid);
         const percentPaid = Math.min(100, Math.round((paid / deal) * 100));
@@ -7120,98 +7126,83 @@ export default function AdminDashboard() {
         const invoiceNo = `ES-INV-2026/${String(apt.id).padStart(2, '0')}-${apt.apartmentNumber.replace(/[^\d]/g, '') || '01'}`;
         const bookingDateStr = buyer.bookingDate || buyer.saleDate || '01 Nov 2026';
         const invoiceDateStr = new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date());
-        const wordsPaid = numberToIndianWords(paid);
         const wordsTotal = numberToIndianWords(deal);
 
         return (
-          <div 
-            className="modal-overlay" 
-            onClick={() => setSaleReceiptModal({ isOpen: false, apt: null })}
-            style={{ 
-              position: 'fixed', 
-              inset: 0, 
-              zIndex: 999999, 
-              backgroundColor: 'rgba(15, 23, 42, 0.75)', 
-              backdropFilter: 'blur(6px)', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              padding: '16px', 
-              overflowY: 'auto' 
-            }}
-          >
-            <div 
-              className="modal-content-card invoice-modal-card" 
-              onClick={(e) => e.stopPropagation()} 
-              style={{ 
-                maxWidth: '850px', 
-                width: '100%', 
-                margin: 'auto', 
-                maxHeight: '94vh', 
-                overflowY: 'auto', 
-                borderRadius: '12px', 
-                boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.5)', 
-                background: '#f8fafc', 
-                border: '1px solid #cbd5e1', 
-                padding: '0' 
-              }}
-            >
-              
-              {/* Slip Top Toolbar (Non-printable controls) */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid #cbd5e1', background: '#0a2540', color: '#ffffff', borderTopLeftRadius: '12px', borderTopRightRadius: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Building2 size={18} style={{ color: '#60a5fa' }} />
-                  <span style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '0.04em' }}>
-                    EstateSphere Luxury Residences — Official Allotment & Payment Invoice
+          <div className="fullscreen-page-overlay">
+            
+            {/* Top Sticky Bar */}
+            <header className="fullscreen-top-nav">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <button 
+                  type="button"
+                  className="btn-secondary-action"
+                  style={{ padding: '7px 14px', fontSize: '13px' }}
+                  onClick={() => setSaleReceiptModal({ isOpen: false, apt: null })}
+                >
+                  <ArrowLeft size={16} />
+                  <span>Back to Sales Registry</span>
+                </button>
+                <div style={{ width: '1px', height: '24px', background: '#cbd5e1' }} />
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FileText size={18} style={{ color: '#2563eb' }} />
+                    <span>Official Allotment & Payment Invoice: Unit {apt.apartmentNumber}</span>
+                  </h3>
+                  <span style={{ fontSize: '11.5px', color: '#64748b' }}>
+                    Allottee: <b style={{ color: '#0f172a' }}>{buyer.name}</b> &bull; Invoice Ref: {invoiceNo}
                   </span>
-                </div>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                  <button
-                    type="button"
-                    onClick={() => window.print()}
-                    className="btn-primary-action"
-                    style={{ padding: '6px 14px', fontSize: '12.5px', gap: '6px', background: '#2563eb', borderColor: '#3b82f6' }}
-                  >
-                    <Printer size={14} />
-                    <span>Print Invoice / Save PDF</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSaleReceiptModal({ isOpen: false, apt: null })}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px', display: 'flex', alignItems: 'center' }}
-                  >
-                    <X size={20} />
-                  </button>
                 </div>
               </div>
 
-              {/* Printable Invoice Sheet (Exact Layout matching Screenshot 2) */}
-              <div style={{ background: '#ffffff', margin: '16px', padding: '28px 32px', borderRadius: '8px', border: '1.5px solid #002b80', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="btn-primary-action"
+                  style={{ background: '#002b80', borderColor: '#002b80', padding: '7px 16px', fontSize: '13px' }}
+                >
+                  <Printer size={15} />
+                  <span>Print Invoice / Save PDF</span>
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary-action"
+                  onClick={() => setSaleReceiptModal({ isOpen: false, apt: null })}
+                >
+                  Close
+                </button>
+              </div>
+            </header>
+
+            {/* Printable Invoice Sheet (Exact Layout matching Screenshot 2) */}
+            <div className="fullscreen-content-container">
+              <div style={{ background: '#ffffff', padding: '36px 40px', borderRadius: '10px', border: '1.5px solid #002b80', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
                 
                 {/* 1. Header Title Banner (Matching Screenshot 2) */}
-                <div style={{ textAlign: 'center', paddingBottom: '16px', borderBottom: '2px solid #002b80', marginBottom: '20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: '#002b80', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '18px' }}>
+                <div style={{ textAlign: 'center', paddingBottom: '16px', borderBottom: '2px solid #002b80', marginBottom: '22px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#002b80', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '20px' }}>
                       ES
                     </div>
-                    <h1 style={{ margin: 0, fontSize: '26px', fontWeight: 800, color: '#002b80', letterSpacing: '0.02em', textTransform: 'none' }}>
+                    <h1 style={{ margin: 0, fontSize: '28px', fontWeight: 800, color: '#002b80', letterSpacing: '0.02em', textTransform: 'none' }}>
                       EstateSphere Luxury Residences Invoice
                     </h1>
                   </div>
-                  <div style={{ fontSize: '11px', color: '#64748b', letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: '4px' }}>
+                  <div style={{ fontSize: '12px', color: '#64748b', letterSpacing: '0.14em', textTransform: 'uppercase', marginTop: '4px' }}>
                     Official Property Allotment Confirmation & Payment Receipt
                   </div>
                 </div>
 
                 {/* 2. Top Details: Billed By | Billed To | Invoice Meta (Exact 3-Block Layout matching Screenshot 2) */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.1fr 0.9fr', gap: '16px', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid #e2e8f0', fontSize: '12px', lineHeight: 1.5 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.1fr 0.9fr', gap: '20px', marginBottom: '22px', paddingBottom: '18px', borderBottom: '1px solid #e2e8f0', fontSize: '12.5px', lineHeight: 1.55 }}>
                   
                   {/* Billed By: EstateSphere Luxury Residences LLP */}
                   <div>
-                    <div style={{ fontWeight: 800, color: '#002b80', fontSize: '12.5px', textTransform: 'uppercase', marginBottom: '4px', paddingBottom: '2px', borderBottom: '1px solid #002b80' }}>
+                    <div style={{ fontWeight: 800, color: '#002b80', fontSize: '13px', textTransform: 'uppercase', marginBottom: '5px', paddingBottom: '3px', borderBottom: '1px solid #002b80' }}>
                       Billed By:
                     </div>
-                    <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '13px' }}>
+                    <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '13.5px' }}>
                       EstateSphere Luxury Residences LLP
                     </div>
                     <div style={{ color: '#475569' }}>
@@ -7226,10 +7217,10 @@ export default function AdminDashboard() {
 
                   {/* Billed To: Client Details */}
                   <div>
-                    <div style={{ fontWeight: 800, color: '#002b80', fontSize: '12.5px', textTransform: 'uppercase', marginBottom: '4px', paddingBottom: '2px', borderBottom: '1px solid #002b80' }}>
+                    <div style={{ fontWeight: 800, color: '#002b80', fontSize: '13px', textTransform: 'uppercase', marginBottom: '5px', paddingBottom: '3px', borderBottom: '1px solid #002b80' }}>
                       Billed To (Allottee):
                     </div>
-                    <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '13.5px' }}>
+                    <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '14px' }}>
                       {buyer.name}
                     </div>
                     <div style={{ color: '#475569' }}>
@@ -7243,7 +7234,7 @@ export default function AdminDashboard() {
 
                   {/* Invoice Meta */}
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: 800, color: '#002b80', fontSize: '12.5px', textTransform: 'uppercase', marginBottom: '4px', paddingBottom: '2px', borderBottom: '1px solid #002b80' }}>
+                    <div style={{ fontWeight: 800, color: '#002b80', fontSize: '13px', textTransform: 'uppercase', marginBottom: '5px', paddingBottom: '3px', borderBottom: '1px solid #002b80' }}>
                       Invoice Details:
                     </div>
                     <div style={{ color: '#475569' }}>
@@ -7259,40 +7250,40 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* 3. Primary Itemized Table (Exact Navy Blue Header Table matching Screenshot 2) */}
-                <div style={{ marginBottom: '18px', overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', border: '1px solid #002b80' }}>
+                <div style={{ marginBottom: '20px', overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', border: '1px solid #002b80' }}>
                     <thead>
                       <tr style={{ background: '#002b80', color: '#ffffff', textAlign: 'left' }}>
-                        <th style={{ padding: '8px 10px', width: '5%', borderRight: '1px solid #1e40af' }}>Sl No</th>
-                        <th style={{ padding: '8px 10px', width: '33%', borderRight: '1px solid #1e40af' }}>Property Description</th>
-                        <th style={{ padding: '8px 10px', width: '18%', borderRight: '1px solid #1e40af' }}>Block & Carpet Area</th>
-                        <th style={{ padding: '8px 10px', width: '14%', textAlign: 'right', borderRight: '1px solid #1e40af' }}>Agreed Price</th>
-                        <th style={{ padding: '8px 10px', width: '15%', textAlign: 'right', borderRight: '1px solid #1e40af' }}>Amount Paid</th>
-                        <th style={{ padding: '8px 10px', width: '15%', textAlign: 'right' }}>Balance Due</th>
+                        <th style={{ padding: '10px 12px', width: '6%', borderRight: '1px solid #1e40af' }}>Sl No</th>
+                        <th style={{ padding: '10px 12px', width: '34%', borderRight: '1px solid #1e40af' }}>Property Description</th>
+                        <th style={{ padding: '10px 12px', width: '18%', borderRight: '1px solid #1e40af' }}>Block & Carpet Area</th>
+                        <th style={{ padding: '10px 12px', width: '14%', textAlign: 'right', borderRight: '1px solid #1e40af' }}>Agreed Price</th>
+                        <th style={{ padding: '10px 12px', width: '14%', textAlign: 'right', borderRight: '1px solid #1e40af' }}>Amount Paid</th>
+                        <th style={{ padding: '10px 12px', width: '14%', textAlign: 'right' }}>Balance Due</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr style={{ borderBottom: '1px solid #cbd5e1', background: '#f8fafc' }}>
-                        <td style={{ padding: '10px 10px', borderRight: '1px solid #cbd5e1', fontWeight: 700, textAlign: 'center' }}>1</td>
-                        <td style={{ padding: '10px 10px', borderRight: '1px solid #cbd5e1' }}>
-                          <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '13px' }}>
+                        <td style={{ padding: '12px 12px', borderRight: '1px solid #cbd5e1', fontWeight: 700, textAlign: 'center' }}>1</td>
+                        <td style={{ padding: '12px 12px', borderRight: '1px solid #cbd5e1' }}>
+                          <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '13.5px' }}>
                             Unit {apt.apartmentNumber} — {apt.title || `${apt.bedrooms} BHK Residence`}
                           </div>
-                          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
-                            {apt.typology} &bull; Luxury specification inclusions &bull; Balcony & Private Garden/Terrace access
+                          <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '3px' }}>
+                            {apt.typology} &bull; Luxury specifications &bull; Balcony & Private Garden/Terrace access
                           </div>
                         </td>
-                        <td style={{ padding: '10px 10px', borderRight: '1px solid #cbd5e1', color: '#334155' }}>
+                        <td style={{ padding: '12px 12px', borderRight: '1px solid #cbd5e1', color: '#334155' }}>
                           <div><b>{apt.block}</b> &bull; {apt.floor}</div>
-                          <div style={{ fontSize: '11px', color: '#64748b' }}>{apt.areaSqft} sq.ft ({apt.areaSqm || Math.round(apt.areaSqft / 10.764)} m²)</div>
+                          <div style={{ fontSize: '11.5px', color: '#64748b' }}>{apt.areaSqft} sq.ft ({apt.areaSqm || Math.round(apt.areaSqft / 10.764)} m²)</div>
                         </td>
-                        <td style={{ padding: '10px 10px', textAlign: 'right', borderRight: '1px solid #cbd5e1', fontWeight: 700, color: '#0f172a' }}>
+                        <td style={{ padding: '12px 12px', textAlign: 'right', borderRight: '1px solid #cbd5e1', fontWeight: 700, color: '#0f172a' }}>
                           {formatFullINR(deal)}
                         </td>
-                        <td style={{ padding: '10px 10px', textAlign: 'right', borderRight: '1px solid #cbd5e1', fontWeight: 800, color: '#059669' }}>
+                        <td style={{ padding: '12px 12px', textAlign: 'right', borderRight: '1px solid #cbd5e1', fontWeight: 800, color: '#059669' }}>
                           {formatFullINR(paid)}
                         </td>
-                        <td style={{ padding: '10px 10px', textAlign: 'right', fontWeight: 800, color: balance === 0 ? '#059669' : '#dc2626' }}>
+                        <td style={{ padding: '12px 12px', textAlign: 'right', fontWeight: 800, color: balance === 0 ? '#059669' : '#dc2626' }}>
                           {balance === 0 ? '₹0.00 (NIL)' : formatFullINR(balance)}
                         </td>
                       </tr>
@@ -7301,19 +7292,19 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Subtotals & Totals Row (Right-aligned, matching Screenshot 2) */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '18px' }}>
-                  <div style={{ width: '320px', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#f8fafc', padding: '10px 14px', fontSize: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '4px', borderBottom: '1px solid #e2e8f0' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
+                  <div style={{ width: '340px', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#f8fafc', padding: '12px 16px', fontSize: '12.5px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '6px', borderBottom: '1px solid #e2e8f0' }}>
                       <span style={{ color: '#475569' }}>Agreed Property Value:</span>
                       <b style={{ color: '#0f172a' }}>{formatFullINR(deal)}</b>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #e2e8f0' }}>
                       <span style={{ color: '#059669', fontWeight: 700 }}>Total Amount Paid:</span>
-                      <b style={{ color: '#059669', fontSize: '13px' }}>{formatFullINR(paid)}</b>
+                      <b style={{ color: '#059669', fontSize: '13.5px' }}>{formatFullINR(paid)}</b>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '6px' }}>
                       <span style={{ color: balance === 0 ? '#059669' : '#dc2626', fontWeight: 700 }}>Net Balance Outstanding:</span>
-                      <b style={{ color: balance === 0 ? '#059669' : '#dc2626', fontSize: '13.5px' }}>
+                      <b style={{ color: balance === 0 ? '#059669' : '#dc2626', fontSize: '14px' }}>
                         {balance === 0 ? '₹0.00 (Cleared)' : formatFullINR(balance)}
                       </b>
                     </div>
@@ -7321,19 +7312,19 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* 4. Amount in Words Box (Exact Banner matching Screenshot 2) */}
-                <div style={{ background: '#f0f7ff', border: '1.5px solid #002b80', borderRadius: '6px', padding: '8px 14px', marginBottom: '18px', fontSize: '12px', color: '#002b80' }}>
+                <div style={{ background: '#f0f7ff', border: '1.5px solid #002b80', borderRadius: '6px', padding: '10px 16px', marginBottom: '20px', fontSize: '12.5px', color: '#002b80' }}>
                   <b>Amount in Words (Total Consideration):</b> {wordsTotal}
                 </div>
 
                 {/* 5. Bank Details & UPI Payments Grid (Two Boxes matching Screenshot 2) */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '18px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px', marginBottom: '20px' }}>
                   
                   {/* Bank Details Box */}
-                  <div style={{ border: '1.5px solid #002b80', borderRadius: '6px', padding: '10px 14px', background: '#ffffff', fontSize: '11.5px' }}>
-                    <div style={{ fontWeight: 800, color: '#002b80', textTransform: 'uppercase', marginBottom: '6px', borderBottom: '1px solid #002b80', paddingBottom: '2px' }}>
+                  <div style={{ border: '1.5px solid #002b80', borderRadius: '6px', padding: '12px 16px', background: '#ffffff', fontSize: '12px' }}>
+                    <div style={{ fontWeight: 800, color: '#002b80', textTransform: 'uppercase', marginBottom: '8px', borderBottom: '1px solid #002b80', paddingBottom: '3px' }}>
                       Bank Account Details:
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr', rowGap: '4px', color: '#334155' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', rowGap: '5px', color: '#334155' }}>
                       <span style={{ color: '#64748b' }}>Bank Name:</span>
                       <b>State Bank of India (SBI) / HDFC Bank</b>
                       <span style={{ color: '#64748b' }}>Holder Name:</span>
@@ -7346,11 +7337,11 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* UPI / Digital Settlement Box */}
-                  <div style={{ border: '1.5px solid #002b80', borderRadius: '6px', padding: '10px 14px', background: '#ffffff', fontSize: '11.5px' }}>
-                    <div style={{ fontWeight: 800, color: '#002b80', textTransform: 'uppercase', marginBottom: '6px', borderBottom: '1px solid #002b80', paddingBottom: '2px' }}>
+                  <div style={{ border: '1.5px solid #002b80', borderRadius: '6px', padding: '12px 16px', background: '#ffffff', fontSize: '12px' }}>
+                    <div style={{ fontWeight: 800, color: '#002b80', textTransform: 'uppercase', marginBottom: '8px', borderBottom: '1px solid #002b80', paddingBottom: '3px' }}>
                       Digital & Payment Verification:
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr', rowGap: '4px', color: '#334155' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr', rowGap: '5px', color: '#334155' }}>
                       <span style={{ color: '#64748b' }}>Payment Mode:</span>
                       <b>RTGS / NEFT / IMPS / Wire Transfer</b>
                       <span style={{ color: '#64748b' }}>UPI VPA:</span>
@@ -7368,19 +7359,19 @@ export default function AdminDashboard() {
 
                 {/* 6. Payment Plan Details Box (Full Payment vs EMI vs Token) */}
                 {isFullPayment && (
-                  <div style={{ background: '#f0fdf4', border: '1.5px solid #16a34a', borderRadius: '6px', padding: '10px 14px', marginBottom: '18px', fontSize: '12px', color: '#166534' }}>
+                  <div style={{ background: '#f0fdf4', border: '1.5px solid #16a34a', borderRadius: '6px', padding: '12px 16px', marginBottom: '20px', fontSize: '12.5px', color: '#166534' }}>
                     <div style={{ fontWeight: 800, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <CheckCircle2 size={16} />
                       <span>100% Full Consideration Settled — Zero Dues Outstanding</span>
                     </div>
                     <p style={{ margin: '4px 0 0', lineHeight: 1.4 }}>
-                      The entire agreed property consideration has been received in full and credited to the project escrow. Allotment is confirmed with title registry clearance and possession NOC authorization.
+                      The entire agreed property consideration has been received in full and credited to project escrow. Allotment is confirmed with title registry clearance and possession NOC authorization.
                     </p>
                   </div>
                 )}
 
                 {isEmi && (
-                  <div style={{ background: '#eff6ff', border: '1.5px solid #2563eb', borderRadius: '6px', padding: '10px 14px', marginBottom: '18px', fontSize: '12px', color: '#1e40af' }}>
+                  <div style={{ background: '#eff6ff', border: '1.5px solid #2563eb', borderRadius: '6px', padding: '12px 16px', marginBottom: '20px', fontSize: '12.5px', color: '#1e40af' }}>
                     <div style={{ fontWeight: 800, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <CreditCard size={16} />
                       <span>Active EMI / Installment Payment Schedule</span>
@@ -7395,7 +7386,7 @@ export default function AdminDashboard() {
                 )}
 
                 {isToken && (
-                  <div style={{ background: '#fffbeb', border: '1.5px solid #d97706', borderRadius: '6px', padding: '10px 14px', marginBottom: '18px', fontSize: '12px', color: '#92400e' }}>
+                  <div style={{ background: '#fffbeb', border: '1.5px solid #d97706', borderRadius: '6px', padding: '12px 16px', marginBottom: '20px', fontSize: '12.5px', color: '#92400e' }}>
                     <div style={{ fontWeight: 800, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Clock size={16} />
                       <span>Token Booking Advance Received — Holding Confirmed</span>
@@ -7410,36 +7401,36 @@ export default function AdminDashboard() {
 
                 {/* Special Terms Note */}
                 {buyer.notes && (
-                  <div style={{ marginBottom: '18px', padding: '8px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '11.5px', color: '#475569' }}>
+                  <div style={{ marginBottom: '20px', padding: '10px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '12px', color: '#475569' }}>
                     <b>Special Notes / Inclusions:</b> {buyer.notes}
                   </div>
                 )}
 
                 {/* 7. Bottom Signatures & Seal (Exact layout matching Screenshot 2) */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: '16px', borderTop: '1px solid #002b80', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: '18px', borderTop: '1.5px solid #002b80', marginBottom: '18px' }}>
                   
                   {/* Left: Official Circular Seal (matching Screenshot 2) */}
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 800, color: '#002b80', textTransform: 'uppercase', marginBottom: '4px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 800, color: '#002b80', textTransform: 'uppercase', marginBottom: '5px' }}>
                       Official Seal
                     </div>
-                    <div style={{ width: '68px', height: '68px', borderRadius: '50%', border: '2px solid #002b80', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f0f7ff', color: '#002b80', textAlign: 'center', padding: '4px' }}>
+                    <div style={{ width: '72px', height: '72px', borderRadius: '50%', border: '2px solid #002b80', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f0f7ff', color: '#002b80', textAlign: 'center', padding: '4px' }}>
                       <div style={{ fontSize: '8px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.04em' }}>ESTATESPHERE</div>
-                      <ShieldCheck size={16} style={{ margin: '2px 0' }} />
-                      <div style={{ fontSize: '7px', fontWeight: 700 }}>VERIFIED</div>
+                      <ShieldCheck size={18} style={{ margin: '2px 0' }} />
+                      <div style={{ fontSize: '7.5px', fontWeight: 800 }}>VERIFIED</div>
                     </div>
                   </div>
 
                   {/* Right: Signature (matching Screenshot 2) */}
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 800, color: '#002b80', textTransform: 'uppercase', marginBottom: '4px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 800, color: '#002b80', textTransform: 'uppercase', marginBottom: '5px' }}>
                       Signature
                     </div>
-                    <div style={{ border: '1px solid #cbd5e1', padding: '8px 24px', borderRadius: '4px', background: '#ffffff', textAlign: 'center' }}>
-                      <div style={{ fontFamily: 'cursive', fontSize: '16px', fontWeight: 700, color: '#002b80' }}>
+                    <div style={{ border: '1px solid #cbd5e1', padding: '10px 28px', borderRadius: '4px', background: '#ffffff', textAlign: 'center' }}>
+                      <div style={{ fontFamily: 'cursive', fontSize: '18px', fontWeight: 700, color: '#002b80' }}>
                         EstateSphere
                       </div>
-                      <div style={{ fontSize: '9px', color: '#64748b', textTransform: 'uppercase', borderTop: '1px solid #e2e8f0', marginTop: '2px', paddingTop: '2px' }}>
+                      <div style={{ fontSize: '9.5px', color: '#64748b', textTransform: 'uppercase', borderTop: '1px solid #e2e8f0', marginTop: '3px', paddingTop: '2px' }}>
                         Authorized Signatory
                       </div>
                     </div>
@@ -7448,13 +7439,13 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* 8. Bottom Thank You Bar (matching Screenshot 2) */}
-                <div style={{ textAlign: 'center', paddingTop: '10px', borderTop: '1.5px solid #002b80', fontSize: '13px', fontWeight: 800, color: '#002b80', letterSpacing: '0.04em' }}>
+                <div style={{ textAlign: 'center', paddingTop: '12px', borderTop: '1.5px solid #002b80', fontSize: '13.5px', fontWeight: 800, color: '#002b80', letterSpacing: '0.04em' }}>
                   Thank You for Choosing EstateSphere Luxury Residences
                 </div>
 
               </div>
-
             </div>
+
           </div>
         );
       })()}
