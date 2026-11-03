@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import FloorPlanSVG from './FloorPlanSVG'
 import ApartmentScene from './ApartmentScene'
-import { ArrowDown, ArrowUp, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, X, Home, ArrowLeft } from 'lucide-react'
 import { dataStore } from '../admin/dataStore'
 
 // Progressive 360° loader: shows a blurred low-res preview OVER the
@@ -369,7 +369,12 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
     <main className="apartments-page-layout">
       {/* Left Persistent Rail */}
       <aside className="persistent-era-rail rail-on-light">
-        <div className="persistent-emblem">
+        <div 
+          className="persistent-emblem" 
+          onClick={() => navigateTo('/')}
+          title="Return to Homepage"
+          style={{ cursor: 'pointer', pointerEvents: 'auto' }}
+        >
           <svg ref={emblemRef} viewBox="0 0 120 120">
             <defs>
               <path id="persistentEmblemPath" d="M60,60 m-43,0 a43,43 0 1,1 86,0 a43,43 0 1,1 -86,0" />
@@ -379,6 +384,31 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
             </text>
           </svg>
           <span>✣</span>
+        </div>
+
+        {/* Dedicated Rail Action Buttons */}
+        <div className="rail-navigation-actions">
+          <button
+            type="button"
+            className="rail-home-btn"
+            onClick={() => navigateTo('/')}
+            title="Return to Homepage"
+          >
+            <Home size={12} strokeWidth={2.2} />
+            <span>HOME</span>
+          </button>
+
+          {selectedApartment && (
+            <button
+              type="button"
+              className="rail-apartments-btn"
+              onClick={() => { setSelectedApartment(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              title="Back to All Apartments"
+            >
+              <ArrowLeft size={11} strokeWidth={2.2} />
+              <span>UNITS</span>
+            </button>
+          )}
         </div>
 
         {/* Navigation Breadcrumb inside rail */}
@@ -409,7 +439,18 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
           <small>RESIDENCE</small>
         </div>
         <div className="nav-actions">
-          <a href="/apartments" onClick={(e) => { e.preventDefault(); setSelectedApartment(null); }}>Select an apartment</a>
+          <button 
+            type="button" 
+            className="nav-home-pill-btn" 
+            onClick={() => navigateTo('/')}
+            title="Return to Homepage"
+          >
+            <Home size={13} strokeWidth={2.2} />
+            <span>HOME</span>
+          </button>
+          <a href="/apartments" onClick={(e) => { e.preventDefault(); setSelectedApartment(null); }}>
+            {selectedApartment ? '← All apartments' : 'Select an apartment'}
+          </a>
           <button onClick={openForm}>Book a call</button>
           <a className="nav-contact" href="/contact" onClick={(e) => { e.preventDefault(); navigateTo('/contact') }}>Contact</a>
         </div>
@@ -427,6 +468,22 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
           {/* Detailed View Section */}
           <section className="apartment-detail-intro-sec">
             <div className="apartment-detail-header">
+              {/* Back to All Apartments Button */}
+              <div className="detail-back-navigation-row">
+                <button
+                  type="button"
+                  className="detail-back-btn"
+                  onClick={() => {
+                    setSelectedApartment(null);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  title="Back to All Apartments"
+                >
+                  <ArrowLeft size={13} strokeWidth={2.2} />
+                  <span>ALL APARTMENTS</span>
+                </button>
+              </div>
+
               <h1 className="detail-serif-title">{selectedApartment.apartmentNumber}</h1>
               <div className="detail-typology-row">
                 <span>{selectedApartment.typology}</span>

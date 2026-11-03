@@ -875,3 +875,118 @@
 .apartments-page-layout .apartment-detail-rooms-sec {
   padding-bottom: 80px !important;
 }
+
+
+/* ========================================================
+   NAVIGATION ENHANCEMENTS: LUXURY HOME & BACK BUTTONS
+======================================================== */
+
+/* Navigation Home Pill in Header */
+.nav-home-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(37, 40, 34, 0.06);
+  border: 1px solid rgba(37, 40, 34, 0.18);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #252822;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  line-height: 1;
+}
+
+.nav-home-pill-btn:hover {
+  background: #252822;
+  color: #ffffff;
+  border-color: #252822;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+/* Rail Action Buttons (Under circular emblem) */
+.rail-navigation-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  pointer-events: auto !important;
+}
+
+.rail-home-btn,
+.rail-apartments-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(37, 40, 34, 0.22);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #252822;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.rail-home-btn:hover,
+.rail-apartments-btn:hover {
+  background: #252822;
+  color: #ffffff;
+  border-color: #252822;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+/* Detail Page Back Navigation Row */
+.detail-back-navigation-row {
+  margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+}
+
+.detail-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(37, 40, 34, 0.22);
+  border-radius: 30px;
+  padding: 8px 18px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: #252822;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  backdrop-filter: blur(8px);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.detail-back-btn:hover {
+  background: #252822;
+  color: #ffffff;
+  border-color: #252822;
+  transform: translateX(-4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.detail-back-btn svg {
+  transition: transform 0.2s ease;
+}
+
+.detail-back-btn:hover svg {
+  transform: translateX(-2px);
+}
