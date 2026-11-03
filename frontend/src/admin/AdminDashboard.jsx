@@ -4363,7 +4363,7 @@ export default function AdminDashboard() {
                                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px', alignItems: 'center' }}>
                                     {member.role === 'SUPER_ADMIN' ? (
                                       <span style={{ fontSize: '10.5px', background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', padding: '2px 7px', borderRadius: '4px', fontWeight: 700 }}>
-                                        👑 All-Access (All 7 Modules)
+                                        👑 All-Access (All 8 Modules)
                                       </span>
                                     ) : (
                                       <>
@@ -4371,6 +4371,7 @@ export default function AdminDashboard() {
                                           <span key={m} style={{ fontSize: '10px', background: '#f8fafc', color: '#334155', border: '1px solid #e2e8f0', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>
                                             {m === 'dashboard' && 'Dashboard'}
                                             {m === 'apartments' && 'Inventory'}
+                                            {m === 'sales' && 'Sales'}
                                             {m === 'media' && 'Media'}
                                             {m === 'content' && 'Content'}
                                             {m === 'inquiries' && 'Leads'}
@@ -5940,7 +5941,7 @@ export default function AdminDashboard() {
                       onClick={() => setFormTeam({ 
                         ...formTeam, 
                         role: 'SUPER_ADMIN', 
-                        modules: ['dashboard', 'apartments', 'media', 'content', 'inquiries', 'team', 'settings'],
+                        modules: ['dashboard', 'apartments', 'sales', 'media', 'content', 'inquiries', 'team', 'settings'],
                         canAddApartment: true,
                         canEditApartment: true
                       })}
@@ -5962,7 +5963,7 @@ export default function AdminDashboard() {
                             onChange={() => setFormTeam({ 
                               ...formTeam, 
                               role: 'SUPER_ADMIN', 
-                              modules: ['dashboard', 'apartments', 'media', 'content', 'inquiries', 'team', 'settings'],
+                              modules: ['dashboard', 'apartments', 'sales', 'media', 'content', 'inquiries', 'team', 'settings'],
                               canAddApartment: true,
                               canEditApartment: true
                             })}
@@ -5974,7 +5975,7 @@ export default function AdminDashboard() {
                         </span>
                       </div>
                       <p style={{ margin: '4px 0 0 24px', fontSize: '12px', color: '#64748b', lineHeight: 1.4 }}>
-                        All-access control: Naye users banana, flats delete karna, aur system settings change karna.
+                        All 8 modules: Manage team members, inventory, sales registry, media, CMS content, and system settings.
                       </p>
                     </div>
 
@@ -5983,7 +5984,7 @@ export default function AdminDashboard() {
                       onClick={() => setFormTeam({ 
                         ...formTeam, 
                         role: 'ADMIN_MANAGER',
-                        modules: ['dashboard', 'apartments', 'media', 'content', 'inquiries'],
+                        modules: ['dashboard', 'apartments', 'sales', 'media', 'content', 'inquiries'],
                         canAddApartment: true,
                         canEditApartment: true
                       })}
@@ -6005,7 +6006,7 @@ export default function AdminDashboard() {
                             onChange={() => setFormTeam({ 
                               ...formTeam, 
                               role: 'ADMIN_MANAGER',
-                              modules: ['dashboard', 'apartments', 'media', 'content', 'inquiries'],
+                              modules: ['dashboard', 'apartments', 'sales', 'media', 'content', 'inquiries'],
                               canAddApartment: true,
                               canEditApartment: true
                             })}
@@ -6017,7 +6018,7 @@ export default function AdminDashboard() {
                         </span>
                       </div>
                       <p style={{ margin: '4px 0 0 24px', fontSize: '12px', color: '#64748b', lineHeight: 1.4 }}>
-                        Flats add/edit karna, photos badalna, sold out toggle karna aur leads CRM manage karna.
+                        Manage apartments, record sold units and buyer registry, update photos, and handle customer leads.
                       </p>
                     </div>
 
@@ -6026,7 +6027,7 @@ export default function AdminDashboard() {
                       onClick={() => setFormTeam({ 
                         ...formTeam, 
                         role: 'SALES_AGENT',
-                        modules: ['dashboard', 'apartments', 'inquiries'],
+                        modules: ['dashboard', 'apartments', 'sales', 'inquiries'],
                         canAddApartment: false,
                         canEditApartment: false
                       })}
@@ -6048,7 +6049,7 @@ export default function AdminDashboard() {
                             onChange={() => setFormTeam({ 
                               ...formTeam, 
                               role: 'SALES_AGENT',
-                              modules: ['dashboard', 'apartments', 'inquiries'],
+                              modules: ['dashboard', 'apartments', 'sales', 'inquiries'],
                               canAddApartment: false,
                               canEditApartment: false
                             })}
@@ -6060,7 +6061,7 @@ export default function AdminDashboard() {
                         </span>
                       </div>
                       <p style={{ margin: '4px 0 0 24px', fontSize: '12px', color: '#64748b', lineHeight: 1.4 }}>
-                        Sirf Inventory dekhna aur Leads pe direct calling/WhatsApp updates daalna (flats delete ya price change nahi kar sakte).
+                        View inventory and sold units registry, with direct phone and WhatsApp outreach for customer leads.
                       </p>
                     </div>
 
@@ -6071,13 +6072,14 @@ export default function AdminDashboard() {
                         <span>Granular Module Access Checklists</span>
                       </div>
                       <p style={{ margin: '0 0 12px', fontSize: '11.5px', color: '#64748b' }}>
-                        Specific module toggles karein. Jin modules pe tick nahi hoga wo user ke sidebar se gayab rahenge.
+                        Checked modules will appear in this user's sidebar. Unchecked modules will remain hidden.
                       </p>
 
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                         {[
                           { key: 'dashboard', label: '📊 Dashboard Overview' },
                           { key: 'apartments', label: '🏢 Apartments / Inventory' },
+                          { key: 'sales', label: '🤝 Sold Units & Buyers' },
                           { key: 'media', label: '🖼️ Media & Photos Studio' },
                           { key: 'content', label: '✍️ Website Text & Content CMS' },
                           { key: 'inquiries', label: '📥 Customer Inquiries CRM' },
@@ -6208,9 +6210,9 @@ export default function AdminDashboard() {
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {[
-                      { role: 'SUPER_ADMIN', label: '👑 Super Admin', badge: 'All-Access', desc: 'All 7 modules: Team, Inventory Add/Edit/Delete, Content CMS, Media, Settings.' },
-                      { role: 'ADMIN_MANAGER', label: '💼 Admin (Manager)', badge: 'Manage Inventory', desc: 'Flats Add/Edit, Photos & Media, Website Text CMS, Leads CRM.' },
-                      { role: 'SALES_AGENT', label: '📞 Sales Agent', badge: 'Leads & View Only', desc: 'Sirf Inventory view & Leads outreach (No flat deletes, no media/content edits).' }
+                      { role: 'SUPER_ADMIN', label: '👑 Super Admin', badge: 'All-Access', desc: 'All 8 modules: Team, Inventory, Sold Units Registry, Media, Content CMS, Inquiries, Settings.' },
+                      { role: 'ADMIN_MANAGER', label: '💼 Admin (Manager)', badge: 'Manage Inventory', desc: 'Apartments Add/Edit, Sold Units Registry, Media & Photos, Content CMS, Leads CRM.' },
+                      { role: 'SALES_AGENT', label: '📞 Sales Agent', badge: 'Leads & View Only', desc: 'Inventory view, Sold Units Registry & Leads calling outreach (No flat deletes or media edits).' }
                     ].map(r => {
                       const isSelected = memberPermissionsForm.role === r.role;
                       return (
@@ -6269,13 +6271,14 @@ export default function AdminDashboard() {
                     <span>2. Granular Module Access Scope (Visible in Sidebar)</span>
                   </h4>
                   <p style={{ margin: '0 0 16px', fontSize: '12px', color: '#64748b', lineHeight: 1.5 }}>
-                    Jin modules pe tick hoga sirf wahi module is user ke sidebar me aayenge. Baaki unpermitted modules user ke sidebar se 100% hide rahenge.
+                    Checked modules will appear in this user's sidebar. Unchecked modules will remain completely hidden.
                   </p>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                     {[
                       { key: 'dashboard', label: '📊 Dashboard Overview' },
                       { key: 'apartments', label: '🏢 Apartments / Inventory' },
+                      { key: 'sales', label: '🤝 Sold Units & Buyers' },
                       { key: 'media', label: '🖼️ Media & Photos Studio' },
                       { key: 'content', label: '✍️ Website Text & Content CMS' },
                       { key: 'inquiries', label: '📥 Customer Inquiries CRM' },
@@ -6320,7 +6323,7 @@ export default function AdminDashboard() {
                         <span>➕ Allow Adding / Editing Flats & Sold Out Status Toggle</span>
                       </label>
                       <p style={{ margin: '4px 0 0 25px', fontSize: '11.5px', color: '#15803d' }}>
-                        Agar yeh unchecked rahega to user ko sirf read-only inventory list dikhegi (koi status change ya add button nahi dikhega).
+                        When unchecked, the user will have read-only inventory access without status change or apartment creation buttons.
                       </p>
                     </div>
                   )}
