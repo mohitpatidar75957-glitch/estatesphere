@@ -32,14 +32,16 @@ export default function AdminLogin({ onLoginSuccess }) {
     setSuccessMsg('');
     setForgotMsg('');
 
-    if (!email.trim() || !password) {
+    const cleanEmail = email.trim();
+    const cleanPass = password.trim();
+    if (!cleanEmail || !cleanPass) {
       setError('Please enter both email and password.');
       return;
     }
 
     setLoading(true);
     try {
-      const res = await authService.login(email.trim(), password, rememberMe);
+      const res = await authService.login(cleanEmail, cleanPass, rememberMe);
       setSuccessMsg(`Welcome back, ${res.user.name} (${res.user.role})! Redirecting...`);
       setTimeout(() => {
         if (onLoginSuccess) {
