@@ -170,7 +170,7 @@ export default function AdminDashboard() {
     nightImage: '/assets/luxury_villa_night.jpg',
     videoUrl: '',
     brochureUrl: '',
-    floorPlanUrl: '/assets/estate-exterior-reveal.png',
+    floorPlanUrl: '',
     totalUnits: 25,
     totalBlocks: '3 Towers (Block B1, B2, B3)',
     amenities: ['Saltwater Horizon Pool', 'Gated Community 24/7', 'Underground EV Parking', 'Gym & Wellness', 'Mediterranean Landscaping'],
@@ -199,7 +199,7 @@ export default function AdminDashboard() {
       nightImage: '/assets/luxury_villa_night.jpg',
       videoUrl: '',
       brochureUrl: '/assets/Dwellora_Master_Brochure.pdf',
-      floorPlanUrl: '/assets/estate-exterior-reveal.png',
+      floorPlanUrl: '',
       totalUnits: 20,
       totalBlocks: '2 Towers',
       amenities: ['Saltwater Horizon Pool', 'Gated Community 24/7', 'Underground EV Parking', 'State-of-the-Art Gym & Wellness'],
@@ -263,7 +263,7 @@ export default function AdminDashboard() {
       nightImage: projectModal.nightImage && projectModal.nightImage.trim() ? projectModal.nightImage.trim() : '/assets/luxury_villa_night.jpg',
       videoUrl: projectModal.videoUrl ? projectModal.videoUrl.trim() : '',
       brochureUrl: projectModal.brochureUrl ? projectModal.brochureUrl.trim() : '/assets/Dwellora_Master_Brochure.pdf',
-      floorPlanUrl: projectModal.floorPlanUrl ? projectModal.floorPlanUrl.trim() : '/assets/estate-exterior-reveal.png',
+      floorPlanUrl: projectModal.floorPlanUrl ? projectModal.floorPlanUrl.trim() : '',
       totalUnits: Number(projectModal.totalUnits) || 25,
       totalBlocks: projectModal.totalBlocks ? projectModal.totalBlocks.trim() : '3 Towers',
       amenities: projectModal.amenities || [],
@@ -1362,7 +1362,7 @@ export default function AdminDashboard() {
         amenities: Array.isArray(formApt.amenities) && formApt.amenities.length > 0 
           ? formApt.amenities 
           : ['Italian Marble Flooring', 'Floor-to-Ceiling Windows', 'Smart Video Door Phone', 'Modular Kitchen', 'Private Solarium Balcony'],
-        floorPlanUrl: formApt.floorPlanUrl || '/assets/estate-exterior-reveal.png',
+        floorPlanUrl: (formApt.floorPlanUrl && !formApt.floorPlanUrl.includes('estate-exterior-reveal')) ? formApt.floorPlanUrl : '',
         imageUrl: finalCover,
         panorama360: finalPano,
         roomGallery: finalRoomGallery
@@ -1399,7 +1399,7 @@ export default function AdminDashboard() {
       parking: '1 Covered Basement Slot',
       amenities: ['Italian Marble Flooring', 'Floor-to-Ceiling Windows', 'Smart Video Door Phone', 'Modular Kitchen', 'Private Solarium Balcony'],
       customAmenityInput: '',
-      floorPlanUrl: '/assets/estate-exterior-reveal.png',
+      floorPlanUrl: '',
       status: 'AVAILABLE',
       imageUrl: '',
       panorama360: '',
@@ -1435,7 +1435,7 @@ export default function AdminDashboard() {
         : ['Italian Marble Flooring', 'Floor-to-Ceiling Windows', 'Smart Video Door Phone', 'Modular Kitchen', 'Private Solarium Balcony'],
       customAmenityInput: '',
       priceHistory: Array.isArray(apt.priceHistory) ? [...apt.priceHistory] : [],
-      floorPlanUrl: apt.floorPlanUrl || '/assets/estate-exterior-reveal.png',
+      floorPlanUrl: (apt.floorPlanUrl && !apt.floorPlanUrl.includes('estate-exterior-reveal')) ? apt.floorPlanUrl : '',
       imageUrl: defaultHall,
       panorama360: defaultPano,
       roomGallery: {
@@ -1503,7 +1503,7 @@ export default function AdminDashboard() {
         basePrice: basePrice,
         price: unitPrice,
         areaSqm: Math.round(superArea / 10.764),
-        floorPlanUrl: editingApt.floorPlanUrl || '/assets/estate-exterior-reveal.png',
+        floorPlanUrl: (editingApt.floorPlanUrl && !editingApt.floorPlanUrl.includes('estate-exterior-reveal')) ? editingApt.floorPlanUrl : '',
         imageUrl: finalCover,
         panorama360: finalPano,
         roomGallery: finalRoomGallery

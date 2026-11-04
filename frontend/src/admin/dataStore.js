@@ -167,7 +167,7 @@ export const DEFAULT_25_APARTMENTS = Array.from({ length: 25 }, (_, i) => {
       'Designer Modular Kitchen',
       'Private Solarium Balcony'
     ],
-    floorPlanUrl: '/assets/estate-exterior-reveal.png',
+    floorPlanUrl: '',
     priceHistory: [],
     status,
     buyer,
@@ -693,7 +693,7 @@ export const DEFAULT_PROJECTS = [
     nightImage: '/assets/luxury_villa_night.jpg',
     videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     brochureUrl: '/assets/Dwellora_Master_Brochure.pdf',
-    floorPlanUrl: '/assets/estate-exterior-reveal.png',
+    floorPlanUrl: '',
     totalUnits: 25,
     totalBlocks: '3 Towers (Block B1, B2, B3)',
     amenities: [
@@ -1059,8 +1059,9 @@ export const dataStore = {
             if (!item.priceHistory) {
               item.priceHistory = [];
             }
-            if (!item.floorPlanUrl) {
-              item.floorPlanUrl = '/assets/estate-exterior-reveal.png';
+            if (item.floorPlanUrl && item.floorPlanUrl.includes('estate-exterior-reveal')) {
+              item.floorPlanUrl = '';
+              needsUpdate = true;
             }
 
             return item;
@@ -1239,7 +1240,7 @@ export const dataStore = {
       amenities: Array.isArray(aptData.amenities) && aptData.amenities.length > 0 
         ? aptData.amenities 
         : ['Italian Marble Flooring', 'Floor-to-Ceiling Windows', 'Smart Video Door Phone', 'Modular Kitchen', 'Private Solarium Balcony'],
-      floorPlanUrl: aptData.floorPlanUrl || '/assets/estate-exterior-reveal.png',
+      floorPlanUrl: (aptData.floorPlanUrl && !aptData.floorPlanUrl.includes('estate-exterior-reveal')) ? aptData.floorPlanUrl : '',
       priceHistory: [],
       status: aptData.status || 'AVAILABLE',
       imageUrl: aptData.imageUrl || '/assets/estate-boutique-lounge.png',
@@ -1320,7 +1321,7 @@ export const dataStore = {
           : ['Italian Marble Flooring', 'Smart Video Door Phone', 'Modular Kitchen'],
         priceHistory: [],
         imageUrl: r.imageUrl || '/assets/estate-boutique-lounge.png',
-        floorPlanUrl: r.floorPlanUrl || '/assets/estate-exterior-reveal.png',
+        floorPlanUrl: (r.floorPlanUrl && !r.floorPlanUrl.includes('estate-exterior-reveal')) ? r.floorPlanUrl : '',
         roomGallery: {
           livingHall: '/assets/interior-living-hall.png',
           kitchen: '/assets/interior-kitchen.png',
@@ -1828,7 +1829,7 @@ export const dataStore = {
       nightImage: projectData.nightImage || '/assets/luxury_villa_night.jpg',
       videoUrl: projectData.videoUrl || '',
       brochureUrl: projectData.brochureUrl || '/assets/Dwellora_Master_Brochure.pdf',
-      floorPlanUrl: projectData.floorPlanUrl || '/assets/estate-exterior-reveal.png',
+      floorPlanUrl: (projectData.floorPlanUrl && !projectData.floorPlanUrl.includes('estate-exterior-reveal')) ? projectData.floorPlanUrl : '',
       totalUnits: Number(projectData.totalUnits) || 20,
       totalBlocks: projectData.totalBlocks || '2 Towers',
       amenities: Array.isArray(projectData.amenities) ? projectData.amenities : ['Gated Community 24/7', 'Swimming Pool', 'EV Parking'],

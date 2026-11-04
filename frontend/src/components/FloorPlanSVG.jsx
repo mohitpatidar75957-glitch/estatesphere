@@ -197,15 +197,23 @@ export default function FloorPlanSVG({ typology, bedrooms, apartment }) {
       {/* Furniture - Bed (Master Bedroom) */}
       <rect x="225" y="20" width="30" height="35" rx="2" style={furnitureStyle} />
       <rect x="230" y="20" width="20" height="8" rx="1" fill="#e8e8e8" stroke="#8c9288" strokeWidth="0.5" />
+      <text x="222" y="62" fontSize="4.5" fill="#64748b" fontFamily="sans-serif" fontWeight="700">MASTER BED</text>
       
       {/* Furniture - Bed (Guest Bedroom) */}
       <rect x="175" y="85" width="25" height="35" rx="2" style={furnitureStyle} />
+      <rect x="180" y="85" width="15" height="6" rx="1" fill="#e8e8e8" stroke="#8c9288" strokeWidth="0.5" />
+      <text x="172" y="126" fontSize="4.5" fill="#64748b" fontFamily="sans-serif" fontWeight="700">BEDROOM 02</text>
       
       {/* Sofa (Living Room) */}
       <rect x="90" y="25" width="45" height="15" rx="1" style={furnitureStyle} />
       <rect x="85" y="25" width="5" height="25" rx="1" style={furnitureStyle} />
       <rect x="135" y="25" width="5" height="25" rx="1" style={furnitureStyle} />
       <circle cx="112" cy="75" r="14" style={furnitureStyle} />
+      <text x="92" y="105" fontSize="5" fill="#475569" fontFamily="sans-serif" fontWeight="700">LIVING SALON</text>
+
+      {/* Kitchen / Dining corner */}
+      <rect x="170" y="22" width="30" height="14" rx="1" style={furnitureStyle} />
+      <text x="168" y="46" fontSize="4.5" fill="#64748b" fontFamily="sans-serif" fontWeight="700">KITCHEN</text>
 
       {/* Outer structural walls */}
       <rect x="70" y="10" width="200" height="120" style={wallStyle} />
@@ -298,9 +306,19 @@ export default function FloorPlanSVG({ typology, bedrooms, apartment }) {
   const isPenthouse = (typology || '').toUpperCase().includes('PENTHOUSE')
   const isBasementPlus = (typology || '').toUpperCase().includes('BASEMENT')
 
-  // Pick floorplan based on custom image or bedrooms count
+  // Pick floorplan based on custom blueprint or bedrooms count
   const renderCurrentResidenceFloor = () => {
-    if (apartment?.floorPlanUrl) {
+    // Only show an uploaded image if it is an actual custom blueprint image (e.g. data:image/ or blueprint file, not exterior marketing photos)
+    const isCustomBlueprint = apartment?.floorPlanUrl && 
+      typeof apartment.floorPlanUrl === 'string' &&
+      apartment.floorPlanUrl.trim() !== '' &&
+      !apartment.floorPlanUrl.includes('estate-exterior-reveal') &&
+      !apartment.floorPlanUrl.includes('luxury_villa') &&
+      !apartment.floorPlanUrl.includes('estate-apartment-exterior') &&
+      !apartment.floorPlanUrl.includes('estate-boutique-lounge') &&
+      !apartment.floorPlanUrl.includes('estate-private-terrace');
+
+    if (isCustomBlueprint) {
       return (
         <img
           src={apartment.floorPlanUrl}
@@ -309,6 +327,8 @@ export default function FloorPlanSVG({ typology, bedrooms, apartment }) {
         />
       )
     }
+
+    // Always render architectural vector map by BHK
     if (bedCount >= 4) {
       return renderFourBedroomFloor()
     } else if (bedCount === 3) {
@@ -339,7 +359,7 @@ export default function FloorPlanSVG({ typology, bedrooms, apartment }) {
         <>
           <div className="floorplan-box">
             <div className="floorplan-svg-wrap">{renderCurrentResidenceFloor()}</div>
-            <span className="floorplan-label">RESIDENCE LEVEL • FIRST FLOOR</span>
+            <span className="floorplan-label">{floorLabel}</span>
           </div>
           <div className="floorplan-box">
             <div className="floorplan-svg-wrap">{renderPenthouseDeck()}</div>
