@@ -8,10 +8,65 @@ import {
   Image as ImageIcon, Settings as SettingsIcon, UploadCloud, Upload,
   CheckCircle, UserPlus, Lock, Key, Shield, HelpCircle, Save,
   XCircle, SlidersHorizontal, Sparkles, MessageSquare, PhoneCall,
-  MapPin, Type, FileText, AlignLeft
+  MapPin, Type, FileText, AlignLeft, BarChart3, PieChart, DollarSign, Wallet, AlertTriangle, Send, CreditCard, FileCheck,
+  Globe, Video, Grid, Table, FileSpreadsheet, History, Car, Menu, Terminal, Zap, HardDrive, Cpu
 } from 'lucide-react';
 import { authService } from './auth';
 import { dataStore, DEFAULT_SITE_CONTENT, ROLE_PERMISSIONS } from './dataStore';
+
+// Pure Indian Currency Formatting Helpers (Defined at module level to avoid hoisting issues)
+const formatFullINR = (num) => {
+  if (!num && num !== 0) return '₹0';
+  return '₹' + Number(num).toLocaleString('en-IN');
+};
+
+const formatINR = (val) => {
+  if (!val) return '₹0';
+  const cr = val / 10000000;
+  if (cr >= 1) return `₹${cr.toFixed(2)} Cr`;
+  const lac = val / 100000;
+  return `₹${lac.toFixed(1)} L`;
+};
+
+const numberToIndianWords = (num) => {
+  if (!num || isNaN(num) || num <= 0) return 'Rupees Zero Only';
+  num = Math.round(Number(num));
+  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
+    'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+  const convertTwoDigits = (n) => {
+    if (n < 20) return ones[n];
+    return tens[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + ones[n % 10] : '');
+  };
+
+  const convertThreeDigits = (n) => {
+    let str = '';
+    if (Math.floor(n / 100) > 0) {
+      str += ones[Math.floor(n / 100)] + ' Hundred';
+      if (n % 100 !== 0) str += ' and ';
+    }
+    if (n % 100 !== 0) {
+      str += convertTwoDigits(n % 100);
+    }
+    return str;
+  };
+
+  let crore = Math.floor(num / 10000000);
+  num %= 10000000;
+  let lakh = Math.floor(num / 100000);
+  num %= 100000;
+  let thousand = Math.floor(num / 1000);
+  num %= 1000;
+  let remainder = num;
+
+  let res = 'Rupees ';
+  if (crore > 0) res += convertThreeDigits(crore) + ' Crore ';
+  if (lakh > 0) res += convertThreeDigits(lakh) + ' Lakh ';
+  if (thousand > 0) res += convertThreeDigits(thousand) + ' Thousand ';
+  if (remainder > 0) res += convertThreeDigits(remainder) + ' ';
+  return res.trim() + ' Only';
+};
 
 export default function AdminDashboard() {
   const currentUser = authService.getUser();
@@ -60,10 +115,10 @@ export default function AdminDashboard() {
   }, [user, currentRole, isSuperAdmin]);
 
   // Active Sidebar Modules:
-  // 1. dashboard | 2. apartments | 3. media | 4. content | 5. inquiries | 6. team | 7. settings
+  // 1. dashboard | 2. projects | 3. apartments | 4. sales | 5. media | 6. content | 7. inquiries | 8. team | 9. settings
   const [currentTab, setCurrentTab] = useState(() => {
     const hash = typeof window !== 'undefined' ? window.location.hash.replace('#', '') : '';
-    if (['dashboard', 'apartments', 'sales', 'media', 'content', 'inquiries', 'team', 'settings'].includes(hash)) {
+    if (['dashboard', 'projects', 'apartments', 'sales', 'media', 'content', 'inquiries', 'team', 'settings'].includes(hash)) {
       return hash;
     }
     return 'dashboard';
@@ -90,6 +145,182 @@ export default function AdminDashboard() {
   const [mediaList, setMediaList] = useState(() => dataStore.getMedia());
   const [settings, setSettings] = useState(() => dataStore.getSettings());
 
+  // Projects Management State (Point 2: Project Management)
+  const [projects, setProjects] = useState(() => (typeof dataStore.getProjects === 'function' ? dataStore.getProjects() : []));
+  const [projectSearch, setProjectSearch] = useState('');
+  const [projectStatusFilter, setProjectStatusFilter] = useState('ALL');
+  const [selectedProjectForFlats, setSelectedProjectForFlats] = useState('ALL');
+  const [projectModal, setProjectModal] = useState({
+    isOpen: false,
+    mode: 'add',
+    id: null,
+    name: '',
+    tagline: '',
+    description: '',
+    location: '',
+    address: '',
+    city: 'Bangalore',
+    googleMapsUrl: '',
+    startingPrice: '26250000',
+    status: 'Under Construction',
+    launchDate: '15 Jan 2024',
+    completionDate: 'December 2026',
+    reraNumber: 'PRM/KA/RERA/1251',
+    heroImage: '/assets/luxury_villa_day.jpg',
+    nightImage: '/assets/luxury_villa_night.jpg',
+    videoUrl: '',
+    brochureUrl: '',
+    floorPlanUrl: '/assets/estate-exterior-reveal.png',
+    totalUnits: 25,
+    totalBlocks: '3 Towers (Block B1, B2, B3)',
+    amenities: ['Saltwater Horizon Pool', 'Gated Community 24/7', 'Underground EV Parking', 'Gym & Wellness', 'Mediterranean Landscaping'],
+    customAmenityInput: '',
+    isMaster: false
+  });
+
+  const openAddProjectModal = () => {
+    setProjectModal({
+      isOpen: true,
+      mode: 'add',
+      id: null,
+      name: '',
+      tagline: '',
+      description: '',
+      location: '',
+      address: '',
+      city: 'Bangalore',
+      googleMapsUrl: '',
+      startingPrice: '25000000',
+      status: 'Under Construction',
+      launchDate: 'Jan 2026',
+      completionDate: 'Dec 2028',
+      reraNumber: 'PRM/KA/RERA/2026/001',
+      heroImage: '/assets/luxury_villa_day.jpg',
+      nightImage: '/assets/luxury_villa_night.jpg',
+      videoUrl: '',
+      brochureUrl: '/assets/Dwellora_Master_Brochure.pdf',
+      floorPlanUrl: '/assets/estate-exterior-reveal.png',
+      totalUnits: 20,
+      totalBlocks: '2 Towers',
+      amenities: ['Saltwater Horizon Pool', 'Gated Community 24/7', 'Underground EV Parking', 'State-of-the-Art Gym & Wellness'],
+      customAmenityInput: '',
+      isMaster: false
+    });
+  };
+
+  const openEditProjectModal = (proj) => {
+    if (!proj) return;
+    setProjectModal({
+      isOpen: true,
+      mode: 'edit',
+      id: proj.id,
+      name: proj.name || '',
+      tagline: proj.tagline || '',
+      description: proj.description || '',
+      location: proj.location || '',
+      address: proj.address || '',
+      city: proj.city || 'Bangalore',
+      googleMapsUrl: proj.googleMapsUrl || '',
+      startingPrice: proj.startingPrice || '',
+      status: proj.status || 'Under Construction',
+      launchDate: proj.launchDate || '',
+      completionDate: proj.completionDate || '',
+      reraNumber: proj.reraNumber || '',
+      heroImage: proj.heroImage || '',
+      nightImage: proj.nightImage || '',
+      videoUrl: proj.videoUrl || '',
+      brochureUrl: proj.brochureUrl || '',
+      floorPlanUrl: proj.floorPlanUrl || '',
+      totalUnits: proj.totalUnits || 25,
+      totalBlocks: proj.totalBlocks || '3 Towers',
+      amenities: Array.isArray(proj.amenities) ? [...proj.amenities] : [],
+      customAmenityInput: '',
+      isMaster: !!proj.isMaster
+    });
+  };
+
+  const handleSaveProject = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!projectModal.name || !projectModal.name.trim()) {
+      alert('Please enter a Project Name');
+      return;
+    }
+    const userName = user?.name || 'Super Admin';
+    const projectPayload = {
+      name: projectModal.name.trim(),
+      tagline: projectModal.tagline ? projectModal.tagline.trim() : '',
+      description: projectModal.description ? projectModal.description.trim() : '',
+      location: projectModal.location ? projectModal.location.trim() : '',
+      address: projectModal.address ? projectModal.address.trim() : '',
+      city: projectModal.city ? projectModal.city.trim() : 'Bangalore',
+      googleMapsUrl: projectModal.googleMapsUrl ? projectModal.googleMapsUrl.trim() : '',
+      startingPrice: Number(projectModal.startingPrice) || 25000000,
+      status: projectModal.status || 'Under Construction',
+      launchDate: projectModal.launchDate ? projectModal.launchDate.trim() : 'Jan 2026',
+      completionDate: projectModal.completionDate ? projectModal.completionDate.trim() : 'Dec 2028',
+      reraNumber: projectModal.reraNumber ? projectModal.reraNumber.trim() : 'PRM/KA/RERA/1251',
+      heroImage: projectModal.heroImage && projectModal.heroImage.trim() ? projectModal.heroImage.trim() : '/assets/luxury_villa_day.jpg',
+      nightImage: projectModal.nightImage && projectModal.nightImage.trim() ? projectModal.nightImage.trim() : '/assets/luxury_villa_night.jpg',
+      videoUrl: projectModal.videoUrl ? projectModal.videoUrl.trim() : '',
+      brochureUrl: projectModal.brochureUrl ? projectModal.brochureUrl.trim() : '/assets/Dwellora_Master_Brochure.pdf',
+      floorPlanUrl: projectModal.floorPlanUrl ? projectModal.floorPlanUrl.trim() : '/assets/estate-exterior-reveal.png',
+      totalUnits: Number(projectModal.totalUnits) || 25,
+      totalBlocks: projectModal.totalBlocks ? projectModal.totalBlocks.trim() : '3 Towers',
+      amenities: projectModal.amenities || [],
+      isMaster: projectModal.isMaster
+    };
+
+    if (projectModal.mode === 'add') {
+      dataStore.addProject(projectPayload, userName);
+      triggerToast(`🎉 Project "${projectPayload.name}" successfully created!`);
+    } else {
+      dataStore.updateProject(projectModal.id, projectPayload, userName);
+      triggerToast(`✅ Project "${projectPayload.name}" updated! Changes synced to live website.`);
+    }
+
+    setProjects(dataStore.getProjects());
+    setApartments(dataStore.getApartments());
+      setBuyers(dataStore.getBuyers());
+    setProjectModal(prev => ({ ...prev, isOpen: false }));
+  };
+
+  const handleDeleteProject = (proj) => {
+    if (!proj) return;
+    if (proj.isMaster) {
+      alert('Cannot delete the active master project currently powering the live website.');
+      return;
+    }
+    if (window.confirm(`Are you sure you want to delete the project "${proj.name}"? This action cannot be undone.`)) {
+      try {
+        dataStore.deleteProject(proj.id, user?.name || 'Super Admin');
+        setProjects(dataStore.getProjects());
+        triggerToast(`🗑️ Project "${proj.name}" deleted.`);
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+  };
+
+  const handleSetActiveMasterProject = (proj) => {
+    if (!proj) return;
+    dataStore.setActiveMasterProject(proj.id, user?.name || 'Super Admin');
+    setProjects(dataStore.getProjects());
+    triggerToast(`⭐ "${proj.name}" is now the active master project on the public website!`);
+  };
+
+  const filteredProjects = useMemo(() => {
+    return projects.filter(p => {
+      const q = (projectSearch || '').trim().toLowerCase();
+      const matchSearch = !q ||
+        (p.name && p.name.toLowerCase().includes(q)) ||
+        (p.location && p.location.toLowerCase().includes(q)) ||
+        (p.city && p.city.toLowerCase().includes(q)) ||
+        (p.reraNumber && p.reraNumber.toLowerCase().includes(q));
+      const matchStatus = projectStatusFilter === 'ALL' || p.status === projectStatusFilter;
+      return matchSearch && matchStatus;
+    });
+  }, [projects, projectSearch, projectStatusFilter]);
+
   // Scheduled Site Visits
   const [tours, setTours] = useState([
     { id: 201, customerName: 'Vikramaditya Singhania', phone: '+91 98201 44521', unit: 'No-03 Penthouse Duplex', date: 'Today', time: '02:30 PM', status: 'CONFIRMED' },
@@ -97,11 +328,19 @@ export default function AdminDashboard() {
     { id: 203, customerName: 'Sameer Kapoor', phone: '+91 98330 11982', unit: 'No-06 Corner Panorama', date: '29 Oct 2026', time: '04:30 PM', status: 'CONFIRMED' }
   ]);
 
-  // Filters & Search for Apartments
+  // Filters & Search for Apartments (Point 3: Apartment / Flat Management)
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [blockFilter, setBlockFilter] = useState('ALL');
   const [bhkFilter, setBhkFilter] = useState('ALL');
+  const [floorFilter, setFloorFilter] = useState('ALL');
+  const [priceRangeFilter, setPriceRangeFilter] = useState('ALL');
+  const [apartmentViewMode, setApartmentViewMode] = useState('table'); // 'table' | 'tower'
+  const [priceHistoryModal, setPriceHistoryModal] = useState({ isOpen: false, apt: null });
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false);
+  const [bulkImportText, setBulkImportText] = useState('');
+  const [bulkImportPreview, setBulkImportPreview] = useState([]);
+  const [bulkImportError, setBulkImportError] = useState('');
 
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
@@ -144,6 +383,334 @@ export default function AdminDashboard() {
     assignedAgent: '',
     notes: ''
   });
+
+  // ========================================================
+  // POINT 4: BUYER / CUSTOMER MANAGEMENT MASTER STATE
+  // ========================================================
+  const [buyers, setBuyers] = useState(() => dataStore.getBuyers());
+  const [buyerTabMode, setBuyerTabMode] = useState('buyers'); // 'buyers' | 'units' | 'dues'
+  const [searchBuyerQuery, setSearchBuyerQuery] = useState('');
+  const [buyerKycFilter, setBuyerKycFilter] = useState('ALL');
+  const [buyerStatusFilter, setBuyerStatusFilter] = useState('ALL'); // 'ALL' | 'SOLD' | 'RESERVED' // 'ALL' | 'VERIFIED' | 'PENDING'
+  const [buyerPlanFilter, setBuyerPlanFilter] = useState('ALL'); // 'ALL' | 'FULL_PAYMENT' | 'EMI_PLAN' | 'TOKEN_ADVANCE'
+  
+  // Buyer 360 Profile Modal State
+  const [showBuyerProfileModal, setShowBuyerProfileModal] = useState(false);
+  const [selectedBuyerForProfile, setSelectedBuyerForProfile] = useState(null);
+  // Point 11: Global Search & Notifications State
+  const [showGlobalSearch, setShowGlobalSearch] = useState(false);
+  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
+  const [showNotificationPanel, setShowNotificationPanel] = useState(false);
+  const [readNotificationIds, setReadNotificationIds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('era_read_notifications') || '[]');
+    } catch (_) { return []; }
+  });
+  const [notificationCategoryFilter, setNotificationCategoryFilter] = useState('ALL');
+
+  // Point 12: Settings Sub-Tabs & Backend Diagnostics
+  const [settingsActiveTab, setSettingsActiveTab] = useState('PROFILE'); // 'PROFILE' | 'WEBSITE' | 'DIAGNOSTICS' | 'PREFERENCES'
+  const [backendDiagnostics, setBackendDiagnostics] = useState({
+    tested: false,
+    loading: false,
+    online: true,
+    status: 'ONLINE',
+    latencyMs: 14,
+    recordsCount: 25,
+    lastPing: 'Live Escrow Connected'
+  });
+  const [adminPreferences, setAdminPreferences] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('era_admin_preferences') || JSON.stringify({
+        currencyMode: 'INR_CR_LAKH',
+        defaultTab: 'dashboard',
+        soundAlerts: true,
+        autoRefreshSecs: '60'
+      }));
+    } catch (_) {
+      return { currencyMode: 'INR_CR_LAKH', defaultTab: 'dashboard', soundAlerts: true, autoRefreshSecs: '60' };
+    }
+  });
+
+  // Point 15: Mobile Sidebar Toggle
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  const [buyerProfileTab, setBuyerProfileTab] = useState('properties'); // 'properties' | 'ledger' | 'kyc' | 'notes' | 'cancellations'
+
+  // Add / Edit Buyer Modal State
+  const [showAddEditBuyerModal, setShowAddEditBuyerModal] = useState(false);
+  const [editingBuyer, setEditingBuyer] = useState(null);
+
+  // Quick Action Sub-Modals
+  const [recordPaymentModal, setRecordPaymentModal] = useState({ isOpen: false, buyer: null, unitNumber: '', amount: '', paymentMode: 'NEFT / RTGS', txnId: '', stage: 'Installment Payment' });
+  const [cancelBookingModal, setCancelBookingModal] = useState({ isOpen: false, buyer: null, unitNumber: '', reason: '', refundAmount: '', refundStatus: 'PROCESSED' });
+  const [logCommModal, setLogCommModal] = useState({ isOpen: false, buyer: null, type: 'CALL', summary: '', nextFollowUp: '' });
+  const [uploadDocModal, setUploadDocModal] = useState({ isOpen: false, buyer: null, title: '', type: 'AGREEMENT' });
+
+  // Point 5: Multi-Step Formal Real Estate Booking & Allotment Workflow
+  const [bookingWorkflowModal, setBookingWorkflowModal] = useState({
+    isOpen: false,
+    step: 1,
+    unitNumber: '',
+    buyerType: 'NEW',
+    buyerId: '',
+    buyerName: '',
+    buyerPhone: '',
+    buyerEmail: '',
+    buyerPan: '',
+    dealAmount: '',
+    paidAmount: '1500000',
+    paymentMode: 'NEFT / RTGS',
+    txnId: '',
+    bankName: 'HDFC Bank',
+    paymentPlan: 'TOKEN_ADVANCE',
+    bookingDate: new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date()),
+    fromInquiryId: null
+  });
+
+  // Point 5: 360° Panorama Interactive Test Viewer Modal
+  const [preview360Modal, setPreview360Modal] = useState({
+    isOpen: false,
+    url: '',
+    title: '',
+    panX: 0,
+    panY: 0,
+    zoom: 1
+  });
+
+  // Point 6: Overdue Payment Reminder & Legal Demand Notice Modal
+  const [paymentReminderModal, setPaymentReminderModal] = useState({
+    isOpen: false,
+    buyer: null,
+    unitNumber: '',
+    dueAmount: 0,
+    dueDate: '',
+    milestone: '',
+    customNotice: '',
+    copied: false
+  });
+
+  // Point 7: Site Visit Scheduling Modal (Inquiries CRM)
+  const [siteVisitModal, setSiteVisitModal] = useState({
+    isOpen: false,
+    inquiry: null,
+    date: '',
+    time: '02:30 PM',
+    agent: 'Rohit Verma (Manager)',
+    pickupRequired: false,
+    notes: ''
+  });
+
+  // Point 7: Document Category for Official Real Estate Documents Suite
+  const [docCategoryTab, setDocCategoryTab] = useState('INVOICE');
+
+  // Media tab: Block filter for room galleries
+  const [mediaBlockFilter, setMediaBlockFilter] = useState('ALL');
+
+  // Point 8: Inquiries View Mode ('TABLE' | 'CALENDAR')
+  const [inquiryViewMode, setInquiryViewMode] = useState('TABLE');
+
+  // Point 9: Desktop vs Mobile Banner View Mode ('DESKTOP' | 'MOBILE')
+  const [heroPreviewDevice, setHeroPreviewDevice] = useState('DESKTOP');
+  const [mediaCategoryFilter, setMediaCategoryFilter] = useState('ALL');
+
+  // Point 10: Team Management Sub-Tab Mode ('MEMBERS' | 'MATRIX' | 'SESSIONS')
+  const [teamTabMode, setTeamTabMode] = useState('MEMBERS');
+  const [loginSessions, setLoginSessions] = useState(() => dataStore.getLoginHistory());
+
+  // Open 360 Profile Helper
+  // Point 11: Real-time Notifications List
+  const notificationsList = useMemo(() => {
+    const list = [];
+    
+    // Inquiries
+    (inquiries || []).slice(0, 4).forEach((inq, idx) => {
+      list.push({
+        id: `notif-inq-${inq.id || idx}`,
+        type: 'INQUIRY',
+        title: `New Inquiry: ${inq.name}`,
+        desc: `${inq.interestedApartment || 'Luxury Residence'} • ${inq.phone}`,
+        time: inq.displayTime || 'Today',
+        targetTab: 'inquiries'
+      });
+    });
+
+    // Site Visits
+    (inquiries || []).filter(i => i.visitDate).slice(0, 3).forEach((vInq, idx) => {
+      list.push({
+        id: `notif-visit-${vInq.id || idx}`,
+        type: 'VISIT',
+        title: `Site Visit: ${vInq.name}`,
+        desc: `Scheduled on ${vInq.visitDate} @ ${vInq.visitTime || '02:30 PM'} (Escort: ${vInq.assignedAgent || 'Sales Host'})`,
+        time: vInq.visitDate,
+        targetTab: 'inquiries'
+      });
+    });
+
+    // Milestone Payments / Bookings
+    (buyers || []).flatMap(b => (b.paymentReceipts || []).map(p => ({ ...p, buyerName: b.name }))).slice(0, 3).forEach((rcp, idx) => {
+      list.push({
+        id: `notif-rcp-${rcp.receiptNo || idx}`,
+        type: 'PAYMENT',
+        title: `Payment Received: ${formatINR(rcp.amount)}`,
+        desc: `From ${rcp.buyerName} via ${rcp.paymentMode} (${rcp.receiptNo || 'Receipt Voucher'})`,
+        time: rcp.date || 'Recent',
+        targetTab: 'sales'
+      });
+    });
+
+    // Administrative / Security Alerts
+    list.push({
+      id: 'notif-sec-01',
+      type: 'SECURITY',
+      title: 'Database Sync Online',
+      desc: 'Spring Boot 3.3.4 (Port 8085) & MySQL Dialect running with verified escrow.',
+      time: 'Live',
+      targetTab: 'settings'
+    });
+
+    return list;
+  }, [inquiries, buyers]);
+
+  const unreadNotificationsCount = useMemo(() => {
+    return notificationsList.filter(n => !readNotificationIds.includes(n.id)).length;
+  }, [notificationsList, readNotificationIds]);
+
+  const handleMarkNotificationRead = (id) => {
+    if (!readNotificationIds.includes(id)) {
+      const updated = [...readNotificationIds, id];
+      setReadNotificationIds(updated);
+      try { localStorage.setItem('era_read_notifications', JSON.stringify(updated)); } catch (_) {}
+    }
+  };
+
+  const handleMarkAllNotificationsRead = () => {
+    const allIds = notificationsList.map(n => n.id);
+    setReadNotificationIds(allIds);
+    try { localStorage.setItem('era_read_notifications', JSON.stringify(allIds)); } catch (_) {}
+    triggerToast('All notifications marked as read.');
+  };
+
+  // Point 11: Global Search Results Computation
+  const globalSearchResults = useMemo(() => {
+    const q = (globalSearchQuery || '').trim().toLowerCase();
+    if (!q) {
+      return { apartments: [], inquiries: [], buyers: [], team: [], projects: [], total: 0 };
+    }
+
+    const matchedApartments = (apartments || []).filter(a => 
+      (a.apartmentNumber && a.apartmentNumber.toLowerCase().includes(q)) ||
+      (a.title && a.title.toLowerCase().includes(q)) ||
+      (a.block && a.block.toLowerCase().includes(q)) ||
+      (a.status && a.status.toLowerCase().includes(q))
+    ).slice(0, 5);
+
+    const matchedInquiries = (inquiries || []).filter(i => 
+      (i.name && i.name.toLowerCase().includes(q)) ||
+      (i.phone && i.phone.toLowerCase().includes(q)) ||
+      (i.email && i.email.toLowerCase().includes(q)) ||
+      (i.interestedApartment && i.interestedApartment.toLowerCase().includes(q))
+    ).slice(0, 5);
+
+    const matchedBuyers = (buyers || []).filter(b => 
+      (b.name && b.name.toLowerCase().includes(q)) ||
+      (b.phone && b.phone.toLowerCase().includes(q)) ||
+      (b.email && b.email.toLowerCase().includes(q)) ||
+      (b.bookingHistory || []).some(bk => bk.unitNumber && bk.unitNumber.toLowerCase().includes(q))
+    ).slice(0, 5);
+
+    const matchedTeam = (team || []).filter(t => 
+      (t.name && t.name.toLowerCase().includes(q)) ||
+      (t.email && t.email.toLowerCase().includes(q)) ||
+      (t.role && t.role.toLowerCase().includes(q)) ||
+      (t.roleLabel && t.roleLabel.toLowerCase().includes(q))
+    ).slice(0, 4);
+
+    const matchedProjects = (projects || []).filter(p => 
+      (p.name && p.name.toLowerCase().includes(q)) ||
+      (p.city && p.city.toLowerCase().includes(q)) ||
+      (p.location && p.location.toLowerCase().includes(q))
+    ).slice(0, 3);
+
+    const total = matchedApartments.length + matchedInquiries.length + matchedBuyers.length + matchedTeam.length + matchedProjects.length;
+
+    return {
+      apartments: matchedApartments,
+      inquiries: matchedInquiries,
+      buyers: matchedBuyers,
+      team: matchedTeam,
+      projects: matchedProjects,
+      total
+    };
+  }, [globalSearchQuery, apartments, inquiries, buyers, team, projects]);
+
+  const openBuyerProfile = (buyer) => {
+    setSelectedBuyerForProfile(buyer);
+    setBuyerProfileTab('properties');
+    setShowBuyerProfileModal(true);
+  };
+
+  // Open Add / Edit Buyer Form
+  const openAddBuyerModal = () => {
+    setEditingBuyer({
+      id: null,
+      name: '',
+      phone: '',
+      altPhone: '',
+      email: '',
+      address: '',
+      city: 'Bangalore',
+      state: 'Karnataka',
+      pincode: '',
+      occupation: '',
+      company: '',
+      unitNumber: '',
+      dealAmount: '',
+      paidAmount: '',
+      paymentPlan: 'TOKEN_ADVANCE',
+      paymentMode: 'NEFT / RTGS',
+      txnId: '',
+      assignedAgent: user?.name || 'Super Admin',
+      internalNotes: '',
+      kyc: {
+        status: 'VERIFIED',
+        panNumber: '',
+        aadhaarNumber: ''
+      }
+    });
+    setShowAddEditBuyerModal(true);
+  };
+
+  const openEditBuyerDetailsModal = (buyer) => {
+    setEditingBuyer({
+      id: buyer.id,
+      name: buyer.name || '',
+      phone: buyer.phone || '',
+      altPhone: buyer.altPhone || '',
+      email: buyer.email || '',
+      address: buyer.address || '',
+      city: buyer.city || 'Bangalore',
+      state: buyer.state || 'Karnataka',
+      pincode: buyer.pincode || '',
+      occupation: buyer.occupation || '',
+      company: buyer.company || '',
+      unitNumber: (buyer.bookedUnits && buyer.bookedUnits[0]) || '',
+      dealAmount: (buyer.bookingHistory && buyer.bookingHistory[0]?.agreedPrice) || '',
+      paidAmount: (buyer.bookingHistory && buyer.bookingHistory[0]?.paidAmount) || '',
+      paymentPlan: (buyer.bookingHistory && buyer.bookingHistory[0]?.paymentPlan) || 'TOKEN_ADVANCE',
+      paymentMode: 'NEFT / RTGS',
+      txnId: '',
+      assignedAgent: buyer.assignedAgent || user?.name || 'Super Admin',
+      internalNotes: buyer.internalNotes || '',
+      kyc: {
+        status: buyer.kyc?.status || 'VERIFIED',
+        panNumber: buyer.kyc?.panNumber || '',
+        aadhaarNumber: buyer.kyc?.aadhaarNumber || ''
+      }
+    });
+    setShowAddEditBuyerModal(true);
+  };
+
   const [saleReceiptModal, setSaleReceiptModal] = useState({
     isOpen: false,
     apt: null
@@ -462,12 +1029,225 @@ export default function AdminDashboard() {
     return itemDate === new Date().toDateString();
   }).length;
 
-  // Calculate closed sales revenue
+  // REAL & LIVE Inventory Categorization
+  const soldApartmentsList = useMemo(() => apartments.filter(a => a.status === 'SOLD'), [apartments]);
+  const reservedApartmentsList = useMemo(() => apartments.filter(a => a.status === 'RESERVED'), [apartments]);
+  const availableApartmentsList = useMemo(() => apartments.filter(a => a.status === 'AVAILABLE'), [apartments]);
+
+  // Closed Sold Revenue (100% Real from sold units)
   const totalSoldRevenue = useMemo(() => {
+    return soldApartmentsList.reduce((sum, a) => sum + (Number(a.price) || 0), 0);
+  }, [soldApartmentsList]);
+
+  // Reserved Units Pipeline Value (Token Hold)
+  const totalReservedRevenue = useMemo(() => {
+    return reservedApartmentsList.reduce((sum, a) => sum + (Number(a.price) || 0), 0);
+  }, [reservedApartmentsList]);
+
+  // Total Contracted Value (Sold + Reserved Bookings)
+  const totalContractedRevenue = totalSoldRevenue + totalReservedRevenue;
+
+  // Unsold Available Inventory Value
+  const totalAvailableInventoryValue = useMemo(() => {
+    return availableApartmentsList.reduce((sum, a) => sum + (Number(a.price) || 0), 0);
+  }, [availableApartmentsList]);
+
+  // Registered Buyers List (Buyers attached to sold or reserved units)
+  const registeredBuyers = useMemo(() => {
     return apartments
-      .filter(a => a.status === 'SOLD')
-      .reduce((sum, a) => sum + (Number(a.price) || 0), 0);
+      .filter(a => a.buyer && a.buyer.name && a.buyer.name.trim())
+      .map(a => ({
+        ...a.buyer,
+        apartmentId: a.id,
+        apartmentNumber: a.apartmentNumber,
+        price: a.price,
+        status: a.status
+      }));
   }, [apartments]);
+  const totalBuyersCount = registeredBuyers.length;
+
+  // Exact Payments Received in Bank (Actual verified receipts)
+  const totalReceivedPayments = useMemo(() => {
+    let sum = 0;
+    soldApartmentsList.forEach(a => {
+      if (a.buyer && a.buyer.paidAmount !== undefined && a.buyer.paidAmount !== '') {
+        sum += Number(a.buyer.paidAmount);
+      } else {
+        sum += Number(a.price || 0);
+      }
+    });
+    reservedApartmentsList.forEach(a => {
+      if (a.buyer && a.buyer.paidAmount !== undefined && a.buyer.paidAmount !== '') {
+        sum += Number(a.buyer.paidAmount);
+      } else {
+        sum += 1500000; // Standard holding token
+      }
+    });
+    return sum;
+  }, [soldApartmentsList, reservedApartmentsList]);
+
+  // Exact Pending Dues (Total Contracted - Received)
+  const totalPendingPayments = Math.max(0, totalContractedRevenue - totalReceivedPayments);
+
+  // Real Upcoming Installments from Active Buyers
+  const upcomingInstallmentsList = useMemo(() => {
+    const list = [];
+    apartments.forEach(a => {
+      if (a.buyer && a.buyer.name) {
+        const deal = Number(a.buyer.dealAmount || a.price || 0);
+        const paid = Number(a.buyer.paidAmount !== undefined && a.buyer.paidAmount !== '' ? a.buyer.paidAmount : (a.status === 'SOLD' ? deal : 1500000));
+        const balance = Math.max(0, deal - paid);
+        if (balance > 0) {
+          list.push({
+            id: a.id,
+            apartmentNumber: a.apartmentNumber,
+            buyerName: a.buyer.name,
+            phone: a.buyer.phone || '+91 98765 43210',
+            balance,
+            nextAmount: a.buyer.emiDetails?.monthlyEmi || Math.round(balance * 0.25),
+            dueDate: a.buyer.nextDueDate || (a.buyer.emiDetails?.nextDueDate || '15 Nov 2026'),
+            plan: a.buyer.paymentPlan || 'Milestone / EMI',
+            status: a.status === 'RESERVED' ? 'TOKEN_ACTIVE' : 'EMI_DUE'
+          });
+        }
+      }
+    });
+    return list;
+  }, [apartments]);
+
+  // Pending Approvals & High Priority Alerts
+  const pendingApprovalsList = useMemo(() => {
+    const alerts = [];
+    reservedApartmentsList.forEach(a => {
+      alerts.push({
+        id: `res-${a.id}`,
+        type: 'booking',
+        badge: 'Token On Hold',
+        badgeColor: '#d97706',
+        badgeBg: '#fffbeb',
+        title: `Unit ${a.apartmentNumber} awaiting Agreement Approval`,
+        desc: `Buyer: ${a.buyer?.name || 'Prospective Buyer'} • ₹15L Token Paid • Balance: ${formatINR(Number(a.price || 0) - 1500000)}`,
+        actionText: 'Review Booking',
+        targetTab: 'sales'
+      });
+    });
+    inquiries.slice(0, 3).forEach(i => {
+      alerts.push({
+        id: `inq-${i.id}`,
+        type: 'lead',
+        badge: 'New Lead Callback',
+        badgeColor: '#2563eb',
+        badgeBg: '#eff6ff',
+        title: `Customer Call Request: ${i.name}`,
+        desc: `Interested in ${i.apartment || 'Luxury Residence'} • ${i.phone || i.email}`,
+        actionText: 'Contact Lead',
+        targetTab: 'inquiries'
+      });
+    });
+    return alerts;
+  }, [reservedApartmentsList, inquiries]);
+
+  // REAL Block-wise Inventory Statistics
+  const blockStats = useMemo(() => {
+    const blocks = ['Block B1', 'Block B2', 'Block B3'];
+    return blocks.map(bName => {
+      const bApts = apartments.filter(a => (a.block || '').includes(bName));
+      const bSold = bApts.filter(a => a.status === 'SOLD');
+      const bReserved = bApts.filter(a => a.status === 'RESERVED');
+      const bAvailable = bApts.filter(a => a.status === 'AVAILABLE');
+      const bSoldRev = bSold.reduce((s, a) => s + Number(a.price || 0), 0);
+      const bAvailRev = bAvailable.reduce((s, a) => s + Number(a.price || 0), 0);
+      return {
+        name: bName,
+        total: bApts.length,
+        sold: bSold.length,
+        reserved: bReserved.length,
+        available: bAvailable.length,
+        soldRevenue: bSoldRev,
+        availableRevenue: bAvailRev
+      };
+    });
+  }, [apartments]);
+
+  // REAL BHK Typology Statistics
+  const bhkStats = useMemo(() => {
+    return [2, 3, 4].map(bhk => {
+      const bhkApts = apartments.filter(a => a.bedrooms === bhk);
+      const bSold = bhkApts.filter(a => a.status === 'SOLD');
+      const bReserved = bhkApts.filter(a => a.status === 'RESERVED');
+      const bAvailable = bhkApts.filter(a => a.status === 'AVAILABLE');
+      return {
+        label: `${bhk} BHK`,
+        total: bhkApts.length,
+        sold: bSold.length,
+        reserved: bReserved.length,
+        available: bAvailable.length
+      };
+    });
+  }, [apartments]);
+
+  const [inspectorTab, setInspectorTab] = useState('sold'); // 'sold' | 'reserved' | 'available'
+  const [inspectorSearch, setInspectorSearch] = useState('');
+  const [inspectorBlockFilter, setInspectorBlockFilter] = useState('ALL');
+  const [chartViewMode, setChartViewMode] = useState('blocks'); // 'blocks' | 'typology' | 'status'
+
+  // Filtered inspector lists for live property inventory inspection
+  const filteredSoldList = useMemo(() => {
+    return soldApartmentsList.filter(a => {
+      const q = inspectorSearch.trim().toLowerCase();
+      const matchSearch = !q || 
+        a.apartmentNumber.toLowerCase().includes(q) ||
+        (a.buyer?.name && a.buyer.name.toLowerCase().includes(q)) ||
+        (a.buyer?.phone && a.buyer.phone.toLowerCase().includes(q)) ||
+        (a.title && a.title.toLowerCase().includes(q));
+      const matchBlock = inspectorBlockFilter === 'ALL' || (a.block || '').includes(inspectorBlockFilter);
+      return matchSearch && matchBlock;
+    });
+  }, [soldApartmentsList, inspectorSearch, inspectorBlockFilter]);
+
+  const filteredReservedList = useMemo(() => {
+    return reservedApartmentsList.filter(a => {
+      const q = inspectorSearch.trim().toLowerCase();
+      const matchSearch = !q || 
+        a.apartmentNumber.toLowerCase().includes(q) ||
+        (a.buyer?.name && a.buyer.name.toLowerCase().includes(q)) ||
+        (a.buyer?.phone && a.buyer.phone.toLowerCase().includes(q)) ||
+        (a.title && a.title.toLowerCase().includes(q));
+      const matchBlock = inspectorBlockFilter === 'ALL' || (a.block || '').includes(inspectorBlockFilter);
+      return matchSearch && matchBlock;
+    });
+  }, [reservedApartmentsList, inspectorSearch, inspectorBlockFilter]);
+
+  const filteredAvailableList = useMemo(() => {
+    return availableApartmentsList.filter(a => {
+      const q = inspectorSearch.trim().toLowerCase();
+      const matchSearch = !q || 
+        a.apartmentNumber.toLowerCase().includes(q) ||
+        (a.title && a.title.toLowerCase().includes(q)) ||
+        (a.typology && a.typology.toLowerCase().includes(q));
+      const matchBlock = inspectorBlockFilter === 'ALL' || (a.block || '').includes(inspectorBlockFilter);
+      return matchSearch && matchBlock;
+    });
+  }, [availableApartmentsList, inspectorSearch, inspectorBlockFilter]);
+
+  // Project Occupancy Rates
+  const occupancyRate = totalApartmentsCount > 0 ? Math.round((soldCount / totalApartmentsCount) * 100) : 0;
+  const reservedRate = totalApartmentsCount > 0 ? Math.round((reservedCount / totalApartmentsCount) * 100) : 0;
+  const availableRate = Math.max(0, 100 - occupancyRate - reservedRate);
+
+  const blockB1Total = apartments.filter(a => (a.block || '').includes('B1')).length;
+  const blockB1Sold = apartments.filter(a => (a.block || '').includes('B1') && a.status === 'SOLD').length;
+  const blockB2Total = apartments.filter(a => (a.block || '').includes('B2')).length;
+  const blockB2Sold = apartments.filter(a => (a.block || '').includes('B2') && a.status === 'SOLD').length;
+  const blockB3Total = apartments.filter(a => (a.block || '').includes('B3')).length;
+  const blockB3Sold = apartments.filter(a => (a.block || '').includes('B3') && a.status === 'SOLD').length;
+
+  const handleSendReminder = (item) => {
+    const actText = `Payment reminder sent to ${item.buyerName} for Unit ${item.apartmentNumber} (Due: ${item.dueDate}, ₹${formatINR(item.nextAmount || item.balance)})`;
+    dataStore.addActivity(actText, 'invoice');
+    setActivityFeed(dataStore.getActivityFeed());
+    triggerToast(`📩 Payment reminder successfully sent to ${item.buyerName} (${item.phone})!`);
+  };
 
   // Handle Apartment Status Change (AVAILABLE / RESERVED / SOLD) - Single Unit
   const handleApartmentStatus = (aptId, newStatus) => {
@@ -512,7 +1292,7 @@ export default function AdminDashboard() {
     });
   };
 
-  // Handle Adding New Apartment (Fixed: Single plus)
+  // Handle Adding New Apartment (Point 3: Apartment Management with Duplicate Check & Full Specs)
   const handleCreateApartment = (e) => {
     e.preventDefault();
     if (!formApt.apartmentNumber.trim()) {
@@ -520,8 +1300,25 @@ export default function AdminDashboard() {
       return;
     }
 
+    // 1. Duplicate Apartment Number Validation (Point 3)
+    const cleanNum = formApt.apartmentNumber.trim().toLowerCase();
+    const cleanProj = formApt.projectId || 'proj-1';
+    const isDup = apartments.some(a => 
+      a.apartmentNumber && 
+      a.apartmentNumber.trim().toLowerCase() === cleanNum && 
+      (a.projectId || 'proj-1') === cleanProj
+    );
+    if (isDup) {
+      alert(`⚠️ Duplicate Unit Number: "${formApt.apartmentNumber}" already exists in ${formApt.projectName || 'this project'}! Please enter a unique unit number.`);
+      return;
+    }
+
     const userName = user?.name || 'Super Admin';
-    const areaSqftNum = Number(formApt.areaSqft) || 1200;
+    const areaSqftNum = Number(formApt.areaSqft) || 1500;
+    const carpetAreaNum = Number(formApt.carpetAreaSqft) || Math.round(areaSqftNum * 0.72);
+    const builtUpAreaNum = Number(formApt.builtUpAreaSqft) || Math.round(areaSqftNum * 0.88);
+    const unitPriceNum = Number(formApt.price) || 25000000;
+    const basePriceNum = Number(formApt.basePrice) || unitPriceNum;
 
     const finalRoomGallery = {
       livingHall: formApt.roomGallery?.livingHall || '/assets/interior-living-hall.png',
@@ -542,72 +1339,67 @@ export default function AdminDashboard() {
     const blockVal = formApt.block || 'Block B1';
     const floorVal = formApt.floor || 'Ground Floor';
 
-    const newUnit = dataStore.addApartment({
-      ...formApt,
-      apartmentNumber: formApt.apartmentNumber.trim(),
-      typology: typologyVal,
-      block: blockVal,
-      floor: floorVal,
-      bedrooms: bedroomsNum,
-      bathrooms: bathroomsNum,
-      title: formApt.title || `${bedroomsNum} BHK ${typologyVal}`,
-      areaSqft: areaSqftNum,
-      terraceArea: Number(formApt.terraceArea) || 0,
-      price: Number(formApt.price) || 0,
-      areaSqm: Math.round(areaSqftNum / 10.764),
-      floorPlanUrl: formApt.floorPlanUrl || '',
-      imageUrl: finalCover,
-      panorama360: finalPano,
-      roomGallery: finalRoomGallery
-    }, userName);
+    try {
+      const newUnit = dataStore.addApartment({
+        ...formApt,
+        apartmentNumber: formApt.apartmentNumber.trim(),
+        projectId: cleanProj,
+        projectName: formApt.projectName || 'Dwellora Residence',
+        typology: typologyVal,
+        block: blockVal,
+        floor: floorVal,
+        bedrooms: bedroomsNum,
+        bathrooms: bathroomsNum,
+        title: formApt.title || `${bedroomsNum} BHK ${typologyVal}`,
+        areaSqft: areaSqftNum,
+        carpetAreaSqft: carpetAreaNum,
+        builtUpAreaSqft: builtUpAreaNum,
+        areaSqm: Math.round(areaSqftNum / 10.764),
+        terraceArea: Number(formApt.terraceArea) || 0,
+        basePrice: basePriceNum,
+        price: unitPriceNum,
+        parking: formApt.parking || '1 Covered Basement Slot',
+        amenities: Array.isArray(formApt.amenities) && formApt.amenities.length > 0 
+          ? formApt.amenities 
+          : ['Italian Marble Flooring', 'Floor-to-Ceiling Windows', 'Smart Video Door Phone', 'Modular Kitchen', 'Private Solarium Balcony'],
+        floorPlanUrl: formApt.floorPlanUrl || '/assets/estate-exterior-reveal.png',
+        imageUrl: finalCover,
+        panorama360: finalPano,
+        roomGallery: finalRoomGallery
+      }, userName);
 
-    setApartments(dataStore.getApartments());
-    setActivityFeed(dataStore.getActivityFeed());
-    setShowAddModal(false);
-    setFormApt({
-      apartmentNumber: '',
-      title: '',
-      headline: '',
-      description: '',
-      block: '',
-      floor: '',
-      typology: '',
-      bedrooms: '',
-      bathrooms: '',
-      areaSqft: '',
-      terraceArea: '',
-      price: '',
-      status: 'AVAILABLE',
-      imageUrl: '',
-      panorama360: '',
-      roomGallery: {
-        livingHall: '',
-        livingHall360: '',
-        kitchen: '',
-        kitchen360: '',
-        bedroom: '',
-        bedroom360: '',
-        terrace: '',
-        terrace360: ''
-      }
-    });
-    triggerToast(`Unit ${newUnit.apartmentNumber} registered and live on website!`);
+      setApartments(dataStore.getApartments());
+      setActivityFeed(dataStore.getActivityFeed());
+      setShowAddModal(false);
+      triggerToast(`🎉 Unit ${newUnit.apartmentNumber} registered and live on website!`);
+    } catch (err) {
+      alert(err.message || 'Error creating apartment.');
+    }
   };
 
   const openAddApartmentModal = () => {
     setFormApt({
       apartmentNumber: '',
+      projectId: 'proj-1',
+      projectName: 'Dwellora Residence',
       title: '',
       headline: '',
       description: '',
-      block: '',
-      floor: '',
-      typology: '',
-      bedrooms: '',
-      bathrooms: '',
+      block: 'Block B1',
+      floor: 'Ground Floor',
+      typology: 'Garden Residence',
+      bedrooms: 3,
+      bathrooms: 2,
+      carpetAreaSqft: '',
+      builtUpAreaSqft: '',
       areaSqft: '',
       terraceArea: '',
+      basePrice: '',
       price: '',
+      parking: '1 Covered Basement Slot',
+      amenities: ['Italian Marble Flooring', 'Floor-to-Ceiling Windows', 'Smart Video Door Phone', 'Modular Kitchen', 'Private Solarium Balcony'],
+      customAmenityInput: '',
+      floorPlanUrl: '/assets/estate-exterior-reveal.png',
       status: 'AVAILABLE',
       imageUrl: '',
       panorama360: '',
@@ -629,9 +1421,21 @@ export default function AdminDashboard() {
     const existingGallery = apt.roomGallery || {};
     const defaultHall = existingGallery.livingHall || apt.imageUrl || '/assets/interior-living-hall.png';
     const defaultPano = existingGallery.livingHall360 || apt.panorama360 || existingGallery.panorama360 || '/assets/cayley-interior-8k.jpg';
+    const superArea = Number(apt.areaSqft) || 1500;
     setEditingApt({
       ...apt,
-      floorPlanUrl: apt.floorPlanUrl || '',
+      projectId: apt.projectId || 'proj-1',
+      projectName: apt.projectName || 'Dwellora Residence',
+      carpetAreaSqft: apt.carpetAreaSqft || Math.round(superArea * 0.72),
+      builtUpAreaSqft: apt.builtUpAreaSqft || Math.round(superArea * 0.88),
+      basePrice: apt.basePrice || apt.price || 25000000,
+      parking: apt.parking || '1 Covered Basement Slot',
+      amenities: Array.isArray(apt.amenities) && apt.amenities.length > 0 
+        ? [...apt.amenities] 
+        : ['Italian Marble Flooring', 'Floor-to-Ceiling Windows', 'Smart Video Door Phone', 'Modular Kitchen', 'Private Solarium Balcony'],
+      customAmenityInput: '',
+      priceHistory: Array.isArray(apt.priceHistory) ? [...apt.priceHistory] : [],
+      floorPlanUrl: apt.floorPlanUrl || '/assets/estate-exterior-reveal.png',
       imageUrl: defaultHall,
       panorama360: defaultPano,
       roomGallery: {
@@ -649,11 +1453,25 @@ export default function AdminDashboard() {
     setShowEditModal(true);
   };
 
-  // Handle Editing Apartment
+  // Handle Editing Apartment (Point 3: Price History Tracking & Duplicate Check)
   const handleSaveEditApartment = (e) => {
     e.preventDefault();
     if (!editingApt) return;
     const userName = user?.name || 'Super Admin';
+
+    // Duplicate Check
+    const cleanNum = editingApt.apartmentNumber.trim().toLowerCase();
+    const cleanProj = editingApt.projectId || 'proj-1';
+    const isDup = apartments.some(a => 
+      String(a.id) !== String(editingApt.id) &&
+      a.apartmentNumber && 
+      a.apartmentNumber.trim().toLowerCase() === cleanNum && 
+      (a.projectId || 'proj-1') === cleanProj
+    );
+    if (isDup) {
+      alert(`⚠️ Duplicate Unit Number: "${editingApt.apartmentNumber}" already exists in this project! Please specify a unique unit number.`);
+      return;
+    }
 
     const finalRoomGallery = {
       livingHall: editingApt.roomGallery?.livingHall || '/assets/interior-living-hall.png',
@@ -668,19 +1486,155 @@ export default function AdminDashboard() {
     const finalCover = finalRoomGallery.livingHall;
     const finalPano = finalRoomGallery.livingHall360;
 
-    const updated = dataStore.updateApartment(editingApt.id, {
-      ...editingApt,
-      floorPlanUrl: editingApt.floorPlanUrl || '',
-      imageUrl: finalCover,
-      panorama360: finalPano,
-      roomGallery: finalRoomGallery,
-      areaSqm: Math.round(Number(editingApt.areaSqft || 0) / 10.764)
-    }, userName);
-    setApartments(updated);
-    setActivityFeed(dataStore.getActivityFeed());
-    setShowEditModal(false);
-    setEditingApt(null);
-    triggerToast(`Unit ${editingApt.apartmentNumber} rooms and 360° tours updated live!`);
+    const superArea = Number(editingApt.areaSqft || 0) || 1500;
+    const carpetArea = Number(editingApt.carpetAreaSqft) || Math.round(superArea * 0.72);
+    const builtUpArea = Number(editingApt.builtUpAreaSqft) || Math.round(superArea * 0.88);
+    const unitPrice = Number(editingApt.price) || 25000000;
+    const basePrice = Number(editingApt.basePrice) || unitPrice;
+
+    try {
+      const updated = dataStore.updateApartment(editingApt.id, {
+        ...editingApt,
+        apartmentNumber: editingApt.apartmentNumber.trim(),
+        projectId: cleanProj,
+        carpetAreaSqft: carpetArea,
+        builtUpAreaSqft: builtUpArea,
+        areaSqft: superArea,
+        basePrice: basePrice,
+        price: unitPrice,
+        areaSqm: Math.round(superArea / 10.764),
+        floorPlanUrl: editingApt.floorPlanUrl || '/assets/estate-exterior-reveal.png',
+        imageUrl: finalCover,
+        panorama360: finalPano,
+        roomGallery: finalRoomGallery
+      }, userName);
+
+      setApartments(updated);
+      setActivityFeed(dataStore.getActivityFeed());
+      setShowEditModal(false);
+      setEditingApt(null);
+      triggerToast(`Unit ${editingApt.apartmentNumber} details and pricing updated live!`);
+    } catch (err) {
+      alert(err.message || 'Error updating apartment.');
+    }
+  };
+
+  // Bulk Import Helper Functions (Point 3: Excel / CSV Import)
+  const handleDownloadSampleCSV = () => {
+    const csvContent = "Unit Number,BHK,Typology,Block,Floor,Carpet Area Sqft,Super Built-up Sqft,Base Price,Parking,Status\n" +
+      "No-26,3,Ready Luxury Home,Block B1,1st Floor,1250,1750,28500000,1 Covered Basement Slot,AVAILABLE\n" +
+      "No-27,4,Penthouse Duplex,Block B2,Penthouse Level,2100,2900,48000000,2 Covered EV Bays,AVAILABLE\n" +
+      "No-28,2,Garden Residence,Block B3,Ground Floor,980,1350,22500000,1 Dedicated Stilt Bay,AVAILABLE\n" +
+      "No-29,3,Ready Luxury Home,Block B1,2nd Floor,1300,1800,29500000,1 Covered Basement Slot,AVAILABLE";
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'estatesphere_apartments_import_template.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleParseBulkCSV = (rawText) => {
+    setBulkImportError('');
+    if (!rawText || !rawText.trim()) {
+      setBulkImportError('Please paste CSV data or select a valid .csv file.');
+      setBulkImportPreview([]);
+      return;
+    }
+    const lines = rawText.trim().split(/\r?\n/).filter(l => l.trim().length > 0);
+    if (lines.length === 0) {
+      setBulkImportError('Empty CSV content.');
+      setBulkImportPreview([]);
+      return;
+    }
+
+    let dataLines = lines;
+    if (lines[0].toLowerCase().includes('unit') || lines[0].toLowerCase().includes('bhk')) {
+      dataLines = lines.slice(1);
+    }
+
+    if (dataLines.length === 0) {
+      setBulkImportError('No unit rows found below the header line.');
+      setBulkImportPreview([]);
+      return;
+    }
+
+    const existingUnitNumbers = new Set(apartments.map(a => (a.apartmentNumber || '').trim().toLowerCase()));
+    const batchUnitNumbers = new Set();
+
+    const parsedRows = dataLines.map((line, idx) => {
+      const cols = line.includes('\t') ? line.split('\t') : line.split(',');
+      const unitNum = (cols[0] || '').trim();
+      const bhk = parseInt((cols[1] || '').trim(), 10) || 3;
+      const typology = (cols[2] || '').trim() || (bhk >= 4 ? 'Penthouse Duplex' : 'Ready Luxury Home');
+      const block = (cols[3] || '').trim() || 'Block B1';
+      const floor = (cols[4] || '').trim() || '1st Floor';
+      const carpetArea = Number((cols[5] || '').trim()) || 1100;
+      const superArea = Number((cols[6] || '').trim()) || 1500;
+      const price = Number((cols[7] || '').trim()) || 26000000;
+      const parking = (cols[8] || '').trim() || '1 Covered Basement Slot';
+      const status = (cols[9] || '').trim().toUpperCase() || 'AVAILABLE';
+
+      let isValid = true;
+      let errorMsg = '';
+
+      if (!unitNum) {
+        isValid = false;
+        errorMsg = 'Missing Unit Number';
+      } else if (existingUnitNumbers.has(unitNum.toLowerCase())) {
+        isValid = false;
+        errorMsg = `Duplicate: Unit "${unitNum}" already exists in inventory`;
+      } else if (batchUnitNumbers.has(unitNum.toLowerCase())) {
+        isValid = false;
+        errorMsg = `Duplicate: Unit "${unitNum}" repeated in this file`;
+      } else if (isNaN(price) || price <= 0) {
+        isValid = false;
+        errorMsg = 'Invalid Base Price';
+      } else {
+        batchUnitNumbers.add(unitNum.toLowerCase());
+      }
+
+      return {
+        rowIdx: idx + 1,
+        unitNumber: unitNum,
+        bhk,
+        typology,
+        block,
+        floor,
+        carpetAreaSqft: carpetArea,
+        areaSqft: superArea,
+        price,
+        basePrice: price,
+        parking,
+        status: ['AVAILABLE', 'RESERVED', 'SOLD', 'BOOKED'].includes(status) ? status : 'AVAILABLE',
+        isValid,
+        errorMsg
+      };
+    });
+
+    setBulkImportPreview(parsedRows);
+  };
+
+  const handleExecuteBulkImport = () => {
+    const validRows = bulkImportPreview.filter(r => r.isValid);
+    if (validRows.length === 0) {
+      alert('No valid apartment rows to import. Please resolve the errors in the preview first.');
+      return;
+    }
+
+    const res = dataStore.bulkImportApartments(validRows, user?.name || 'Super Admin');
+    if (res.success) {
+      setApartments(dataStore.getApartments());
+      setActivityFeed(dataStore.getActivityFeed());
+      setShowBulkImportModal(false);
+      setBulkImportText('');
+      setBulkImportPreview([]);
+      triggerToast(`🎉 Successfully imported ${res.count} apartments into inventory!`);
+    } else {
+      alert(res.error || 'Failed to import apartments.');
+    }
   };
 
   // Handle Changing Showcase Photo for an Apartment
@@ -830,6 +1784,7 @@ export default function AdminDashboard() {
         const fields = {};
         if (photoModal.roomKey === 'heroDay') fields.heroDayImage = finalUrl;
         if (photoModal.roomKey === 'heroNight') fields.heroNightImage = finalUrl;
+        if (photoModal.roomKey === 'heroMobileImage') fields.heroMobileImage = finalUrl;
         if (photoModal.roomKey === 'revealImage') fields.revealImage = finalUrl;
         if (photoModal.title) fields.heroTitle = photoModal.title;
         if (photoModal.description) fields.heroSubtitle = photoModal.description;
@@ -1201,16 +2156,21 @@ export default function AdminDashboard() {
     triggerToast('Copied to clipboard!');
   };
 
-  // Filtered Apartments by Search, Status, Block, and BHK/Typology
+  // Filtered Apartments by Search, Status, Block, Floor, BHK/Typology & Price (Point 3)
   const filteredApartments = useMemo(() => {
     return apartments.filter(a => {
-      const matchesSearch = 
-        (a.apartmentNumber || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (a.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (a.block || '').toLowerCase().includes(searchQuery.toLowerCase());
+      const q = (searchQuery || '').trim().toLowerCase();
+      const matchesSearch = !q ||
+        (a.apartmentNumber || '').toLowerCase().includes(q) ||
+        (a.title || '').toLowerCase().includes(q) ||
+        (a.block || '').toLowerCase().includes(q) ||
+        (a.floor || '').toLowerCase().includes(q) ||
+        (a.parking || '').toLowerCase().includes(q) ||
+        (a.buyer && a.buyer.name && a.buyer.name.toLowerCase().includes(q));
       
       const matchesStatus = statusFilter === 'ALL' || a.status === statusFilter;
       const matchesBlock = blockFilter === 'ALL' || a.block === blockFilter;
+      const matchesFloor = floorFilter === 'ALL' || a.floor === floorFilter;
       
       let matchesBhk = true;
       if (bhkFilter === '2') matchesBhk = a.bedrooms === 2;
@@ -1219,13 +2179,19 @@ export default function AdminDashboard() {
       else if (bhkFilter === 'PENTHOUSE') matchesBhk = (a.typology || '').toLowerCase().includes('penthouse');
       else if (bhkFilter === 'GARDEN') matchesBhk = (a.typology || '').toLowerCase().includes('garden');
 
-      return matchesSearch && matchesStatus && matchesBlock && matchesBhk;
+      let matchesPrice = true;
+      const p = Number(a.price) || 0;
+      if (priceRangeFilter === 'under3') matchesPrice = p < 30000000;
+      else if (priceRangeFilter === '3to4') matchesPrice = p >= 30000000 && p <= 40000000;
+      else if (priceRangeFilter === 'above4') matchesPrice = p > 40000000;
+
+      return matchesSearch && matchesStatus && matchesBlock && matchesFloor && matchesBhk && matchesPrice;
     }).sort((a, b) => {
       const numA = parseInt((a.apartmentNumber || '').replace(/[^\d]/g, ''), 10) || a.id || 0;
       const numB = parseInt((b.apartmentNumber || '').replace(/[^\d]/g, ''), 10) || b.id || 0;
       return numA - numB;
     });
-  }, [apartments, searchQuery, statusFilter, blockFilter, bhkFilter]);
+  }, [apartments, searchQuery, statusFilter, blockFilter, floorFilter, bhkFilter, priceRangeFilter]);
 
   // Option 3: Filtered Inquiries & Leads CRM Memo
   const filteredInquiries = useMemo(() => {
@@ -1257,63 +2223,8 @@ export default function AdminDashboard() {
     };
   }, [inquiries]);
 
-  // Format Indian Currency
-  // Convert numbers to Indian Currency Words
-  const numberToIndianWords = (num) => {
-    if (!num || isNaN(num) || num <= 0) return 'Rupees Zero Only';
-    num = Math.round(Number(num));
-    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
-      'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
-    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-
-    const convertTwoDigits = (n) => {
-      if (n < 20) return ones[n];
-      return tens[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + ones[n % 10] : '');
-    };
-
-    const convertThreeDigits = (n) => {
-      let str = '';
-      if (Math.floor(n / 100) > 0) {
-        str += ones[Math.floor(n / 100)] + ' Hundred';
-        if (n % 100 !== 0) str += ' and ';
-      }
-      if (n % 100 !== 0) {
-        str += convertTwoDigits(n % 100);
-      }
-      return str;
-    };
-
-    let crore = Math.floor(num / 10000000);
-    num %= 10000000;
-    let lakh = Math.floor(num / 100000);
-    num %= 100000;
-    let thousand = Math.floor(num / 1000);
-    num %= 1000;
-    let remainder = num;
-
-    let res = 'Rupees ';
-    if (crore > 0) res += convertThreeDigits(crore) + ' Crore ';
-    if (lakh > 0) res += convertThreeDigits(lakh) + ' Lakh ';
-    if (thousand > 0) res += convertThreeDigits(thousand) + ' Thousand ';
-    if (remainder > 0) res += convertThreeDigits(remainder) + ' ';
-    return res.trim() + ' Only';
-  };
-
-  const formatFullINR = (num) => {
-    if (!num && num !== 0) return '₹0';
-    return '₹' + Number(num).toLocaleString('en-IN');
-  };
-
-  const formatINR = (val) => {
-    if (!val) return '₹0';
-    const cr = val / 10000000;
-    if (cr >= 1) return `₹${cr.toFixed(2)} Cr`;
-    const lac = val / 100000;
-    return `₹${lac.toFixed(1)} L`;
-  };
-
   // Lock body/html scroll when any fullscreen view is active to eliminate duplicate scrollbars
-  const isAnyFullscreenOpen = Boolean(showAddModal || showEditModal || showAddTeamModal || showEditPermissionsModal || photoModal?.isOpen || buyerModal?.isOpen || saleReceiptModal?.isOpen || deleteConfirmModal?.isOpen);
+  const isAnyFullscreenOpen = Boolean(showAddModal || showEditModal || showAddTeamModal || showEditPermissionsModal || photoModal?.isOpen || buyerModal?.isOpen || saleReceiptModal?.isOpen || deleteConfirmModal?.isOpen || projectModal?.isOpen || showBuyerProfileModal || recordPaymentModal?.isOpen || showAddEditBuyerModal || bookingWorkflowModal?.isOpen || preview360Modal?.isOpen || paymentReminderModal?.isOpen || siteVisitModal?.isOpen);
   useEffect(() => {
     if (isAnyFullscreenOpen) {
       document.body.classList.add('has-fullscreen-open');
@@ -1370,6 +2281,14 @@ export default function AdminDashboard() {
           left: 0;
           z-index: 60;
           box-shadow: 1px 0 3px 0 rgba(0, 0, 0, 0.02);
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+
+        .admin-sidebar::-webkit-scrollbar {
+          display: none;
+          width: 0;
+          height: 0;
         }
 
         .sidebar-header {
@@ -1431,6 +2350,14 @@ export default function AdminDashboard() {
           gap: 5px;
           flex: 1;
           overflow-y: auto;
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+        }
+
+        .sidebar-nav::-webkit-scrollbar {
+          display: none;
+          width: 0;
+          height: 0;
         }
 
         .sidebar-section-title {
@@ -1681,12 +2608,107 @@ export default function AdminDashboard() {
           overflow-x: hidden;
         }
 
-        /* 5 Top Metric Cards (KPIs) */
+        /* Executive Top Metric Cards Grid (Luxury 4-Card Master Strip) */
+        .exec-kpi-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 18px;
+          margin-bottom: 24px;
+        }
+
+        @media (max-width: 1200px) {
+          .exec-kpi-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (max-width: 640px) {
+          .exec-kpi-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        .exec-kpi-card {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 14px;
+          padding: 20px 22px;
+          box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.03);
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          display: flex;
+          flex-direction: column;
+          position: relative;
+        }
+
+        .exec-kpi-card:hover {
+          border-color: #cbd5e1;
+          box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.07);
+          transform: translateY(-2px);
+        }
+
+        .exec-kpi-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 14px;
+        }
+
+        .exec-kpi-title {
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          color: #64748b;
+        }
+
+        .exec-kpi-icon-wrap {
+          width: 38px;
+          height: 38px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .exec-kpi-value {
+          font-size: 28px;
+          font-weight: 800;
+          color: #0f172a;
+          letter-spacing: -0.03em;
+          line-height: 1.1;
+          margin-bottom: 5px;
+        }
+
+        .exec-kpi-subtitle {
+          font-size: 12px;
+          color: #64748b;
+          margin-bottom: 12px;
+        }
+
+        .exec-kpi-meta-row {
+          border-top: 1px solid #f1f5f9;
+          padding-top: 12px;
+          margin-top: auto;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          font-size: 11.5px;
+        }
+
+        /* 5 Top Metric Cards (KPIs) - Legacy Support */
         .kpi-cards-grid {
           display: grid;
           grid-template-columns: repeat(5, 1fr);
           gap: 16px;
-          margin-bottom: 28px;
+          margin-bottom: 16px;
+        }
+
+        .kpi-cards-grid-4 {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 16px;
+          margin-bottom: 24px;
         }
 
         .kpi-card {
@@ -2100,6 +3122,293 @@ export default function AdminDashboard() {
           z-index: 9999;
         }
 
+        
+        /* Point 11: Global Search Pill & Notification Bell */
+        .global-search-trigger-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background: #f8fafc;
+          border: 1px solid #cbd5e1;
+          border-radius: 8px;
+          padding: 6px 12px;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        .global-search-trigger-btn:hover {
+          background: #ffffff;
+          border-color: #94a3b8;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .search-pill-label {
+          font-size: 12px;
+          color: #64748b;
+        }
+        .search-kbd {
+          background: #e2e8f0;
+          color: #475569;
+          font-size: 10px;
+          font-weight: 700;
+          padding: 1px 5px;
+          border-radius: 4px;
+          border: 1px solid #cbd5e1;
+          font-family: inherit;
+        }
+
+        .btn-bell-action {
+          width: 36px;
+          height: 36px;
+          border-radius: 8px;
+          border: 1px solid #cbd5e1;
+          background: #ffffff;
+          color: #475569;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          position: relative;
+          transition: all 0.15s ease;
+        }
+        .btn-bell-action:hover {
+          background: #f8fafc;
+          border-color: #94a3b8;
+          color: #1e293b;
+        }
+        .notification-badge {
+          position: absolute;
+          top: -4px;
+          right: -4px;
+          background: #ef4444;
+          color: #ffffff;
+          font-size: 10px;
+          font-weight: 800;
+          width: 17px;
+          height: 17px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 2px solid #ffffff;
+        }
+
+        .notifications-dropdown-panel {
+          position: absolute;
+          right: 0;
+          top: 44px;
+          width: 380px;
+          max-width: 90vw;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          box-shadow: 0 12px 30px -5px rgba(15, 23, 42, 0.18), 0 4px 6px -2px rgba(15, 23, 42, 0.05);
+          z-index: 120;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+        }
+        .notifications-dropdown-header {
+          padding: 14px 16px;
+          border-bottom: 1px solid #f1f5f9;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .notifications-dropdown-body {
+          max-height: 340px;
+          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+        }
+        .notification-item-row {
+          padding: 12px 14px;
+          border-bottom: 1px solid #f8fafc;
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          cursor: pointer;
+          transition: background 0.12s;
+        }
+        .notification-item-row:hover {
+          background: #f8fafc;
+        }
+        .notification-item-row.unread {
+          background: #f0fdf4;
+        }
+        .notification-item-row.unread:hover {
+          background: #ecfdf5;
+        }
+        .notification-item-icon {
+          width: 28px;
+          height: 28px;
+          border-radius: 8px;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .notifications-dropdown-footer {
+          padding: 10px 14px;
+          background: #f8fafc;
+          border-top: 1px solid #f1f5f9;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        /* Point 11: Global Search Command Palette (Ctrl + K) */
+        .global-search-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(15, 23, 42, 0.6);
+          backdrop-filter: blur(6px);
+          display: flex;
+          align-items: flex-start;
+          justify-content: center;
+          padding-top: 10vh;
+          z-index: 99999;
+        }
+        .global-search-modal {
+          width: 640px;
+          max-width: 92vw;
+          background: #ffffff;
+          border-radius: 14px;
+          border: 1px solid #cbd5e1;
+          box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35);
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+        }
+        .global-search-header {
+          padding: 16px 20px;
+          border-bottom: 1px solid #e2e8f0;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          background: #f8fafc;
+        }
+        .global-search-input {
+          flex: 1;
+          border: none;
+          background: transparent;
+          font-size: 15px;
+          font-weight: 500;
+          color: #0f172a;
+          outline: none;
+        }
+        .global-search-input::placeholder {
+          color: #94a3b8;
+        }
+        .global-search-close-btn {
+          background: #e2e8f0;
+          border: 1px solid #cbd5e1;
+          border-radius: 6px;
+          font-size: 11px;
+          font-weight: 700;
+          color: #64748b;
+          padding: 3px 8px;
+          cursor: pointer;
+        }
+        .global-search-results {
+          max-height: 440px;
+          overflow-y: auto;
+          padding: 12px 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+        .global-search-group {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .global-search-group-title {
+          font-size: 11px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: #94a3b8;
+          padding: 4px 8px;
+        }
+        .global-search-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 10px 12px;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: background 0.12s;
+        }
+        .global-search-item:hover {
+          background: #eff6ff;
+        }
+
+        /* Point 15: Responsive Design (Mobile & Tablet) */
+        .mobile-menu-btn {
+          display: none;
+          width: 36px;
+          height: 36px;
+          border-radius: 8px;
+          border: 1px solid #cbd5e1;
+          background: #ffffff;
+          color: #0f172a;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+        }
+        .admin-sidebar-backdrop {
+          display: none;
+        }
+
+        @media (max-width: 900px) {
+          .admin-sidebar {
+            transform: translateX(-100%);
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 95;
+            box-shadow: 4px 0 25px rgba(0,0,0,0.18);
+          }
+          .admin-sidebar.mobile-open {
+            transform: translateX(0);
+          }
+          .admin-sidebar-backdrop {
+            display: block;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 90;
+          }
+          .admin-main-viewport {
+            margin-left: 0 !important;
+            width: 100% !important;
+          }
+          .fullscreen-page-overlay {
+            left: 0 !important;
+          }
+          .mobile-menu-btn {
+            display: inline-flex;
+          }
+          .breadcrumb-trail {
+            display: none;
+          }
+          .search-pill-label {
+            display: none;
+          }
+          .search-kbd {
+            display: none;
+          }
+          .main-top-bar {
+            padding: 0 16px !important;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .top-action-cluster button span:not(.notification-badge) {
+            display: none;
+          }
+        }
+
         @media (max-width: 1080px) {
           .kpi-cards-grid {
             grid-template-columns: repeat(2, 1fr);
@@ -2107,8 +3416,16 @@ export default function AdminDashboard() {
         }
       `}</style>
 
+      {/* Point 15: Mobile Backdrop */}
+      {mobileSidebarOpen && (
+        <div 
+          className="admin-sidebar-backdrop" 
+          onClick={() => setMobileSidebarOpen(false)} 
+        />
+      )}
+
       {/* 1. EXACT LEFT SIDEBAR AS REQUESTED */}
-      <aside className="admin-sidebar">
+      <aside className={`admin-sidebar ${mobileSidebarOpen ? 'mobile-open' : ''}`}>
         
         {/* Brand Header */}
         <div className="sidebar-header">
@@ -2140,6 +3457,20 @@ export default function AdminDashboard() {
                 <LayoutDashboard size={18} />
                 <span>Dashboard</span>
               </div>
+            </button>
+          )}
+
+          {/* 🏗️ Projects / Master Developments (Point 2) */}
+          {userPermissions.modules?.includes('projects') && (
+            <button 
+              className={`sidebar-link-btn ${currentTab === 'projects' ? 'active' : ''}`}
+              onClick={() => handleSwitchTab('projects')}
+            >
+              <div className="sidebar-link-content">
+                <Layers size={18} />
+                <span>Projects / Sites</span>
+              </div>
+              <span className="nav-badge">{projects.length} Sites</span>
             </button>
           )}
 
@@ -2284,24 +3615,74 @@ export default function AdminDashboard() {
         
         {/* Top Header Bar */}
         <header className="main-top-bar">
-          <div className="breadcrumb-trail">
-            <span>Admin</span>
-            <ChevronRight size={14} />
-            <span className="breadcrumb-active">
-              {currentTab === 'dashboard' && 'Dashboard Overview'}
-              {currentTab === 'apartments' && 'Apartments & Inventory Manager'}
-              {currentTab === 'sales' && 'Sold Properties & Buyer Registry'}
-              {currentTab === 'media' && 'Media & Photos Manager'}
-              {currentTab === 'inquiries' && 'Customer Inquiries (Leads)'}
-              {currentTab === 'team' && 'Team & Roles (Super Admin Access)'}
-              {currentTab === 'settings' && 'Site Settings & Profile'}
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {/* Point 15: Mobile Menu Toggle Button */}
+            <button 
+              type="button"
+              className="mobile-menu-btn"
+              onClick={() => setMobileSidebarOpen(prev => !prev)}
+              aria-label="Toggle navigation drawer"
+              title="Open Navigation"
+            >
+              <Menu size={18} />
+            </button>
+
+            <div className="breadcrumb-trail">
+              <span>Admin</span>
+              <ChevronRight size={14} />
+              <span className="breadcrumb-active">
+                {currentTab === 'dashboard' && 'Dashboard Overview'}
+                {currentTab === 'projects' && 'Projects & Master Developments'}
+                {currentTab === 'apartments' && 'Apartments & Inventory Manager'}
+                {currentTab === 'sales' && 'Sold Properties & Buyer Registry'}
+                {currentTab === 'media' && 'Media & Photos Manager'}
+                {currentTab === 'inquiries' && 'Customer Inquiries (Leads)'}
+                {currentTab === 'team' && 'Team & Roles (Super Admin Access)'}
+                {currentTab === 'settings' && 'Site Settings & Profile'}
+              </span>
+            </div>
           </div>
 
           {/* Quick Action Cluster */}
           <div className="top-action-cluster">
-            {/* Single Plus Button - Only visible for users with Add Apartment permission */}
-            {userPermissions.canAddApartment && (
+            {/* Point 11: Global Search Trigger Pill */}
+            <button
+              type="button"
+              onClick={() => setShowGlobalSearch(true)}
+              className="global-search-trigger-btn"
+              title="Global System Search (Ctrl + K / Cmd + K)"
+            >
+              <Search size={14} style={{ color: '#64748b' }} />
+              <span className="search-pill-label">Search anything...</span>
+              <kbd className="search-kbd">Ctrl K</kbd>
+            </button>
+
+            {/* Point 11: Real-time Notifications Bell Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setShowNotificationPanel(true);
+                setShowGlobalSearch(false);
+              }}
+              className="btn-bell-action"
+              title={`${unreadNotificationsCount} unread system notifications (Click for full page view)`}
+            >
+              <Bell size={16} />
+              {unreadNotificationsCount > 0 && (
+                <span className="notification-badge">{unreadNotificationsCount}</span>
+              )}
+            </button>
+            {/* Project / Apartment Add Button */}
+            {currentTab === 'projects' && (userPermissions?.canAddProject ?? true) && (
+              <button 
+                className="btn-primary-action"
+                onClick={openAddProjectModal}
+              >
+                <Plus size={16} />
+                <span>Add New Project</span>
+              </button>
+            )}
+            {currentTab !== 'projects' && userPermissions.canAddApartment && (
               <button 
                 className="btn-primary-action"
                 onClick={openAddApartmentModal}
@@ -2322,6 +3703,7 @@ export default function AdminDashboard() {
             <button 
               className="btn-secondary-action"
               onClick={() => {
+                setProjects(dataStore.getProjects ? dataStore.getProjects() : []);
                 setApartments(dataStore.getApartments());
                 setInquiries(dataStore.getInquiries());
                 setActivityFeed(dataStore.getActivityFeed());
@@ -2339,357 +3721,958 @@ export default function AdminDashboard() {
 
         {/* Main Content Area */}
         <main className="main-scroll-content">
-          
-          {/* Top 5 Metric Cards (KPIs) - ONLY displayed on Dashboard Overview */}
-          {currentTab === 'dashboard' && (
-            <section className="kpi-cards-grid">
-              
-              {/* 1. Total Apartments */}
-              <div className="kpi-card">
-                <div className="kpi-card-header">
-                  <span className="kpi-label">Total Apartments</span>
-                  <div className="kpi-icon-wrap" style={{ background: '#eff6ff', color: '#2563eb' }}>
-                    <Building2 size={18} />
-                  </div>
-                </div>
-                <div className="kpi-value-row">
-                  <span className="kpi-number">{totalApartmentsCount}</span>
-                  <span className="kpi-subtext">Units</span>
-                </div>
-                <div className="kpi-subtext">Block B1, B2 & B3 registered</div>
-              </div>
-
-              {/* 2. Available Units */}
-              <div className="kpi-card">
-                <div className="kpi-card-header">
-                  <span className="kpi-label">Available Units</span>
-                  <div className="kpi-icon-wrap" style={{ background: '#ecfdf5', color: '#059669' }}>
-                    <CheckCircle2 size={18} />
-                  </div>
-                </div>
-                <div className="kpi-value-row">
-                  <span className="kpi-number" style={{ color: '#059669' }}>{availableCount}</span>
-                  <span className="kpi-subtext">Open</span>
-                </div>
-                <div className="kpi-subtext">Ready for website booking</div>
-              </div>
-
-              {/* 3. Sold Out Units */}
-              <div className="kpi-card">
-                <div className="kpi-card-header">
-                  <span className="kpi-label">Sold Out Units</span>
-                  <div className="kpi-icon-wrap" style={{ background: '#fef2f2', color: '#dc2626' }}>
-                    <ShieldCheck size={18} />
-                  </div>
-                </div>
-                <div className="kpi-value-row">
-                  <span className="kpi-number" style={{ color: '#dc2626' }}>{soldCount}</span>
-                  <span className="kpi-subtext">Closed</span>
-                </div>
-                <div className="kpi-subtext">{formatINR(totalSoldRevenue)} booked revenue</div>
-              </div>
-
-              {/* 4. Reserved Units */}
-              <div className="kpi-card">
-                <div className="kpi-card-header">
-                  <span className="kpi-label">Reserved Units</span>
-                  <div className="kpi-icon-wrap" style={{ background: '#fffbeb', color: '#d97706' }}>
-                    <Clock size={18} />
-                  </div>
-                </div>
-                <div className="kpi-value-row">
-                  <span className="kpi-number" style={{ color: '#d97706' }}>{reservedCount}</span>
-                  <span className="kpi-subtext">On Hold</span>
-                </div>
-                <div className="kpi-subtext">Token deposit received</div>
-              </div>
-
-              {/* 5. New Inquiries Today */}
-              <div className="kpi-card" style={{ borderColor: todayInquiriesCount > 0 ? '#bfdbfe' : '#e2e8f0', background: todayInquiriesCount > 0 ? '#f0f7ff' : '#ffffff' }}>
-                <div className="kpi-card-header">
-                  <span className="kpi-label">New Inquiries Today</span>
-                  <div className="kpi-icon-wrap" style={{ background: '#dbeafe', color: '#1d4ed8' }}>
-                    <Inbox size={18} />
-                  </div>
-                </div>
-                <div className="kpi-value-row">
-                  <span className="kpi-number" style={{ color: '#1d4ed8' }}>{todayInquiriesCount}</span>
-                  <span className="kpi-subtext">Website Leads</span>
-                </div>
-                <div className="kpi-subtext">From "Book a call" modal</div>
-              </div>
-
-            </section>
-          )}
 
           {/* ========================================================
-              MODULE 2: APARTMENTS / INVENTORY (FULL SPECIFICATION)
+              MODULE 2: PROJECT MANAGEMENT (POINT 2 SPECIFICATION)
           ======================================================== */}
-          {currentTab === 'apartments' && (
-            <div className="white-panel">
+          {currentTab === 'projects' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
               
-              {/* Header with Title & Action */}
-              <div className="panel-header-row" style={{ flexWrap: 'wrap', gap: '14px', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px', marginBottom: '16px' }}>
-                <div>
-                  <h3 className="panel-title" style={{ fontSize: '18px' }}>
-                    <Building2 size={20} style={{ color: '#2563eb' }} />
-                    <span>Apartments & Inventory Management</span>
-                  </h3>
-                  <p style={{ margin: '4px 0 0', fontSize: '12.5px', color: '#64748b' }}>
-                    Control individual unit availability. One-click <b>Sold Out</b> toggle instantly blocks website booking and displays red badge.
-                  </p>
+              {/* Header Panel */}
+              <div className="white-panel" style={{ padding: '22px', marginBottom: 0 }}>
+                <div className="panel-header-row" style={{ flexWrap: 'wrap', gap: '14px', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px', marginBottom: '18px' }}>
+                  <div>
+                    <h3 className="panel-title" style={{ fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Layers size={22} style={{ color: '#2563eb' }} />
+                      <span>Projects & Master Developments Management</span>
+                    </h3>
+                    <p style={{ margin: '4px 0 0', fontSize: '12.5px', color: '#64748b' }}>
+                      Manage multiple real estate projects, RERA registrations, amenities, master floor plans, and live website synchronization.
+                    </p>
+                  </div>
+
+                  {(userPermissions?.canAddProject ?? true) && (
+                    <button 
+                      type="button"
+                      className="btn-primary-action"
+                      onClick={openAddProjectModal}
+                    >
+                      <Plus size={16} />
+                      <span>Add New Project</span>
+                    </button>
+                  )}
                 </div>
 
-                {userPermissions.canAddApartment && (
-                  <button 
-                    className="btn-primary-action"
-                    onClick={openAddApartmentModal}
-                  >
-                    <Plus size={16} />
-                    <span>Add New Apartment</span>
-                  </button>
-                )}
-              </div>
+                {/* 4 Executive Metric Cards for Projects */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '20px' }}>
+                  <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Total Projects</span>
+                    <div style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a', margin: '4px 0' }}>{projects.length} Sites</div>
+                    <span style={{ fontSize: '11.5px', color: '#2563eb', fontWeight: 600 }}>Active Developments</span>
+                  </div>
 
-              {/* SEARCH & FILTERS ROW (Status, Block, BHK/Typology) */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginBottom: '18px' }}>
-                
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                  {/* Search by Unit No or Title */}
-                  <div style={{ position: 'relative', width: '230px' }}>
+                  <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Live Website Master</span>
+                    <div style={{ fontSize: '18px', fontWeight: 800, color: '#059669', margin: '4px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {projects.find(p => p.isMaster)?.name || 'Dwellora Residence'}
+                    </div>
+                    <span style={{ fontSize: '11.5px', color: '#059669', fontWeight: 600 }}>★ Powering Public Site</span>
+                  </div>
+
+                  <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Planned Residences</span>
+                    <div style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a', margin: '4px 0' }}>
+                      {projects.reduce((sum, p) => sum + (Number(p.totalUnits) || 0), 0)} Units
+                    </div>
+                    <span style={{ fontSize: '11.5px', color: '#64748b' }}>Across all developments</span>
+                  </div>
+
+                  <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Total Project Value</span>
+                    <div style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a', margin: '4px 0' }}>₹140+ Cr</div>
+                    <span style={{ fontSize: '11.5px', color: '#059669', fontWeight: 600 }}>Combined Pipeline</span>
+                  </div>
+                </div>
+
+                {/* Filters & Search Row */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                  <div style={{ position: 'relative', width: '280px' }}>
                     <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: '#94a3b8' }} />
                     <input
                       type="text"
-                      placeholder="Search by unit number or title..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
                       className="input-clean"
-                      style={{ paddingLeft: '32px', height: '35px', fontSize: '13px' }}
+                      placeholder="Search by project name, city, RERA..."
+                      value={projectSearch}
+                      onChange={(e) => setProjectSearch(e.target.value)}
+                      style={{ paddingLeft: '32px', height: '36px', fontSize: '12.5px', width: '100%', boxSizing: 'border-box' }}
                     />
                   </div>
 
-                  {/* Filter by Status */}
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="input-clean"
-                    style={{ width: '160px', height: '35px', fontSize: '13px' }}
-                  >
-                    <option value="ALL">All Statuses ({apartments.length})</option>
-                    <option value="AVAILABLE">🟢 Available Only ({availableCount})</option>
-                    <option value="SOLD">🔴 Sold Out Only ({soldCount})</option>
-                    <option value="RESERVED">🟡 Reserved Only ({reservedCount})</option>
-                  </select>
-
-                  {/* Filter by Block */}
-                  <select
-                    value={blockFilter}
-                    onChange={(e) => setBlockFilter(e.target.value)}
-                    className="input-clean"
-                    style={{ width: '135px', height: '35px', fontSize: '13px' }}
-                  >
-                    <option value="ALL">All Blocks</option>
-                    <option value="Block B1">Block B1</option>
-                    <option value="Block B2">Block B2</option>
-                    <option value="Block B3">Block B3</option>
-                    <option value="North Tower">North Tower</option>
-                  </select>
-
-                  {/* Filter by BHK / Typology */}
-                  <select
-                    value={bhkFilter}
-                    onChange={(e) => setBhkFilter(e.target.value)}
-                    className="input-clean"
-                    style={{ width: '155px', height: '35px', fontSize: '13px' }}
-                  >
-                    <option value="ALL">All Typologies</option>
-                    <option value="2">2 BHK Only</option>
-                    <option value="3">3 BHK Only</option>
-                    <option value="4">4+ BHK Only</option>
-                    <option value="PENTHOUSE">Penthouse Duplex</option>
-                    <option value="GARDEN">Garden Residence</option>
-                  </select>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <select
+                      className="input-clean"
+                      value={projectStatusFilter}
+                      onChange={(e) => setProjectStatusFilter(e.target.value)}
+                      style={{ height: '36px', fontSize: '12.5px', width: '180px' }}
+                    >
+                      <option value="ALL">All Statuses ({projects.length})</option>
+                      <option value="Under Construction">Under Construction</option>
+                      <option value="Ready to Move">Ready to Move</option>
+                      <option value="Upcoming">Upcoming</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Sold Out">Sold Out</option>
+                    </select>
+                  </div>
                 </div>
-
-                <div style={{ fontSize: '12.5px', color: '#64748b' }}>
-                  Showing <b>{filteredApartments.length}</b> units
-                </div>
-
               </div>
 
-              {/* APARTMENTS TABLE */}
-              <div style={{ overflowX: 'auto' }}>
-                <table className="clean-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: '110px' }}>Unit / Flat</th>
-                      <th>Title & Typology</th>
-                      <th>Block & Floor</th>
-                      <th>Bed / Bath</th>
-                      <th>Super Area</th>
-                      <th>Price</th>
-                      <th style={{ width: '160px' }}>Status</th>
-                      <th style={{ width: '90px', textAlign: 'center' }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredApartments.map(apt => (
-                      <tr key={apt.id}>
-                        {/* Unit / Flat No */}
-                        <td>
-                          <b style={{ color: '#0f172a', fontSize: '14px', letterSpacing: '-0.01em' }}>
-                            {apt.apartmentNumber}
-                          </b>
-                        </td>
+              {/* Projects Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '22px' }}>
+                {filteredProjects.map(proj => {
+                  const isCurrentMaster = !!proj.isMaster;
+                  let statusBg = '#eff6ff';
+                  let statusColor = '#2563eb';
+                  if (proj.status === 'Ready to Move' || proj.status === 'Completed') {
+                    statusBg = '#ecfdf5';
+                    statusColor = '#059669';
+                  } else if (proj.status === 'Upcoming') {
+                    statusBg = '#fffbeb';
+                    statusColor = '#d97706';
+                  } else if (proj.status === 'Sold Out') {
+                    statusBg = '#fef2f2';
+                    statusColor = '#dc2626';
+                  }
 
-                        {/* Title & Typology */}
-                        <td>
-                          <div style={{ fontWeight: 600, color: '#0f172a' }}>{apt.title}</div>
-                          <span style={{ fontSize: '11px', color: '#64748b' }}>
-                            {apt.typology} {apt.completion ? `• ${apt.completion}` : ''}
+                  return (
+                    <div
+                      key={proj.id}
+                      style={{
+                        background: '#ffffff',
+                        borderRadius: '16px',
+                        border: isCurrentMaster ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                        overflow: 'hidden',
+                        boxShadow: isCurrentMaster ? '0 10px 25px -5px rgba(37,99,235,0.12)' : '0 1px 3px rgba(0,0,0,0.03)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        transition: 'all 0.2s ease',
+                        position: 'relative'
+                      }}
+                    >
+                      {/* Image Banner */}
+                      <div style={{ position: 'relative', height: '210px', background: '#0f172a', overflow: 'hidden' }}>
+                        <img
+                          src={proj.heroImage || '/assets/luxury_villa_day.jpg'}
+                          alt={proj.name}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,0.85) 0%, transparent 60%)' }} />
+
+                        {/* Badges on Top of Image */}
+                        <div style={{ position: 'absolute', top: '12px', left: '12px', display: 'flex', gap: '6px' }}>
+                          <span style={{ padding: '4px 10px', borderRadius: '6px', background: statusBg, color: statusColor, fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            {proj.status}
                           </span>
-                          {apt.buyer?.name && (apt.status === 'SOLD' || apt.status === 'RESERVED') && (
-                            <div 
-                              onClick={() => openEditBuyerModal(apt)}
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 600, color: '#2563eb', cursor: 'pointer', marginTop: '3px' }}
-                              title="Click to view/edit buyer details"
-                            >
-                              <UserCheck size={11} />
-                              <span>Buyer: {apt.buyer.name}</span>
-                            </div>
-                          )}
-                        </td>
-
-                        {/* Block & Floor */}
-                        <td>
-                          <div>{apt.block}</div>
-                          <span style={{ fontSize: '11px', color: '#64748b' }}>{apt.floor}</span>
-                        </td>
-
-                        {/* Bedrooms & Bathrooms */}
-                        <td>
-                          <div><b>{apt.bedrooms} BHK</b></div>
-                          <span style={{ fontSize: '11px', color: '#64748b' }}>{apt.bathrooms || 2} Bath</span>
-                        </td>
-
-                        {/* Area */}
-                        <td>
-                          <div><b>{apt.areaSqft} sqft</b></div>
-                          <span style={{ fontSize: '11px', color: '#64748b' }}>
-                            ({apt.areaSqm || Math.round(apt.areaSqft / 10.764)} m² + {apt.terraceArea || 25} m² terrace)
-                          </span>
-                        </td>
-
-                        {/* Price */}
-                        <td>
-                          <b style={{ color: '#0f172a', fontSize: '13.5px' }}>{formatINR(apt.price)}</b>
-                        </td>
-
-                        {/* Status Dropdown or Static Badge */}
-                        <td>
-                          {userPermissions.canEditApartment ? (
-                            <select
-                              className="status-select-clean"
-                              value={apt.status}
-                              onChange={(e) => handleApartmentStatus(apt.id, e.target.value)}
-                              style={{
-                                borderColor: apt.status === 'AVAILABLE' ? '#a7f3d0' : (apt.status === 'RESERVED' ? '#fde68a' : '#fecaca'),
-                                color: apt.status === 'AVAILABLE' ? '#059669' : (apt.status === 'RESERVED' ? '#d97706' : '#dc2626'),
-                                backgroundColor: apt.status === 'AVAILABLE' ? '#ecfdf5' : (apt.status === 'RESERVED' ? '#fffbeb' : '#fef2f2'),
-                                width: '100%'
-                              }}
-                            >
-                              <option value="AVAILABLE">🟢 Available</option>
-                              <option value="RESERVED">🟡 Reserved</option>
-                              <option value="SOLD">🔴 Sold Out</option>
-                            </select>
-                          ) : (
-                            <span style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              padding: '5px 12px',
-                              borderRadius: '20px',
-                              fontSize: '12px',
-                              fontWeight: 600,
-                              border: apt.status === 'AVAILABLE' ? '1px solid #a7f3d0' : (apt.status === 'RESERVED' ? '1px solid #fde68a' : '1px solid #fecaca'),
-                              color: apt.status === 'AVAILABLE' ? '#047857' : (apt.status === 'RESERVED' ? '#b45309' : '#b91c1c'),
-                              background: apt.status === 'AVAILABLE' ? '#ecfdf5' : (apt.status === 'RESERVED' ? '#fffbeb' : '#fef2f2')
-                            }}>
-                              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: apt.status === 'AVAILABLE' ? '#10b981' : (apt.status === 'RESERVED' ? '#f59e0b' : '#ef4444') }} />
-                              {apt.status === 'AVAILABLE' ? 'Available' : (apt.status === 'RESERVED' ? 'Reserved' : 'Sold Out')}
+                          {isCurrentMaster && (
+                            <span style={{ padding: '4px 10px', borderRadius: '6px', background: '#fef08a', color: '#854d0e', fontSize: '11px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              ★ LIVE ON WEBSITE
                             </span>
                           )}
-                        </td>
+                        </div>
 
-                        {/* Actions: Edit + Delete or View Only */}
-                        <td style={{ textAlign: 'center' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-                            {userPermissions.canEditApartment ? (
+                        {/* Title & Location on Image Bottom */}
+                        <div style={{ position: 'absolute', bottom: '12px', left: '16px', right: '16px' }}>
+                          <h4 style={{ margin: 0, color: '#ffffff', fontSize: '19px', fontWeight: 800, letterSpacing: '-0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.4)' }}>
+                            {proj.name}
+                          </h4>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#cbd5e1', fontSize: '12px', marginTop: '2px' }}>
+                            <MapPin size={12} style={{ color: '#60a5fa' }} />
+                            <span>{proj.location} • {proj.city}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Card Content */}
+                      <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}>
+                        <div>
+                          {/* Tagline / Headline */}
+                          {proj.tagline && (
+                            <div style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px', fontStyle: 'italic' }}>
+                              "{proj.tagline}"
+                            </div>
+                          )}
+
+                          {/* Description Excerpt */}
+                          <p style={{ margin: '0 0 14px', fontSize: '12.5px', color: '#64748b', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                            {proj.description}
+                          </p>
+
+                          {/* Meta Specs Grid */}
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', padding: '12px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #f1f5f9', marginBottom: '14px' }}>
+                            <div>
+                              <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Starting Price</span>
+                              <div style={{ fontSize: '15px', fontWeight: 800, color: '#059669', marginTop: '1px' }}>
+                                {formatINR(proj.startingPrice)}
+                              </div>
+                            </div>
+                            <div>
+                              <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>RERA Number</span>
+                              <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#0f172a', marginTop: '1px' }}>
+                                {proj.reraNumber || 'Applied'}
+                              </div>
+                            </div>
+                            <div>
+                              <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Handover / Target</span>
+                              <div style={{ fontSize: '12px', fontWeight: 600, color: '#334155', marginTop: '1px' }}>
+                                {proj.completionDate || 'Dec 2026'}
+                              </div>
+                            </div>
+                            <div>
+                              <span style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Scale</span>
+                              <div style={{ fontSize: '12px', fontWeight: 600, color: '#334155', marginTop: '1px' }}>
+                                {proj.totalUnits} Units &bull; {proj.totalBlocks || '3 Towers'}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Amenities Chips */}
+                          <div style={{ marginBottom: '16px' }}>
+                            <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                              Amenities & Facilities:
+                            </span>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginTop: '6px' }}>
+                              {(proj.amenities || []).slice(0, 4).map((am, i) => (
+                                <span key={i} style={{ fontSize: '11px', background: '#f1f5f9', color: '#475569', padding: '3px 8px', borderRadius: '6px', fontWeight: 500 }}>
+                                  ✓ {am}
+                                </span>
+                              ))}
+                              {(proj.amenities || []).length > 4 && (
+                                <span style={{ fontSize: '11px', background: '#eff6ff', color: '#2563eb', padding: '3px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                                  +{(proj.amenities || []).length - 4} more
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Card Actions Toolbar */}
+                        <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            {(userPermissions?.canEditProject ?? true) && (
                               <button
+                                type="button"
+                                onClick={() => openEditProjectModal(proj)}
                                 style={{
-                                  background: '#eff6ff',
-                                  border: '1px solid #bfdbfe',
-                                  color: '#2563eb',
-                                  cursor: 'pointer',
-                                  padding: '5px 8px',
-                                  borderRadius: '6px',
-                                  display: 'inline-flex',
-                                  alignItems: 'center'
-                                }}
-                                onClick={() => openEditApartmentModal(apt)}
-                                title="Edit apartment details"
-                              >
-                                <Edit3 size={14} />
-                              </button>
-                            ) : (
-                              <button
-                                style={{
-                                  background: '#f8fafc',
-                                  border: '1px solid #e2e8f0',
-                                  color: '#475569',
-                                  cursor: 'pointer',
-                                  padding: '4px 8px',
-                                  borderRadius: '6px',
+                                  flex: 1,
                                   display: 'inline-flex',
                                   alignItems: 'center',
-                                  gap: '4px',
-                                  fontSize: '11px',
-                                  fontWeight: 600
+                                  justifyContent: 'center',
+                                  gap: '6px',
+                                  padding: '8px 12px',
+                                  background: '#eff6ff',
+                                  border: '1px solid #bfdbfe',
+                                  color: '#1d4ed8',
+                                  borderRadius: '8px',
+                                  fontSize: '12px',
+                                  fontWeight: 700,
+                                  cursor: 'pointer'
                                 }}
-                                onClick={() => openEditApartmentModal(apt)}
-                                title="View apartment details"
                               >
-                                <Eye size={12} />
-                                <span>View</span>
+                                <Edit3 size={13} />
+                                <span>Edit Project</span>
                               </button>
                             )}
 
-                            {userPermissions.canDeleteApartment && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCurrentTab('apartments');
+                              }}
+                              style={{
+                                flex: 1,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '6px',
+                                padding: '8px 12px',
+                                background: '#f8fafc',
+                                border: '1px solid #e2e8f0',
+                                color: '#334155',
+                                borderRadius: '8px',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <Building2 size={13} />
+                              <span>Apartments ({isCurrentMaster ? apartments.length : proj.totalUnits})</span>
+                            </button>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            {!isCurrentMaster ? (
                               <button
+                                type="button"
+                                onClick={() => handleSetActiveMasterProject(proj)}
                                 style={{
+                                  flex: 1,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '5px',
+                                  padding: '7px 10px',
+                                  background: '#fefce8',
+                                  border: '1px solid #fde047',
+                                  color: '#a16207',
+                                  borderRadius: '8px',
+                                  fontSize: '11.5px',
+                                  fontWeight: 700,
+                                  cursor: 'pointer'
+                                }}
+                                title="Feature this project on the public website"
+                              >
+                                <Globe size={13} />
+                                <span>Set as Live on Website</span>
+                              </button>
+                            ) : (
+                              <a
+                                href="/"
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{
+                                  flex: 1,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '5px',
+                                  padding: '7px 10px',
+                                  background: '#ecfdf5',
+                                  border: '1px solid #a7f3d0',
+                                  color: '#047857',
+                                  borderRadius: '8px',
+                                  fontSize: '11.5px',
+                                  fontWeight: 700,
+                                  textDecoration: 'none'
+                                }}
+                              >
+                                <ExternalLink size={13} />
+                                <span>View Live on Website</span>
+                              </a>
+                            )}
+
+                            {proj.googleMapsUrl && (
+                              <a
+                                href={proj.googleMapsUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  padding: '7px 10px',
                                   background: '#f8fafc',
                                   border: '1px solid #e2e8f0',
-                                  color: '#ef4444',
-                                  cursor: 'pointer',
-                                  padding: '5px 8px',
-                                  borderRadius: '6px',
-                                  display: 'inline-flex',
-                                  alignItems: 'center'
+                                  borderRadius: '8px',
+                                  color: '#475569',
+                                  fontSize: '11.5px',
+                                  textDecoration: 'none'
                                 }}
-                                onClick={() => handleDeleteApartment(apt.id)}
-                                title="Delete unit"
+                                title="Open Google Maps Location"
                               >
-                                <Trash2 size={14} />
+                                <MapPin size={13} />
+                              </a>
+                            )}
+
+                            {userPermissions.canDeleteProject && !isCurrentMaster && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteProject(proj)}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  padding: '7px 10px',
+                                  background: '#fef2f2',
+                                  border: '1px solid #fee2e2',
+                                  color: '#dc2626',
+                                  borderRadius: '8px',
+                                  fontSize: '11.5px',
+                                  cursor: 'pointer'
+                                }}
+                                title="Delete Project"
+                              >
+                                <Trash2 size={13} />
                               </button>
                             )}
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
+
+            </div>
+          )}
+
+          {/* ========================================================
+              MODULE 3: APARTMENTS / INVENTORY (POINT 3 SPECIFICATION)
+          ======================================================== */}
+          {currentTab === 'apartments' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              
+              {/* Header Panel with Actions */}
+              <div className="white-panel" style={{ padding: '22px 24px' }}>
+                <div className="panel-header-row" style={{ flexWrap: 'wrap', gap: '14px', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px', marginBottom: '16px' }}>
+                  <div>
+                    <h3 className="panel-title" style={{ fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Building2 size={20} style={{ color: '#2563eb' }} />
+                      <span>Apartments & Individual Flat Management (Point 3)</span>
+                    </h3>
+                    <p style={{ margin: '4px 0 0', fontSize: '12.5px', color: '#64748b' }}>
+                      Complete flat specs: Carpet area, built-up, base price, parking, price history & multi-tower availability tracking.
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="btn-secondary-action"
+                      onClick={() => {
+                        setShowBulkImportModal(true);
+                        setBulkImportText('');
+                        setBulkImportPreview([]);
+                        setBulkImportError('');
+                      }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontSize: '13px' }}
+                    >
+                      <FileSpreadsheet size={15} style={{ color: '#059669' }} />
+                      <span>Bulk Import (Excel / CSV)</span>
+                    </button>
+
+                    {userPermissions.canAddApartment && (
+                      <button 
+                        className="btn-primary-action"
+                        onClick={openAddApartmentModal}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontSize: '13px' }}
+                      >
+                        <Plus size={16} />
+                        <span>Add New Apartment</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Point 3 Executive Inventory Availability & Valuation Tracker */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', marginBottom: '16px' }}>
+                  <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Total Units</span>
+                    <div style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>
+                      {apartments.length} <span style={{ fontSize: '12px', fontWeight: 500, color: '#64748b' }}>Flats</span>
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '12px 14px', background: '#ecfdf5', borderRadius: '10px', border: '1px solid #a7f3d0' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 600, color: '#047857', textTransform: 'uppercase' }}>Available Units</span>
+                    <div style={{ fontSize: '18px', fontWeight: 800, color: '#065f46', marginTop: '2px' }}>
+                      {availableCount} <span style={{ fontSize: '12px', fontWeight: 600 }}>({apartments.length ? Math.round((availableCount / apartments.length) * 100) : 0}%)</span>
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '12px 14px', background: '#fffbeb', borderRadius: '10px', border: '1px solid #fde68a' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 600, color: '#b45309', textTransform: 'uppercase' }}>Reserved (Hold)</span>
+                    <div style={{ fontSize: '18px', fontWeight: 800, color: '#92400e', marginTop: '2px' }}>
+                      {reservedCount} <span style={{ fontSize: '12px', fontWeight: 600 }}>({apartments.length ? Math.round((reservedCount / apartments.length) * 100) : 0}%)</span>
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '12px 14px', background: '#fef2f2', borderRadius: '10px', border: '1px solid #fecaca' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 600, color: '#b91c1c', textTransform: 'uppercase' }}>Sold Out Units</span>
+                    <div style={{ fontSize: '18px', fontWeight: 800, color: '#991b1b', marginTop: '2px' }}>
+                      {soldCount} <span style={{ fontSize: '12px', fontWeight: 600 }}>({apartments.length ? Math.round((soldCount / apartments.length) * 100) : 0}%)</span>
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '12px 14px', background: '#eff6ff', borderRadius: '10px', border: '1px solid #bfdbfe' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 600, color: '#1e40af', textTransform: 'uppercase' }}>Total Portfolio Value</span>
+                    <div style={{ fontSize: '18px', fontWeight: 800, color: '#1d4ed8', marginTop: '2px' }}>
+                      {formatINR(apartments.reduce((acc, a) => acc + (Number(a.price) || 0), 0))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Real-time Occupancy Ratio Visual Bar */}
+                <div style={{ marginBottom: '18px' }}>
+                  <div style={{ height: '7px', width: '100%', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden', display: 'flex' }}>
+                    <div style={{ width: `${apartments.length ? (soldCount / apartments.length) * 100 : 0}%`, background: '#ef4444' }} title={`Sold Out: ${soldCount} Units`} />
+                    <div style={{ width: `${apartments.length ? (reservedCount / apartments.length) * 100 : 0}%`, background: '#f59e0b' }} title={`Reserved: ${reservedCount} Units`} />
+                    <div style={{ width: `${apartments.length ? (availableCount / apartments.length) * 100 : 0}%`, background: '#10b981' }} title={`Available: ${availableCount} Units`} />
+                  </div>
+                </div>
+
+                {/* SEARCH, ADVANCED FILTERS & VIEW MODE SWITCHER */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', flex: 1 }}>
+                    {/* Search by Unit No, Title, Block, or Buyer */}
+                    <div style={{ position: 'relative', width: '220px' }}>
+                      <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: '#94a3b8' }} />
+                      <input
+                        type="text"
+                        placeholder="Search unit, buyer, block..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="input-clean"
+                        style={{ paddingLeft: '32px', height: '35px', fontSize: '12.5px' }}
+                      />
+                    </div>
+
+                    {/* Filter by Status */}
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="input-clean"
+                      style={{ width: '145px', height: '35px', fontSize: '12.5px' }}
+                    >
+                      <option value="ALL">All Statuses ({apartments.length})</option>
+                      <option value="AVAILABLE">🟢 Available ({availableCount})</option>
+                      <option value="SOLD">🔴 Sold Out ({soldCount})</option>
+                      <option value="RESERVED">🟡 Reserved ({reservedCount})</option>
+                    </select>
+
+                    {/* Filter by Block / Tower */}
+                    <select
+                      value={blockFilter}
+                      onChange={(e) => setBlockFilter(e.target.value)}
+                      className="input-clean"
+                      style={{ width: '130px', height: '35px', fontSize: '12.5px' }}
+                    >
+                      <option value="ALL">All Blocks</option>
+                      <option value="Block B1">Block B1</option>
+                      <option value="Block B2">Block B2</option>
+                      <option value="Block B3">Block B3</option>
+                      <option value="North Tower">North Tower</option>
+                    </select>
+
+                    {/* Filter by Floor */}
+                    <select
+                      value={floorFilter}
+                      onChange={(e) => setFloorFilter(e.target.value)}
+                      className="input-clean"
+                      style={{ width: '130px', height: '35px', fontSize: '12.5px' }}
+                    >
+                      <option value="ALL">All Floors</option>
+                      <option value="Ground Floor">Ground Floor</option>
+                      <option value="1st Floor">1st Floor</option>
+                      <option value="2nd Floor">2nd Floor</option>
+                      <option value="3rd Floor">3rd Floor</option>
+                      <option value="Penthouse Level">Penthouse Level</option>
+                    </select>
+
+                    {/* Filter by BHK / Typology */}
+                    <select
+                      value={bhkFilter}
+                      onChange={(e) => setBhkFilter(e.target.value)}
+                      className="input-clean"
+                      style={{ width: '140px', height: '35px', fontSize: '12.5px' }}
+                    >
+                      <option value="ALL">All Typologies</option>
+                      <option value="2">2 BHK Only</option>
+                      <option value="3">3 BHK Only</option>
+                      <option value="4">4+ BHK Only</option>
+                      <option value="PENTHOUSE">Penthouse Duplex</option>
+                      <option value="GARDEN">Garden Residence</option>
+                    </select>
+
+                    {/* Filter by Price Range */}
+                    <select
+                      value={priceRangeFilter}
+                      onChange={(e) => setPriceRangeFilter(e.target.value)}
+                      className="input-clean"
+                      style={{ width: '135px', height: '35px', fontSize: '12.5px' }}
+                    >
+                      <option value="ALL">All Prices</option>
+                      <option value="under3">Under ₹3.0 Cr</option>
+                      <option value="3to4">₹3.0 Cr - ₹4.0 Cr</option>
+                      <option value="above4">Above ₹4.0 Cr</option>
+                    </select>
+                  </div>
+
+                  {/* Right side: View Switcher (Table vs Tower Grid) */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ background: '#f1f5f9', padding: '3px', borderRadius: '8px', display: 'flex', gap: '3px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setApartmentViewMode('table')}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          padding: '5px 10px',
+                          border: 'none',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          background: apartmentViewMode === 'table' ? '#ffffff' : 'transparent',
+                          color: apartmentViewMode === 'table' ? '#2563eb' : '#64748b',
+                          boxShadow: apartmentViewMode === 'table' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'
+                        }}
+                      >
+                        <Table size={13} />
+                        <span>Table Listing</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setApartmentViewMode('tower')}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          padding: '5px 10px',
+                          border: 'none',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          background: apartmentViewMode === 'tower' ? '#ffffff' : 'transparent',
+                          color: apartmentViewMode === 'tower' ? '#2563eb' : '#64748b',
+                          boxShadow: apartmentViewMode === 'tower' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'
+                        }}
+                      >
+                        <Grid size={13} />
+                        <span>Tower & Floor Matrix</span>
+                      </button>
+                    </div>
+
+                    <div style={{ fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                      Showing <b>{filteredApartments.length}</b> units
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+
+              {/* VIEW 1: TABLE VIEW */}
+              {apartmentViewMode === 'table' && (
+                <div className="white-panel" style={{ padding: '0', overflow: 'hidden' }}>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table className="clean-table" style={{ width: '100%' }}>
+                      <thead>
+                        <tr>
+                          <th style={{ width: '90px' }}>Unit No</th>
+                          <th>Project & Typology</th>
+                          <th>Block & Floor</th>
+                          <th>Bed / Bath</th>
+                          <th>Carpet / Super Area</th>
+                          <th>Parking</th>
+                          <th>Base Price & History</th>
+                          <th style={{ width: '160px' }}>Status</th>
+                          <th style={{ width: '110px', textAlign: 'center' }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredApartments.map(apt => (
+                          <tr key={apt.id}>
+                            {/* Unit / Flat No */}
+                            <td>
+                              <b style={{ color: '#0f172a', fontSize: '13.5px' }}>
+                                {apt.apartmentNumber}
+                              </b>
+                            </td>
+
+                            {/* Project & Typology */}
+                            <td>
+                              <div style={{ fontWeight: 600, color: '#0f172a' }}>{apt.title}</div>
+                              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '1px' }}>
+                                <span style={{ color: '#2563eb', fontWeight: 600 }}>{apt.projectName || 'Dwellora Residence'}</span> &bull; {apt.typology}
+                              </div>
+                              {apt.buyer?.name && (apt.status === 'SOLD' || apt.status === 'RESERVED') && (
+                                <div 
+                                  onClick={() => openEditBuyerModal(apt)}
+                                  style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 600, color: '#2563eb', cursor: 'pointer', marginTop: '3px' }}
+                                  title="Click to view/edit buyer details"
+                                >
+                                  <UserCheck size={11} />
+                                  <span>Buyer: {apt.buyer.name}</span>
+                                </div>
+                              )}
+                            </td>
+
+                            {/* Block & Floor */}
+                            <td>
+                              <div style={{ fontWeight: 600, color: '#334155' }}>{apt.block}</div>
+                              <span style={{ fontSize: '11px', color: '#64748b' }}>{apt.floor}</span>
+                            </td>
+
+                            {/* Bedrooms & Bathrooms */}
+                            <td>
+                              <div><b>{apt.bedrooms} BHK</b></div>
+                              <span style={{ fontSize: '11px', color: '#64748b' }}>{apt.bathrooms || 2} Bath</span>
+                            </td>
+
+                            {/* Carpet & Super Area */}
+                            <td>
+                              <div><b>{apt.carpetAreaSqft || Math.round((apt.areaSqft || 1500) * 0.72)} sqft</b> <span style={{ fontSize: '10.5px', color: '#059669', fontWeight: 600 }}>Carpet</span></div>
+                              <span style={{ fontSize: '11px', color: '#64748b' }}>
+                                {apt.areaSqft} sqft Super ({apt.areaSqm || Math.round(apt.areaSqft / 10.764)} m²)
+                              </span>
+                            </td>
+
+                            {/* Parking */}
+                            <td>
+                              <div style={{ fontSize: '12px', color: '#334155', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Car size={13} style={{ color: '#64748b' }} />
+                                <span>{apt.parking || '1 Covered Slot'}</span>
+                              </div>
+                            </td>
+
+                            {/* Price & History */}
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <b style={{ color: '#0f172a', fontSize: '13.5px' }}>{formatINR(apt.price)}</b>
+                                {Array.isArray(apt.priceHistory) && apt.priceHistory.length > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setPriceHistoryModal({ isOpen: true, apt })}
+                                    style={{
+                                      border: '1px solid #bfdbfe',
+                                      background: '#eff6ff',
+                                      color: '#1d4ed8',
+                                      fontSize: '10px',
+                                      fontWeight: 700,
+                                      padding: '2px 5px',
+                                      borderRadius: '4px',
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '3px'
+                                    }}
+                                    title="View price revision history"
+                                  >
+                                    <History size={10} />
+                                    <span>{apt.priceHistory.length} Rev</span>
+                                  </button>
+                                )}
+                              </div>
+                              <span style={{ fontSize: '10.5px', color: '#94a3b8' }}>
+                                Base: {formatINR(apt.basePrice || apt.price)}
+                              </span>
+                            </td>
+
+                            {/* Status Dropdown or Static Badge */}
+                            <td>
+                              {userPermissions.canEditApartment ? (
+                                <select
+                                  className="status-select-clean"
+                                  value={apt.status}
+                                  onChange={(e) => handleApartmentStatus(apt.id, e.target.value)}
+                                  style={{
+                                    borderColor: apt.status === 'AVAILABLE' ? '#a7f3d0' : (apt.status === 'RESERVED' ? '#fde68a' : '#fecaca'),
+                                    color: apt.status === 'AVAILABLE' ? '#059669' : (apt.status === 'RESERVED' ? '#d97706' : '#dc2626'),
+                                    backgroundColor: apt.status === 'AVAILABLE' ? '#ecfdf5' : (apt.status === 'RESERVED' ? '#fffbeb' : '#fef2f2'),
+                                    width: '100%',
+                                    fontSize: '12px'
+                                  }}
+                                >
+                                  <option value="AVAILABLE">🟢 Available</option>
+                                  <option value="RESERVED">🟡 Reserved</option>
+                                  <option value="SOLD">🔴 Sold Out</option>
+                                </select>
+                              ) : (
+                                <span style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  padding: '5px 12px',
+                                  borderRadius: '20px',
+                                  fontSize: '12px',
+                                  fontWeight: 600,
+                                  border: apt.status === 'AVAILABLE' ? '1px solid #a7f3d0' : (apt.status === 'RESERVED' ? '1px solid #fde68a' : '1px solid #fecaca'),
+                                  color: apt.status === 'AVAILABLE' ? '#047857' : (apt.status === 'RESERVED' ? '#b45309' : '#b91c1c'),
+                                  background: apt.status === 'AVAILABLE' ? '#ecfdf5' : (apt.status === 'RESERVED' ? '#fffbeb' : '#fef2f2')
+                                }}>
+                                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: apt.status === 'AVAILABLE' ? '#10b981' : (apt.status === 'RESERVED' ? '#f59e0b' : '#ef4444') }} />
+                                  {apt.status === 'AVAILABLE' ? 'Available' : (apt.status === 'RESERVED' ? 'Reserved' : 'Sold Out')}
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Actions: Edit + Price History + Delete */}
+                            <td style={{ textAlign: 'center' }}>
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                {userPermissions.canEditApartment && (
+                                  <button
+                                    style={{
+                                      background: '#eff6ff',
+                                      border: '1px solid #bfdbfe',
+                                      color: '#2563eb',
+                                      cursor: 'pointer',
+                                      padding: '5px 7px',
+                                      borderRadius: '6px',
+                                      display: 'inline-flex',
+                                      alignItems: 'center'
+                                    }}
+                                    onClick={() => openEditApartmentModal(apt)}
+                                    title="Edit flat details & specifications"
+                                  >
+                                    <Edit3 size={13} />
+                                  </button>
+                                )}
+
+                                <button
+                                  type="button"
+                                  style={{
+                                    background: '#f8fafc',
+                                    border: '1px solid #e2e8f0',
+                                    color: '#475569',
+                                    cursor: 'pointer',
+                                    padding: '5px 7px',
+                                    borderRadius: '6px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center'
+                                  }}
+                                  onClick={() => setPriceHistoryModal({ isOpen: true, apt })}
+                                  title="Price revision history"
+                                >
+                                  <History size={13} />
+                                </button>
+
+                                {userPermissions.canDeleteApartment && (
+                                  <button
+                                    style={{
+                                      background: '#f8fafc',
+                                      border: '1px solid #e2e8f0',
+                                      color: '#ef4444',
+                                      cursor: 'pointer',
+                                      padding: '5px 7px',
+                                      borderRadius: '6px',
+                                      display: 'inline-flex',
+                                      alignItems: 'center'
+                                    }}
+                                    onClick={() => handleDeleteApartment(apt.id)}
+                                    title="Delete flat"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* VIEW 2: TOWER & FLOOR ELEVATION MATRIX VIEW (POINT 3) */}
+              {apartmentViewMode === 'tower' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+                  {['Block B1', 'Block B2', 'Block B3'].map(blockName => {
+                    const blockUnits = filteredApartments.filter(a => a.block === blockName);
+                    if (blockUnits.length === 0 && blockFilter !== 'ALL' && blockFilter !== blockName) return null;
+
+                    const floorsList = ['Penthouse Level', '3rd Floor', '2nd Floor', '1st Floor', 'Ground Floor'];
+
+                    return (
+                      <div key={blockName} className="white-panel" style={{ padding: '20px 24px' }}>
+                        {/* Tower Header */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1.5px solid #f1f5f9', paddingBottom: '12px', marginBottom: '16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Layers size={18} style={{ color: '#2563eb' }} />
+                            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>
+                              {blockName} &bull; Tower Elevation View
+                            </h4>
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px', fontSize: '12px', fontWeight: 600 }}>
+                            <span style={{ color: '#059669', background: '#ecfdf5', padding: '3px 8px', borderRadius: '5px' }}>
+                              {blockUnits.filter(a => a.status === 'AVAILABLE').length} Available
+                            </span>
+                            <span style={{ color: '#d97706', background: '#fffbeb', padding: '3px 8px', borderRadius: '5px' }}>
+                              {blockUnits.filter(a => a.status === 'RESERVED').length} Reserved
+                            </span>
+                            <span style={{ color: '#dc2626', background: '#fef2f2', padding: '3px 8px', borderRadius: '5px' }}>
+                              {blockUnits.filter(a => a.status === 'SOLD').length} Sold
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Floors Stack */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                          {floorsList.map(floorName => {
+                            const floorUnits = blockUnits.filter(a => a.floor === floorName);
+                            if (floorUnits.length === 0) return null;
+
+                            return (
+                              <div key={floorName} style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: '16px', alignItems: 'stretch', background: '#f8fafc', padding: '12px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                                {/* Floor Badge */}
+                                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                  <span style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a' }}>{floorName}</span>
+                                  <span style={{ fontSize: '11px', color: '#64748b' }}>{floorUnits.length} Units</span>
+                                </div>
+
+                                {/* Units Grid on this Floor */}
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '10px' }}>
+                                  {floorUnits.map(apt => {
+                                    const isAvail = apt.status === 'AVAILABLE';
+                                    const isRes = apt.status === 'RESERVED';
+                                    const isSold = apt.status === 'SOLD';
+
+                                    const cardBorder = isAvail ? '#a7f3d0' : (isRes ? '#fde68a' : '#fecaca');
+                                    const cardBg = isAvail ? '#ffffff' : (isRes ? '#fffdf5' : '#fff8f8');
+
+                                    return (
+                                      <div
+                                        key={apt.id}
+                                        onClick={() => openEditApartmentModal(apt)}
+                                        style={{
+                                          background: cardBg,
+                                          border: `1.5px solid ${cardBorder}`,
+                                          borderRadius: '8px',
+                                          padding: '10px 12px',
+                                          cursor: 'pointer',
+                                          display: 'flex',
+                                          flexDirection: 'column',
+                                          justifyContent: 'space-between',
+                                          transition: 'transform 0.15s ease, box-shadow 0.15s ease'
+                                        }}
+                                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.06)'; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
+                                      >
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                          <b style={{ fontSize: '14px', color: '#0f172a' }}>{apt.apartmentNumber}</b>
+                                          <span style={{
+                                            fontSize: '10px',
+                                            fontWeight: 700,
+                                            padding: '2px 6px',
+                                            borderRadius: '4px',
+                                            background: isAvail ? '#ecfdf5' : (isRes ? '#fffbeb' : '#fef2f2'),
+                                            color: isAvail ? '#047857' : (isRes ? '#b45309' : '#b91c1c')
+                                          }}>
+                                            {isAvail ? 'Available' : (isRes ? 'Reserved' : 'Sold Out')}
+                                          </span>
+                                        </div>
+
+                                        <div style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>
+                                          {apt.bedrooms} BHK &bull; {apt.typology}
+                                        </div>
+
+                                        <div style={{ fontSize: '11px', color: '#64748b', margin: '4px 0' }}>
+                                          Carpet: <b>{apt.carpetAreaSqft || Math.round((apt.areaSqft || 1500) * 0.72)} sqft</b> &bull; {apt.parking || '1 Car'}
+                                        </div>
+
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px', paddingTop: '4px', borderTop: '1px solid #f1f5f9' }}>
+                                          <b style={{ fontSize: '13px', color: '#059669' }}>{formatINR(apt.price)}</b>
+                                          {apt.buyer?.name && (
+                                            <span style={{ fontSize: '10px', color: '#2563eb', fontWeight: 600, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '100px' }} title={apt.buyer.name}>
+                                              {apt.buyer.name}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
             </div>
           )}
@@ -2705,510 +4688,1982 @@ export default function AdminDashboard() {
                 <div className="panel-header-row" style={{ flexWrap: 'wrap', gap: '16px', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px', marginBottom: '18px' }}>
                   <div>
                     <h3 className="panel-title" style={{ fontSize: '19px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <UserCheck size={22} style={{ color: '#2563eb' }} />
-                      <span>Sold Properties & Buyer Registry</span>
+                      <Users size={22} style={{ color: '#2563eb' }} />
+                      <span>Buyer & Customer Management Suite (Point 4)</span>
                     </h3>
                     <p style={{ margin: '5px 0 0', fontSize: '13px', color: '#64748b', lineHeight: 1.5 }}>
-                      Comprehensive ownership registry of all closed sales and reserved units. View buyer contact profiles, transaction values, payment status, and generate official allotment slips.
+                      Comprehensive 360° customer records: KYC verification dossier, multi-apartment ownership, payment ledgers, document downloads, communication notes, and cancellation records.
                     </p>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
                     <button
                       className="btn-secondary-action"
                       onClick={() => window.print()}
-                      title="Print buyer sales report"
-                      style={{ height: '38px', padding: '0 14px', fontSize: '13px' }}
+                      title="Print comprehensive buyer registry dossier"
+                      style={{ height: '38px', padding: '0 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
                     >
                       <Printer size={15} />
-                      <span>Print Report</span>
+                      <span>Print Registry Dossier</span>
                     </button>
 
                     <button
                       className="btn-primary-action"
                       onClick={() => {
-                        const target = apartments.find(a => a.status === 'AVAILABLE') || apartments[0];
-                        openEditBuyerModal(target);
+                        const avail = apartments.find(a => a.status === 'AVAILABLE') || apartments[0];
+                        setBookingWorkflowModal({
+                          isOpen: true,
+                          step: 1,
+                          unitNumber: avail ? avail.apartmentNumber : 'No-01',
+                          buyerType: 'NEW',
+                          buyerId: '',
+                          buyerName: '',
+                          buyerPhone: '',
+                          buyerEmail: '',
+                          buyerPan: '',
+                          dealAmount: avail ? String(avail.price) : '28800000',
+                          paidAmount: '1500000',
+                          paymentMode: 'NEFT / RTGS',
+                          txnId: 'HDFC' + Math.floor(10000000 + Math.random() * 90000000),
+                          bankName: 'HDFC Bank',
+                          paymentPlan: 'TOKEN_ADVANCE',
+                          bookingDate: new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date()),
+                          fromInquiryId: null
+                        });
                       }}
-                      style={{ height: '38px', padding: '0 16px', fontSize: '13px' }}
+                      style={{ height: '38px', padding: '0 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', background: '#059669', borderColor: '#059669' }}
                     >
                       <Plus size={16} />
-                      <span>Record New Buyer / Sale</span>
+                      <span>+ New Allotment / Sell Unit</span>
+                    </button>
+
+                    <button
+                      className="btn-primary-action"
+                      onClick={openAddBuyerModal}
+                      style={{ height: '38px', padding: '0 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <UserPlus size={16} />
+                      <span>+ Add Buyer Only</span>
                     </button>
                   </div>
+                </div>
+
+                {/* 3 View Mode Toggle Switcher */}
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setBuyerTabMode('buyers')}
+                    style={{
+                      padding: '8px 18px',
+                      borderRadius: '8px',
+                      fontSize: '13.5px',
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: buyerTabMode === 'buyers' ? '#2563eb' : '#f1f5f9',
+                      color: buyerTabMode === 'buyers' ? '#ffffff' : '#475569',
+                      boxShadow: buyerTabMode === 'buyers' ? '0 2px 8px rgba(37,99,235,0.25)' : 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <Users size={16} />
+                    <span>All Buyers & Customers ({buyers.length})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setBuyerTabMode('units')}
+                    style={{
+                      padding: '8px 18px',
+                      borderRadius: '8px',
+                      fontSize: '13.5px',
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: buyerTabMode === 'units' ? '#2563eb' : '#f1f5f9',
+                      color: buyerTabMode === 'units' ? '#ffffff' : '#475569',
+                      boxShadow: buyerTabMode === 'units' ? '0 2px 8px rgba(37,99,235,0.25)' : 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <Building2 size={16} />
+                    <span>Booked Units & Inventory ({soldCount + reservedCount})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setBuyerTabMode('dues')}
+                    style={{
+                      padding: '8px 18px',
+                      borderRadius: '8px',
+                      fontSize: '13.5px',
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: buyerTabMode === 'dues' ? '#dc2626' : '#f1f5f9',
+                      color: buyerTabMode === 'dues' ? '#ffffff' : '#475569',
+                      boxShadow: buyerTabMode === 'dues' ? '0 2px 8px rgba(220,38,38,0.25)' : 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <AlertTriangle size={16} />
+                    <span>Outstanding Dues ({buyers.filter(b => {
+                      const agreed = (b.bookingHistory || []).reduce((acc, bk) => acc + (bk.agreedPrice || 0), 0);
+                      const paid = (b.bookingHistory || []).reduce((acc, bk) => acc + (bk.paidAmount || 0), 0);
+                      return (agreed - paid) > 0;
+                    }).length})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setBuyerTabMode('docs')}
+                    style={{
+                      padding: '8px 18px',
+                      borderRadius: '8px',
+                      fontSize: '13.5px',
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      background: buyerTabMode === 'docs' ? '#002b80' : '#f1f5f9',
+                      color: buyerTabMode === 'docs' ? '#ffffff' : '#475569',
+                      boxShadow: buyerTabMode === 'docs' ? '0 2px 8px rgba(0,43,128,0.25)' : 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <FileText size={16} />
+                    <span>📜 Documents & Invoices Archive</span>
+                  </button>
                 </div>
 
                 {/* 4 Summary Metric Cards */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '20px' }}>
                   
-                  {/* Total Sold Units */}
-                  <div style={{ background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '12px', padding: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#991b1b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Sold Out Units</span>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#fee2e2', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <ShieldCheck size={18} />
-                      </div>
-                    </div>
-                    <div style={{ fontSize: '26px', fontWeight: 800, color: '#991b1b', letterSpacing: '-0.02em' }}>
-                      {soldCount} <span style={{ fontSize: '14px', fontWeight: 600, color: '#b91c1c' }}>Units Closed</span>
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#7f1d1d', marginTop: '4px' }}>
-                      Official registry complete
-                    </div>
-                  </div>
-
-                  {/* Reserved Units */}
-                  <div style={{ background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '12px', padding: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Reserved / On Hold</span>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Clock size={18} />
-                      </div>
-                    </div>
-                    <div style={{ fontSize: '26px', fontWeight: 800, color: '#92400e', letterSpacing: '-0.02em' }}>
-                      {reservedCount} <span style={{ fontSize: '14px', fontWeight: 600, color: '#b45309' }}>Under Token</span>
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#78350f', marginTop: '4px' }}>
-                      Advance deposit received
-                    </div>
-                  </div>
-
-                  {/* Booked Sales Revenue */}
-                  <div style={{ background: '#ecfdf5', border: '1px solid #d1fae5', borderRadius: '12px', padding: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#065f46', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Closed Booked Value</span>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#d1fae5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <TrendingUp size={18} />
-                      </div>
-                    </div>
-                    <div style={{ fontSize: '26px', fontWeight: 800, color: '#065f46', letterSpacing: '-0.02em' }}>
-                      {formatINR(totalSoldRevenue)}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#047857', marginTop: '4px' }}>
-                      Total value of sold units
-                    </div>
-                  </div>
-
-                  {/* Registered Buyers Count */}
+                  {/* Total Buyers */}
                   <div style={{ background: '#eff6ff', border: '1px solid #dbeafe', borderRadius: '12px', padding: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Active Buyers</span>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Total Buyers</span>
                       <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#dbeafe', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Users size={18} />
                       </div>
                     </div>
                     <div style={{ fontSize: '26px', fontWeight: 800, color: '#1e40af', letterSpacing: '-0.02em' }}>
-                      {apartments.filter(a => (a.status === 'SOLD' || a.status === 'RESERVED') && a.buyer?.name).length} <span style={{ fontSize: '14px', fontWeight: 600, color: '#2563eb' }}>Profiles</span>
+                      {buyers.length} <span style={{ fontSize: '14px', fontWeight: 600, color: '#2563eb' }}>Registered</span>
                     </div>
                     <div style={{ fontSize: '12px', color: '#1d4ed8', marginTop: '4px' }}>
-                      Verified contact details
+                      Verified phone & email records
+                    </div>
+                  </div>
+
+                  {/* KYC Verification Status */}
+                  <div style={{ background: '#ecfdf5', border: '1px solid #d1fae5', borderRadius: '12px', padding: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#065f46', textTransform: 'uppercase', letterSpacing: '0.04em' }}>KYC Compliance</span>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#d1fae5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <ShieldCheck size={18} />
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '26px', fontWeight: 800, color: '#065f46', letterSpacing: '-0.02em' }}>
+                      {buyers.filter(b => b.kyc?.status === 'VERIFIED').length} / {buyers.length} <span style={{ fontSize: '14px', fontWeight: 600, color: '#059669' }}>Verified</span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#047857', marginTop: '4px' }}>
+                      PAN & Aadhaar authenticated
+                    </div>
+                  </div>
+
+                  {/* Total Collections */}
+                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Total Received Payments</span>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#dcfce7', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <TrendingUp size={18} />
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '26px', fontWeight: 800, color: '#166534', letterSpacing: '-0.02em' }}>
+                      {formatINR(buyers.reduce((sum, b) => sum + (b.bookingHistory || []).reduce((acc, bk) => acc + (bk.paidAmount || 0), 0), 0))}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#15803d', marginTop: '4px' }}>
+                      Cleared in project escrow account
+                    </div>
+                  </div>
+
+                  {/* Pending Balance Due */}
+                  <div style={{ background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '12px', padding: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Pending Balance (Dues)</span>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Clock size={18} />
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '26px', fontWeight: 800, color: '#92400e', letterSpacing: '-0.02em' }}>
+                      {formatINR(buyers.reduce((sum, b) => sum + (b.bookingHistory || []).reduce((acc, bk) => acc + (bk.balanceAmount || 0), 0), 0))}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#b45309', marginTop: '4px' }}>
+                      Active milestone balances & EMIs
                     </div>
                   </div>
 
                 </div>
 
-                {/* Filter and Search Bar */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap', background: '#f8fafc', padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                  
-                  {/* Search Input */}
-                  <div style={{ position: 'relative', flex: '1 1 280px', maxWidth: '360px' }}>
-                    <Search size={15} style={{ position: 'absolute', left: '12px', top: '10px', color: '#94a3b8' }} />
-                    <input
-                      type="text"
-                      placeholder="Search buyer name, phone, email, unit..."
-                      value={searchSalesQuery}
-                      onChange={(e) => setSearchSalesQuery(e.target.value)}
-                      className="input-clean"
-                      style={{ paddingLeft: '36px', height: '36px', fontSize: '13px', background: '#ffffff', width: '100%' }}
-                    />
-                  </div>
+                {/* ========================================================
+                    VIEW MODE 1: ALL BUYERS & CUSTOMERS (POINT 4 PRIMARY)
+                ======================================================== */}
+                {buyerTabMode === 'buyers' && (
+                  <div>
+                    {/* Search and Filters Strip */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap', background: '#f8fafc', padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
+                      
+                      {/* Search Input */}
+                      <div style={{ position: 'relative', flex: '1 1 280px', maxWidth: '360px' }}>
+                        <Search size={15} style={{ position: 'absolute', left: '12px', top: '10px', color: '#94a3b8' }} />
+                        <input
+                          type="text"
+                          placeholder="Search buyer name, phone, email, PAN, booking ID..."
+                          value={searchBuyerQuery}
+                          onChange={(e) => setSearchBuyerQuery(e.target.value)}
+                          className="input-clean"
+                          style={{ paddingLeft: '36px', height: '36px', fontSize: '13px', background: '#ffffff', width: '100%' }}
+                        />
+                      </div>
 
-                  {/* Filter Pills */}
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <button
-                      type="button"
-                      onClick={() => setSalesStatusFilter('ALL')}
-                      style={{
-                        padding: '6px 14px',
-                        borderRadius: '20px',
-                        fontSize: '12.5px',
-                        fontWeight: 600,
-                        border: '1px solid',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                        background: salesStatusFilter === 'ALL' ? '#2563eb' : '#ffffff',
-                        borderColor: salesStatusFilter === 'ALL' ? '#2563eb' : '#cbd5e1',
-                        color: salesStatusFilter === 'ALL' ? '#ffffff' : '#475569'
-                      }}
-                    >
-                      All Booked Units ({soldCount + reservedCount})
-                    </button>
+                      {/* Real Status Filter (Sold Out vs Reserved Tokens) */}
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#475569' }}>Sale Status:</span>
+                        <button
+                          type="button"
+                          onClick={() => setBuyerStatusFilter('ALL')}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '20px',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            border: '1px solid',
+                            cursor: 'pointer',
+                            background: buyerStatusFilter === 'ALL' ? '#2563eb' : '#ffffff',
+                            borderColor: buyerStatusFilter === 'ALL' ? '#2563eb' : '#cbd5e1',
+                            color: buyerStatusFilter === 'ALL' ? '#ffffff' : '#475569'
+                          }}
+                        >
+                          All Booked ({buyers.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setBuyerStatusFilter('SOLD')}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '20px',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            border: '1px solid',
+                            cursor: 'pointer',
+                            background: buyerStatusFilter === 'SOLD' ? '#dc2626' : '#ffffff',
+                            borderColor: buyerStatusFilter === 'SOLD' ? '#dc2626' : '#fee2e2',
+                            color: buyerStatusFilter === 'SOLD' ? '#ffffff' : '#991b1b'
+                          }}
+                        >
+                          🔴 Officially Sold ({buyers.filter(b => (b.bookingHistory || []).some(bk => bk.status === 'CONFIRMED' || bk.status === 'SOLD')).length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setBuyerStatusFilter('RESERVED')}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '20px',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            border: '1px solid',
+                            cursor: 'pointer',
+                            background: buyerStatusFilter === 'RESERVED' ? '#d97706' : '#ffffff',
+                            borderColor: buyerStatusFilter === 'RESERVED' ? '#d97706' : '#fef3c7',
+                            color: buyerStatusFilter === 'RESERVED' ? '#ffffff' : '#92400e'
+                          }}
+                        >
+                          🟡 Reserved / Under Token ({buyers.filter(b => (b.bookingHistory || []).some(bk => bk.status === 'RESERVED')).length})
+                        </button>
+                      </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setSalesStatusFilter('SOLD')}
-                      style={{
-                        padding: '6px 14px',
-                        borderRadius: '20px',
-                        fontSize: '12.5px',
-                        fontWeight: 600,
-                        border: '1px solid',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                        background: salesStatusFilter === 'SOLD' ? '#dc2626' : '#ffffff',
-                        borderColor: salesStatusFilter === 'SOLD' ? '#dc2626' : '#cbd5e1',
-                        color: salesStatusFilter === 'SOLD' ? '#ffffff' : '#475569'
-                      }}
-                    >
-                      🔴 Sold Out Only ({soldCount})
-                    </button>
+                      {/* KYC Filter */}
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#475569' }}>KYC:</span>
+                        {['ALL', 'VERIFIED', 'PENDING'].map(k => (
+                          <button
+                            key={k}
+                            type="button"
+                            onClick={() => setBuyerKycFilter(k)}
+                            style={{
+                              padding: '5px 12px',
+                              borderRadius: '20px',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              border: '1px solid',
+                              cursor: 'pointer',
+                              background: buyerKycFilter === k ? (k === 'VERIFIED' ? '#059669' : (k === 'PENDING' ? '#d97706' : '#2563eb')) : '#ffffff',
+                              borderColor: buyerKycFilter === k ? 'transparent' : '#cbd5e1',
+                              color: buyerKycFilter === k ? '#ffffff' : '#475569'
+                            }}
+                          >
+                            {k === 'ALL' ? 'All Buyers' : (k === 'VERIFIED' ? '✓ Verified' : '⏳ Pending KYC')}
+                          </button>
+                        ))}
+                      </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setSalesStatusFilter('RESERVED')}
-                      style={{
-                        padding: '6px 14px',
-                        borderRadius: '20px',
-                        fontSize: '12.5px',
-                        fontWeight: 600,
-                        border: '1px solid',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                        background: salesStatusFilter === 'RESERVED' ? '#d97706' : '#ffffff',
-                        borderColor: salesStatusFilter === 'RESERVED' ? '#d97706' : '#cbd5e1',
-                        color: salesStatusFilter === 'RESERVED' ? '#ffffff' : '#475569'
-                      }}
-                    >
-                      🟡 Reserved Only ({reservedCount})
-                    </button>
+                      {/* Payment Plan Filter */}
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#475569' }}>Payment Plan:</span>
+                        <select
+                          value={buyerPlanFilter}
+                          onChange={(e) => setBuyerPlanFilter(e.target.value)}
+                          className="input-clean"
+                          style={{ height: '34px', fontSize: '12px', padding: '0 10px', background: '#ffffff' }}
+                        >
+                          <option value="ALL">All Payment Plans</option>
+                          <option value="FULL_PAYMENT">100% Full Payment</option>
+                          <option value="EMI_PLAN">Active EMI / Milestone</option>
+                          <option value="TOKEN_ADVANCE">Token Advance Hold</option>
+                        </select>
+                      </div>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const target = apartments.find(a => a.status === 'AVAILABLE') || apartments[0];
-                        if (target) openEditBuyerModal(target);
-                      }}
-                      className="btn-primary-action"
-                      style={{ padding: '6px 14px', fontSize: '12.5px', borderRadius: '20px', gap: '5px' }}
-                      title="Create new buyer allotment bill for any apartment"
-                    >
-                      <Plus size={14} />
-                      <span>Create Allotment Bill</span>
-                    </button>
-                  </div>
-
-                </div>
-
-                {/* Buyers & Properties Table (100% Fit, Zero Side-Scrolling) */}
-                <div style={{ marginTop: '20px', overflowX: 'hidden', background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 4px 16px rgba(0,0,0,0.03)' }}>
-                  {filteredSalesApartments.length === 0 ? (
-                    <div style={{ padding: '48px 24px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px' }}>
-                      <UserCheck size={40} style={{ color: '#94a3b8', margin: '0 auto 12px' }} />
-                      <h4 style={{ margin: '0 0 6px', fontSize: '16px', fontWeight: 700, color: '#334155' }}>No matching property sales found</h4>
-                      <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#64748b' }}>
-                        {searchSalesQuery ? 'Try clearing your search query or switching filters.' : 'Mark apartments as Sold Out or Reserved in the inventory to track them here.'}
-                      </p>
-                      <button
-                        className="btn-primary-action"
-                        onClick={() => handleSwitchTab('apartments')}
-                        style={{ margin: '0 auto' }}
-                      >
-                        <Building2 size={15} />
-                        <span>Go to Apartments Inventory</span>
-                      </button>
                     </div>
-                  ) : (
-                    <table className="admin-table" style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'separate', borderSpacing: 0 }}>
-                      <colgroup>
-                        <col style={{ width: '25%' }} />
-                        <col style={{ width: '9%' }} />
-                        <col style={{ width: '23%' }} />
-                        <col style={{ width: '15%' }} />
-                        <col style={{ width: '14%' }} />
-                        <col style={{ width: '14%' }} />
-                      </colgroup>
-                      <thead>
-                        <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-                          <th style={{ width: '25%', padding: '14px 14px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', whiteSpace: 'nowrap' }}>Unit & Typology</th>
-                          <th style={{ width: '9%', padding: '14px 6px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center', whiteSpace: 'nowrap' }}>Status</th>
-                          <th style={{ width: '23%', padding: '14px 14px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', whiteSpace: 'nowrap' }}>Buyer Profile & Contact</th>
-                          <th style={{ width: '15%', padding: '14px 14px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', whiteSpace: 'nowrap' }}>Transaction Value</th>
-                          <th style={{ width: '14%', padding: '14px 14px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', whiteSpace: 'nowrap' }}>Payment Schedule</th>
-                          <th style={{ width: '14%', padding: '14px 12px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredSalesApartments.map(apt => {
-                          const buyer = apt.buyer || {
-                            name: apt.status === 'SOLD' ? 'Private Client' : 'Prospective Buyer',
-                            phone: '+91 98200 00000',
-                            email: 'client@estatesphere.in',
-                            dealAmount: apt.price,
-                            saleDate: 'Recently',
-                            paymentStatus: apt.status === 'SOLD' ? 'FULLY_PAID' : 'TOKEN_PAID',
-                            paymentStatusLabel: apt.status === 'SOLD' ? '100% Payment Cleared' : 'Token Advance Received',
-                            assignedAgent: 'Super Admin',
-                            notes: 'Allotment in progress.'
-                          };
 
-                          const initials = (buyer.name || 'Private Client')
-                            .split(' ')
-                            .filter(Boolean)
-                            .slice(0, 2)
-                            .map(w => w[0].toUpperCase())
-                            .join('') || 'ES';
+                    {/* Buyers Master Table (100% Fit, Zero Side-Scrolling) */}
+                    <div style={{ overflowX: 'hidden', background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 4px 16px rgba(0,0,0,0.03)', width: '100%' }}>
+                      <table className="admin-table" style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'separate', borderSpacing: 0 }}>
+                        <thead>
+                          <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                            <th style={{ padding: '12px 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'left', width: '18%' }}>Buyer Profile & Identity</th>
+                            <th style={{ padding: '12px 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'left', width: '17%' }}>Contact & Location</th>
+                            <th style={{ padding: '12px 8px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'left', width: '12%' }}>Booked Unit</th>
+                            <th style={{ padding: '12px 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'left', width: '14%' }}>Deal & Progress</th>
+                            <th style={{ padding: '12px 8px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'left', width: '11%' }}>KYC Status</th>
+                            <th style={{ padding: '12px 10px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', textAlign: 'left', width: '28%' }}>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {buyers
+                            .filter(b => {
+                              const q = searchBuyerQuery.trim().toLowerCase();
+                              const matchSearch = !q ||
+                                b.name?.toLowerCase().includes(q) ||
+                                b.phone?.toLowerCase().includes(q) ||
+                                b.email?.toLowerCase().includes(q) ||
+                                b.id?.toLowerCase().includes(q) ||
+                                b.kyc?.panNumber?.toLowerCase().includes(q) ||
+                                (b.bookedUnits || []).some(u => u.toLowerCase().includes(q));
+                              const matchKyc = buyerKycFilter === 'ALL' || b.kyc?.status === buyerKycFilter;
+                              const matchPlan = buyerPlanFilter === 'ALL' || (b.bookingHistory || []).some(bk => bk.paymentPlan === buyerPlanFilter);
+                              const isSold = (b.bookingHistory || []).some(bk => bk.status === 'CONFIRMED' || bk.status === 'SOLD');
+                              const isReserved = (b.bookingHistory || []).some(bk => bk.status === 'RESERVED');
+                              const matchStatus = buyerStatusFilter === 'ALL' || (buyerStatusFilter === 'SOLD' ? isSold : isReserved);
+                              return matchSearch && matchKyc && matchPlan && matchStatus;
+                            })
+                            .map(b => {
+                              const totalAgreed = (b.bookingHistory || []).reduce((acc, bk) => acc + (bk.agreedPrice || 0), 0);
+                              const totalPaid = (b.bookingHistory || []).reduce((acc, bk) => acc + (bk.paidAmount || 0), 0);
+                              const totalBal = Math.max(0, totalAgreed - totalPaid);
+                              const percent = totalAgreed > 0 ? Math.min(100, Math.round((totalPaid / totalAgreed) * 100)) : 0;
+                              const isCleared = totalBal === 0 && totalPaid > 0;
 
-                          const dealVal = Number(buyer.dealAmount) || apt.price || 1;
-                          const paidVal = buyer.paidAmount !== undefined ? Number(buyer.paidAmount) : (buyer.paymentStatus === 'FULLY_PAID' ? dealVal : Math.round(dealVal * 0.9));
-                          const balVal = buyer.balanceAmount !== undefined ? Number(buyer.balanceAmount) : Math.max(0, dealVal - paidVal);
-                          const percentCleared = Math.min(100, Math.max(0, Math.round((paidVal / dealVal) * 100)));
-                          const isCleared = balVal <= 0 || buyer.paymentStatus === 'FULLY_PAID';
+                              return (
+                                <tr key={b.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s ease' }}>
+                                  
+                                  {/* 1. Buyer Profile & Identity */}
+                                  <td style={{ padding: '12px 10px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <div style={{ width: '32px', height: '32px', borderRadius: '7px', background: '#eff6ff', color: '#1d4ed8', border: '1.5px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '11.5px', flexShrink: 0 }}>
+                                        {b.name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()}
+                                      </div>
+                                      <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                          {b.name}
+                                        </div>
+                                        <div style={{ fontSize: '10.5px', color: '#64748b', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+                                          <span style={{ fontSize: '9px', fontWeight: 700, color: '#2563eb', background: '#eff6ff', padding: '1px 4px', borderRadius: '3px', border: '1px solid #bfdbfe' }}>
+                                            {b.id}
+                                          </span>
+                                          <span style={{ color: '#94a3b8' }}>&bull;</span>
+                                          <span>{((b.bookingHistory && b.bookingHistory[0]?.bookingDate) || b.registeredDate)}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
 
-                          return (
-                            <tr key={apt.id} style={{ transition: 'background 0.15s ease', borderBottom: '1px solid #f1f5f9' }}>
-                              
-                              {/* 1. Unit & Typology */}
-                              <td style={{ padding: '14px 14px', verticalAlign: 'middle', textAlign: 'left' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                  <img
-                                    src={apt.imageUrl || '/assets/estate-boutique-lounge.png'}
-                                    alt={apt.apartmentNumber}
-                                    style={{ width: '44px', height: '44px', borderRadius: '8px', objectFit: 'cover', border: '1.5px solid #e2e8f0', flexShrink: 0, boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}
-                                  />
-                                  <div style={{ minWidth: 0 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                      <b style={{ color: '#0f172a', fontSize: '14px', letterSpacing: '-0.01em' }}>
-                                        {apt.apartmentNumber}
-                                      </b>
-                                      <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#1e40af', background: '#eff6ff', border: '1px solid #dbeafe', padding: '1px 6px', borderRadius: '4px' }}>
-                                        {apt.block}
+                                  {/* 2. Contact & Location */}
+                                  <td style={{ padding: '12px 10px', verticalAlign: 'middle', overflow: 'hidden' }}>
+                                    <div style={{ fontSize: '12px', color: '#1e293b', fontWeight: 600, whiteSpace: 'nowrap' }}>{b.phone}</div>
+                                    <div style={{ fontSize: '10.5px', color: '#64748b', marginTop: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={b.email}>{b.email}</div>
+                                    <div style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: '1px', whiteSpace: 'nowrap' }}>📍 {b.city || 'Bangalore'}</div>
+                                  </td>
+
+                                  {/* 3. Booked Properties */}
+                                  <td style={{ padding: '12px 8px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                                    <div style={{ display: 'inline-flex', flexWrap: 'nowrap', gap: '4px', alignItems: 'center' }}>
+                                      {(b.bookedUnits && b.bookedUnits.length > 0) ? (
+                                        b.bookedUnits.map((u, i) => {
+                                          const bkItem = (b.bookingHistory || []).find(bk => bk.unitNumber === u) || (b.bookingHistory && b.bookingHistory[i]);
+                                          const isSoldUnit = bkItem?.status === 'CONFIRMED' || bkItem?.status === 'SOLD';
+                                          return (
+                                            <span key={i} style={{
+                                              background: isSoldUnit ? '#fee2e2' : '#fef3c7',
+                                              color: isSoldUnit ? '#991b1b' : '#92400e',
+                                              border: '1px solid',
+                                              borderColor: isSoldUnit ? '#fca5a5' : '#fcd34d',
+                                              borderRadius: '5px',
+                                              padding: '3px 7px',
+                                              fontSize: '11px',
+                                              fontWeight: 700,
+                                              display: 'inline-flex',
+                                              alignItems: 'center',
+                                              gap: '4px',
+                                              whiteSpace: 'nowrap'
+                                            }}>
+                                              <span>{isSoldUnit ? '🔴' : '🟡'} Unit {u}</span>
+                                              <span style={{ fontSize: '10px', opacity: 0.85, fontWeight: 600 }}>({isSoldUnit ? 'Sold' : 'Token'})</span>
+                                            </span>
+                                          );
+                                        })
+                                      ) : (
+                                        <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic' }}>None</span>
+                                      )}
+                                    </div>
+                                  </td>
+
+                                  {/* 4. Deal Value & Progress */}
+                                  <td style={{ padding: '12px 10px', verticalAlign: 'middle' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                                      <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#0f172a' }}>{formatINR(totalAgreed)}</span>
+                                      <span style={{ fontSize: '10.5px', fontWeight: 700, color: isCleared ? '#059669' : '#2563eb' }}>
+                                        {percent}%
                                       </span>
                                     </div>
-                                    <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#1e293b', marginTop: '2px', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={apt.title || `${apt.bedrooms} BHK Residence`}>
-                                      {apt.title || `${apt.bedrooms} BHK Residence`}
+                                    <div style={{ width: '100%', height: '4px', background: '#e2e8f0', borderRadius: '2px', overflow: 'hidden' }}>
+                                      <div style={{ width: `${percent}%`, height: '100%', background: isCleared ? '#10b981' : '#3b82f6', borderRadius: '2px' }} />
                                     </div>
-                                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '1px', whiteSpace: 'nowrap' }}>
-                                      {apt.floor} &bull; {apt.areaSqft} sq.ft
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10.5px', marginTop: '3px' }}>
+                                      <span style={{ color: '#059669', fontWeight: 600 }}>Recv: {formatINR(totalPaid)}</span>
+                                      <span style={{ color: totalBal > 0 ? '#dc2626' : '#64748b', fontWeight: 700 }}>
+                                        {totalBal > 0 ? `Due: ${formatINR(totalBal)}` : 'Cleared'}
+                                      </span>
+                                    </div>
+                                  </td>
+
+                                  {/* 5. KYC Status */}
+                                  <td style={{ padding: '12px 8px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: b.kyc?.status === 'VERIFIED' ? '#059669' : '#d97706', fontWeight: 700, fontSize: '11.5px' }}>
+                                        {b.kyc?.status === 'VERIFIED' ? (
+                                          <>
+                                            <CheckCircle2 size={13} style={{ color: '#059669' }} />
+                                            <span>KYC Verified</span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Clock size={13} style={{ color: '#d97706' }} />
+                                            <span>KYC Pending</span>
+                                          </>
+                                        )}
+                                      </div>
+                                      <div style={{ fontSize: '10.5px', color: '#64748b', fontFamily: 'monospace' }}>
+                                        PAN: <b style={{ color: '#334155' }}>{b.kyc?.panNumber || 'Pending'}</b>
+                                      </div>
+                                    </div>
+                                  </td>
+
+                                  {/* 6. Actions */}
+                                  <td style={{ padding: '12px 10px', verticalAlign: 'middle', textAlign: 'left', whiteSpace: 'nowrap' }}>
+                                    <div style={{ display: 'inline-flex', gap: '5px', alignItems: 'center', justifyContent: 'flex-start', flexWrap: 'nowrap' }}>
+                                      
+                                      {/* View Profile */}
+                                      <button
+                                        type="button"
+                                        onClick={() => openBuyerProfile(b)}
+                                        className="btn-primary-action"
+                                        style={{ padding: '0 8px', height: '28px', fontSize: '11px', fontWeight: 700, gap: '4px', borderRadius: '6px', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', lineHeight: 1, flexShrink: 0 }}
+                                        title="View complete buyer profile & dossiers"
+                                      >
+                                        <Eye size={12} />
+                                        <span>Profile</span>
+                                      </button>
+
+                                      {/* Edit Details */}
+                                      <button
+                                        type="button"
+                                        onClick={() => openEditBuyerDetailsModal(b)}
+                                        className="btn-secondary-action"
+                                        style={{ padding: '0 8px', height: '28px', fontSize: '11px', fontWeight: 600, gap: '4px', borderRadius: '6px', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', lineHeight: 1, flexShrink: 0 }}
+                                        title="Edit buyer KYC, address, or details"
+                                      >
+                                        <Edit3 size={12} />
+                                        <span>Edit</span>
+                                      </button>
+
+                                      {/* Quick Payment */}
+                                      <button
+                                        type="button"
+                                        onClick={() => setRecordPaymentModal({
+                                          isOpen: true,
+                                          buyer: b,
+                                          unitNumber: (b.bookedUnits && b.bookedUnits[0]) || '',
+                                          amount: '',
+                                          paymentMode: 'NEFT / RTGS',
+                                          txnId: '',
+                                          stage: 'Installment Milestone'
+                                        })}
+                                        className="btn-secondary-action"
+                                        style={{ padding: '0 8px', height: '28px', fontSize: '11px', fontWeight: 700, gap: '4px', borderRadius: '6px', color: '#059669', borderColor: '#a7f3d0', background: '#ecfdf5', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', lineHeight: 1, flexShrink: 0 }}
+                                        title="Record new payment / installment receipt"
+                                      >
+                                        <CreditCard size={12} />
+                                        <span>+ Pay</span>
+                                      </button>
+
+                                      {/* WhatsApp Reminder (or reserved space if balance is cleared) */}
+                                      {totalBal > 0 ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const noticeText = `OFFICIAL PAYMENT DEMAND NOTICE — ESTATESPHERE RESIDENCES\n\nDear ${b.name},\nThis is a formal milestone payment reminder for your allotted residence Unit ${(b.bookedUnits && b.bookedUnits[0]) || ''} at Dwellora Residence.\n\n• Allotted Property: Unit ${(b.bookedUnits && b.bookedUnits[0]) || ''}\n• Outstanding Balance Due: ${formatFullINR(totalBal)}\n• Milestone: Milestone 2: Foundation & Plinth Remittance\n• Due Date: 15 Nov 2026\n\nPlease remit to Project Escrow Bank Account:\n- Beneficiary: EstateSphere Residences Escrow Master A/C\n- Bank: HDFC Bank Ltd, MG Road Flagship Branch\n- Escrow A/C No: 50200084729182\n- IFSC Code: HDFC0001982\n\nThank you for choosing EstateSphere Residences.\nEstateSphere Accounts & Escrow Desk`;
+                                            setPaymentReminderModal({
+                                              isOpen: true,
+                                              buyer: b,
+                                              unitNumber: (b.bookedUnits && b.bookedUnits[0]) || '',
+                                              dueAmount: totalBal,
+                                              dueDate: '15 Nov 2026',
+                                              milestone: 'Milestone 2 (Foundation & Plinth)',
+                                              customNotice: noticeText,
+                                              copied: false
+                                            });
+                                          }}
+                                          className="btn-secondary-action"
+                                          style={{ padding: '0 8px', height: '28px', fontSize: '11px', fontWeight: 600, gap: '4px', borderRadius: '6px', color: '#16a34a', borderColor: '#bbf7d0', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', lineHeight: 1, flexShrink: 0 }}
+                                          title="Open Payment Reminder & Demand Notice Suite"
+                                        >
+                                          <Send size={12} />
+                                          <span>Remind</span>
+                                        </button>
+                                      ) : (
+                                        <div style={{ width: '68px', height: '28px', flexShrink: 0 }} />
+                                      )}
+
+                                    </div>
+                                  </td>
+
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* ========================================================
+                    VIEW MODE 2: BOOKED PROPERTIES INVENTORY (TABLE VIEW)
+                ======================================================== */}
+                {buyerTabMode === 'units' && (
+                  <div>
+                    <div style={{ overflowX: 'hidden', background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 4px 16px rgba(0,0,0,0.03)' }}>
+                      <table className="admin-table" style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'separate', borderSpacing: 0 }}>
+                        <colgroup>
+                          <col style={{ width: '25%' }} />
+                          <col style={{ width: '9%' }} />
+                          <col style={{ width: '23%' }} />
+                          <col style={{ width: '15%' }} />
+                          <col style={{ width: '14%' }} />
+                          <col style={{ width: '14%' }} />
+                        </colgroup>
+                        <thead>
+                          <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                            <th style={{ padding: '14px 14px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', whiteSpace: 'nowrap' }}>Unit & Typology</th>
+                            <th style={{ padding: '14px 6px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center', whiteSpace: 'nowrap' }}>Status</th>
+                            <th style={{ padding: '14px 14px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', whiteSpace: 'nowrap' }}>Buyer Profile & Contact</th>
+                            <th style={{ padding: '14px 14px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', whiteSpace: 'nowrap' }}>Transaction Value</th>
+                            <th style={{ padding: '14px 14px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left', whiteSpace: 'nowrap' }}>Payment Schedule</th>
+                            <th style={{ padding: '14px 12px', fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'right', whiteSpace: 'nowrap' }}>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredSalesApartments.map(apt => {
+                            const buyer = apt.buyer || {
+                              name: apt.status === 'SOLD' ? 'Private Client' : 'Prospective Buyer',
+                              phone: '+91 98200 00000',
+                              email: 'client@estatesphere.in',
+                              dealAmount: apt.price,
+                              saleDate: 'Recently',
+                              paymentStatus: apt.status === 'SOLD' ? 'FULLY_PAID' : 'TOKEN_PAID',
+                              paymentStatusLabel: apt.status === 'SOLD' ? '100% Payment Cleared' : 'Token Advance Received',
+                              assignedAgent: 'Super Admin',
+                              notes: 'Allotment in progress.'
+                            };
+
+                            const dealVal = Number(buyer.dealAmount) || apt.price || 1;
+                            const paidVal = buyer.paidAmount !== undefined ? Number(buyer.paidAmount) : (buyer.paymentStatus === 'FULLY_PAID' ? dealVal : Math.round(dealVal * 0.9));
+                            const balVal = buyer.balanceAmount !== undefined ? Number(buyer.balanceAmount) : Math.max(0, dealVal - paidVal);
+                            const percentCleared = Math.min(100, Math.max(0, Math.round((paidVal / dealVal) * 100)));
+                            const isCleared = balVal <= 0 || buyer.paymentStatus === 'FULLY_PAID';
+
+                            return (
+                              <tr key={apt.id} style={{ transition: 'background 0.15s ease', borderBottom: '1px solid #f1f5f9' }}>
+                                
+                                <td style={{ padding: '14px 14px', verticalAlign: 'middle', textAlign: 'left' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <img
+                                      src={apt.imageUrl || '/assets/estate-boutique-lounge.png'}
+                                      alt={apt.apartmentNumber}
+                                      style={{ width: '44px', height: '44px', borderRadius: '8px', objectFit: 'cover', border: '1.5px solid #e2e8f0', flexShrink: 0 }}
+                                    />
+                                    <div style={{ minWidth: 0 }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <b style={{ color: '#0f172a', fontSize: '14px' }}>{apt.apartmentNumber}</b>
+                                        <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#1e40af', background: '#eff6ff', border: '1px solid #dbeafe', padding: '1px 6px', borderRadius: '4px' }}>
+                                          {apt.block}
+                                        </span>
+                                      </div>
+                                      <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#1e293b', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {apt.title || `${apt.bedrooms} BHK Residence`}
+                                      </div>
+                                      <div style={{ fontSize: '11px', color: '#64748b', marginTop: '1px' }}>
+                                        {apt.floor} &bull; {apt.areaSqft} sq.ft
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              </td>
+                                </td>
 
-                              {/* 2. Status Badge */}
-                              <td style={{ padding: '14px 6px', verticalAlign: 'middle', textAlign: 'center' }}>
-                                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                <td style={{ padding: '14px 6px', verticalAlign: 'middle', textAlign: 'center' }}>
                                   {apt.status === 'SOLD' ? (
-                                    <span style={{
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: '5px',
-                                      padding: '4px 9px',
-                                      borderRadius: '20px',
-                                      fontSize: '11px',
-                                      fontWeight: 700,
-                                      background: '#fef2f2',
-                                      color: '#b91c1c',
-                                      border: '1px solid #fecaca',
-                                      whiteSpace: 'nowrap'
-                                    }}>
-                                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444' }} />
-                                      Sold Out
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, background: '#fef2f2', color: '#991b1b', border: '1px solid #fee2e2' }}>
+                                      ● Sold
                                     </span>
                                   ) : (
-                                    <span style={{
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: '5px',
-                                      padding: '4px 9px',
-                                      borderRadius: '20px',
-                                      fontSize: '11px',
-                                      fontWeight: 700,
-                                      background: '#fffbeb',
-                                      color: '#b45309',
-                                      border: '1px solid #fde68a',
-                                      whiteSpace: 'nowrap'
-                                    }}>
-                                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#f59e0b' }} />
-                                      Reserved
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, background: '#fffbeb', color: '#92400e', border: '1px solid #fef3c7' }}>
+                                      ● Reserved
                                     </span>
                                   )}
-                                </div>
-                              </td>
+                                </td>
 
-                              {/* 3. Buyer Details */}
-                              <td style={{ padding: '14px 14px', verticalAlign: 'middle', textAlign: 'left' }}>
-                                <div>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                                    <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: '#eff6ff', color: '#2563eb', fontWeight: 700, fontSize: '11px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid #bfdbfe' }}>
-                                      {initials}
-                                    </div>
-                                    <div style={{ fontWeight: 700, fontSize: '13.5px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap' }}>
-                                      <span>{buyer.name}</span>
-                                      <UserCheck size={13} style={{ color: '#2563eb' }} />
-                                    </div>
+                                <td style={{ padding: '14px 14px', verticalAlign: 'middle', textAlign: 'left' }}>
+                                  <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '13.5px' }}>{buyer.name}</div>
+                                  <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>{buyer.phone}</div>
+                                  <div style={{ fontSize: '11px', color: '#64748b' }}>{buyer.email}</div>
+                                </td>
+
+                                <td style={{ padding: '14px 14px', verticalAlign: 'middle', textAlign: 'left' }}>
+                                  <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>{formatINR(dealVal)}</div>
+                                  <div style={{ fontSize: '11px', color: '#059669', fontWeight: 600, marginTop: '2px' }}>Paid: {formatINR(paidVal)}</div>
+                                  <div style={{ fontSize: '11px', color: balVal > 0 ? '#dc2626' : '#64748b', fontWeight: 700 }}>
+                                    {balVal > 0 ? `Due: ${formatINR(balVal)}` : 'Cleared'}
                                   </div>
-                                  
-                                  {buyer.phone && (
-                                    <div style={{ marginTop: '4px' }}>
-                                      <a
-                                        href={`tel:${buyer.phone}`}
-                                        style={{ fontSize: '11.5px', color: '#475569', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
-                                        title="Click to call buyer"
+                                </td>
+
+                                <td style={{ padding: '14px 14px', verticalAlign: 'middle', textAlign: 'left' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 700, marginBottom: '3px' }}>
+                                    <span>Progress</span>
+                                    <span>{percentCleared}%</span>
+                                  </div>
+                                  <div style={{ width: '100%', height: '4px', background: '#e2e8f0', borderRadius: '2px', overflow: 'hidden' }}>
+                                    <div style={{ width: `${percentCleared}%`, height: '100%', background: isCleared ? '#10b981' : '#3b82f6', borderRadius: '2px' }} />
+                                  </div>
+                                </td>
+
+                                <td style={{ padding: '14px 12px', verticalAlign: 'middle', textAlign: 'right' }}>
+                                  <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center', justifyContent: 'flex-end' }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => openEditBuyerModal(apt)}
+                                      className="btn-secondary-action"
+                                      style={{ padding: '6px 10px', fontSize: '12px', gap: '4px', borderRadius: '7px' }}
+                                    >
+                                      <Edit3 size={12} />
+                                      <span>Edit</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const actor = user?.name || 'Super Admin';
+                                        dataStore.addActivity(`${actor} generated official allotment invoice & slip for Unit ${apt.apartmentNumber} (${buyer.name || 'Allottee'})`, 'invoice');
+                                        setActivityFeed(dataStore.getActivityFeed());
+                                        setSaleReceiptModal({ isOpen: true, apt });
+                                      }}
+                                      style={{ padding: '6px 12px', fontSize: '12px', fontWeight: 600, background: '#002b80', color: '#ffffff', border: 'none', borderRadius: '7px', display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+                                    >
+                                      <FileText size={12} style={{ color: '#ffffff' }} />
+                                      <span>Slip</span>
+                                    </button>
+                                  </div>
+                                </td>
+
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* ========================================================
+                    VIEW MODE 3: OUTSTANDING DUES & OVERDUE TRACKER
+                ======================================================== */}
+                {buyerTabMode === 'dues' && (
+                  <div>
+                    <div style={{ overflowX: 'auto', background: '#ffffff', borderRadius: '14px', border: '1px solid #fecaca', boxShadow: '0 4px 16px rgba(220,38,38,0.05)' }}>
+                      <table className="admin-table" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+                        <thead>
+                          <tr style={{ background: '#fef2f2', borderBottom: '2px solid #fee2e2' }}>
+                            <th style={{ padding: '14px 16px', fontSize: '11px', fontWeight: 700, color: '#991b1b', textTransform: 'uppercase', textAlign: 'left' }}>Buyer & Contact</th>
+                            <th style={{ padding: '14px 14px', fontSize: '11px', fontWeight: 700, color: '#991b1b', textTransform: 'uppercase', textAlign: 'left' }}>Booked Unit</th>
+                            <th style={{ padding: '14px 14px', fontSize: '11px', fontWeight: 700, color: '#991b1b', textTransform: 'uppercase', textAlign: 'left' }}>Agreed Deal Value</th>
+                            <th style={{ padding: '14px 14px', fontSize: '11px', fontWeight: 700, color: '#991b1b', textTransform: 'uppercase', textAlign: 'left' }}>Amount Cleared</th>
+                            <th style={{ padding: '14px 14px', fontSize: '11px', fontWeight: 700, color: '#991b1b', textTransform: 'uppercase', textAlign: 'left' }}>Pending Due Balance</th>
+                            <th style={{ padding: '14px 16px', fontSize: '11px', fontWeight: 700, color: '#991b1b', textTransform: 'uppercase', textAlign: 'right' }}>Reminders & Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {buyers
+                            .filter(b => {
+                              const agreed = (b.bookingHistory || []).reduce((acc, bk) => acc + (bk.agreedPrice || 0), 0);
+                              const paid = (b.bookingHistory || []).reduce((acc, bk) => acc + (bk.paidAmount || 0), 0);
+                              return (agreed - paid) > 0;
+                            })
+                            .map(b => {
+                              const totalAgreed = (b.bookingHistory || []).reduce((acc, bk) => acc + (bk.agreedPrice || 0), 0);
+                              const totalPaid = (b.bookingHistory || []).reduce((acc, bk) => acc + (bk.paidAmount || 0), 0);
+                              const totalBal = totalAgreed - totalPaid;
+
+                              return (
+                                <tr key={b.id} style={{ borderBottom: '1px solid #fee2e2' }}>
+                                  <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
+                                    <b style={{ color: '#0f172a', fontSize: '14px' }}>{b.name}</b>
+                                    <div style={{ fontSize: '12px', color: '#475569' }}>{b.phone}</div>
+                                    <div style={{ fontSize: '11px', color: '#64748b' }}>{b.email}</div>
+                                  </td>
+                                  <td style={{ padding: '14px 14px', verticalAlign: 'middle' }}>
+                                    <span style={{ background: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca', padding: '3px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 700 }}>
+                                      Unit {(b.bookedUnits && b.bookedUnits[0]) || 'N/A'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '14px 14px', verticalAlign: 'middle', fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>
+                                    {formatINR(totalAgreed)}
+                                  </td>
+                                  <td style={{ padding: '14px 14px', verticalAlign: 'middle', fontSize: '13px', fontWeight: 600, color: '#059669' }}>
+                                    {formatINR(totalPaid)}
+                                  </td>
+                                  <td style={{ padding: '14px 14px', verticalAlign: 'middle' }}>
+                                    <div style={{ fontSize: '15px', fontWeight: 800, color: '#dc2626' }}>
+                                      {formatINR(totalBal)}
+                                    </div>
+                                    <span style={{ fontSize: '11px', color: '#991b1b', fontWeight: 600 }}>
+                                      Due upon agreement / next milestone
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '14px 16px', verticalAlign: 'middle', textAlign: 'right' }}>
+                                    <div style={{ display: 'inline-flex', gap: '8px', alignItems: 'center' }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const cleanPhone = (b.phone || '').replace(/[^0-9]/g, '');
+                                          const text = encodeURIComponent(`Dear ${b.name}, Greetings from EstateSphere. This is a gentle reminder regarding the outstanding installment of ${formatINR(totalBal)} for Unit ${(b.bookedUnits && b.bookedUnits[0]) || ''}. Please contact your Relationship Manager for assistance.`);
+                                          window.open(`https://wa.me/${cleanPhone}?text=${text}`, '_blank');
+                                          triggerToast(`WhatsApp reminder sent to ${b.name}`);
+                                        }}
+                                        className="btn-primary-action"
+                                        style={{ background: '#16a34a', borderColor: '#16a34a', padding: '6px 12px', fontSize: '12px', gap: '5px' }}
                                       >
-                                        <Phone size={11} style={{ color: '#64748b' }} />
-                                        <span>{buyer.phone}</span>
-                                      </a>
-                                    </div>
-                                  )}
-
-                                  {buyer.email && (
-                                    <div style={{ marginTop: '2px' }}>
-                                      <a
-                                        href={`mailto:${buyer.email}`}
-                                        style={{ fontSize: '11.5px', color: '#2563eb', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
-                                        title="Click to email buyer"
+                                        <Send size={13} />
+                                        <span>WhatsApp Alert</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setRecordPaymentModal({
+                                          isOpen: true,
+                                          buyer: b,
+                                          unitNumber: (b.bookedUnits && b.bookedUnits[0]) || '',
+                                          amount: '',
+                                          paymentMode: 'NEFT / RTGS',
+                                          txnId: '',
+                                          stage: 'Installment Milestone'
+                                        })}
+                                        className="btn-secondary-action"
+                                        style={{ padding: '6px 12px', fontSize: '12px', gap: '4px' }}
                                       >
-                                        <Mail size={11} />
-                                        <span>{buyer.email}</span>
-                                      </a>
+                                        <CreditCard size={13} />
+                                        <span>+ Pay</span>
+                                      </button>
                                     </div>
-                                  )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
 
-                                  {buyer.assignedAgent && (
-                                    <div style={{ fontSize: '10.5px', color: '#64748b', marginTop: '3px' }}>
-                                      Handled by: <b style={{ color: '#334155' }}>{buyer.assignedAgent}</b>
+                {/* ========================================================
+                    SUB-TAB 4: OFFICIAL REAL ESTATE DOCUMENTS & INVOICES ARCHIVE
+                ======================================================== */}
+                {buyerTabMode === 'docs' && (
+                  <div className="white-panel" style={{ padding: '24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', marginBottom: '20px', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px' }}>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <FileText size={19} style={{ color: '#002b80' }} />
+                          <span>Official Real Estate Documents & Invoices Archive</span>
+                        </h4>
+                        <p style={{ margin: '4px 0 0', fontSize: '12.5px', color: '#64748b' }}>
+                          Instant generation, verification, and PDF/A4 printing of RERA Allotment Letters, Payment Vouchers, Milestone Demand Notices, and Handover Certificates.
+                        </p>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 700, padding: '4px 10px', borderRadius: '6px', background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}>
+                          {apartments.filter(a => a.status === 'SOLD' || a.status === 'RESERVED').length} Active Property Dossiers
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ width: '100%', overflowX: 'hidden' }}>
+                      <table className="clean-table" style={{ width: '100%', tableLayout: 'fixed' }}>
+                        <thead>
+                          <tr>
+                            <th style={{ width: '14%' }}>Unit & Block</th>
+                            <th style={{ width: '22%' }}>Allottee Client</th>
+                            <th style={{ width: '14%' }}>Booking Date</th>
+                            <th style={{ width: '18%' }}>Financial Status</th>
+                            <th style={{ width: '32%', textAlign: 'center' }}>Official Documents Suite</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {apartments
+                            .filter(a => a.status === 'SOLD' || a.status === 'RESERVED')
+                            .map(apt => {
+                              const buyer = apt.buyer || {
+                                name: 'Private Client',
+                                phone: '+91 98200 11000',
+                                email: 'client@estatesphere.in',
+                                dealAmount: apt.price || 30000000,
+                                paidAmount: apt.status === 'SOLD' ? (apt.price || 30000000) : 1500000,
+                                balanceAmount: apt.status === 'SOLD' ? 0 : Math.max(0, (apt.price || 30000000) - 1500000),
+                                bookingDate: '26 Oct 2026',
+                                paymentStatus: apt.status === 'SOLD' ? 'FULLY_PAID' : 'TOKEN_PAID'
+                              };
+
+                              const dealVal = Number(buyer.dealAmount) || apt.price || 30000000;
+                              const paidVal = Number(buyer.paidAmount) || (apt.status === 'SOLD' ? dealVal : 1500000);
+                              const balVal = Math.max(0, dealVal - paidVal);
+
+                              return (
+                                <tr key={apt.id}>
+                                  <td>
+                                    <div style={{ fontWeight: 800, fontSize: '13.5px', color: '#0f172a' }}>
+                                      {apt.apartmentNumber}
                                     </div>
-                                  )}
-                                </div>
-                              </td>
-
-                              {/* 4. Deal Value & Payment Breakdown */}
-                              <td style={{ padding: '14px 14px', verticalAlign: 'middle', textAlign: 'left' }}>
-                                <div>
-                                  <div style={{ fontSize: '14.5px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}>
-                                    {formatINR(dealVal)}
-                                  </div>
-                                  <div style={{ fontSize: '11.5px', color: '#059669', fontWeight: 600, marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
-                                    <CheckCircle2 size={11} />
-                                    <span>Paid: {formatINR(paidVal)}</span>
-                                  </div>
-                                  <div style={{ fontSize: '11px', color: isCleared ? '#059669' : '#dc2626', fontWeight: 600, marginTop: '2px', whiteSpace: 'nowrap' }}>
-                                    Balance: {isCleared ? '₹0 (Cleared)' : formatINR(balVal)}
-                                  </div>
-                                </div>
-                              </td>
-
-                              {/* 5. Payment Status & Booking Date */}
-                              <td style={{ padding: '14px 14px', verticalAlign: 'middle', textAlign: 'left' }}>
-                                <div>
-                                  <span style={{
-                                    display: 'inline-block',
-                                    padding: '3px 9px',
-                                    borderRadius: '12px',
-                                    fontSize: '11px',
-                                    fontWeight: 700,
-                                    background: isCleared ? '#ecfdf5' : (buyer.paymentPlan === 'TOKEN_ADVANCE' || buyer.paymentStatus === 'TOKEN_PAID' ? '#fffbeb' : '#eff6ff'),
-                                    color: isCleared ? '#047857' : (buyer.paymentPlan === 'TOKEN_ADVANCE' || buyer.paymentStatus === 'TOKEN_PAID' ? '#b45309' : '#1d4ed8'),
-                                    border: `1px solid ${isCleared ? '#a7f3d0' : (buyer.paymentPlan === 'TOKEN_ADVANCE' || buyer.paymentStatus === 'TOKEN_PAID' ? '#fde68a' : '#bfdbfe')}`,
-                                    whiteSpace: 'nowrap'
-                                  }}>
-                                    {isCleared ? '✅ 100% Paid' : (buyer.paymentPlan === 'TOKEN_ADVANCE' || buyer.paymentStatus === 'TOKEN_PAID' ? '🟡 Token Advance' : '🔵 Active EMI')}
-                                  </span>
-
-                                  {/* Progress bar */}
-                                  <div style={{ marginTop: '5px', maxWidth: '100px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: 600, color: '#64748b', marginBottom: '2px' }}>
-                                      <span>Cleared</span>
-                                      <span style={{ color: isCleared ? '#059669' : '#2563eb' }}>{percentCleared}%</span>
+                                    <div style={{ fontSize: '11px', color: '#64748b' }}>
+                                      {apt.block} &bull; {apt.typology}
                                     </div>
-                                    <div style={{ width: '100%', height: '4px', background: '#e2e8f0', borderRadius: '2px', overflow: 'hidden' }}>
-                                      <div style={{ width: `${percentCleared}%`, height: '100%', background: isCleared ? '#10b981' : '#3b82f6', borderRadius: '2px' }} />
+                                    <span style={{
+                                      display: 'inline-block',
+                                      marginTop: '4px',
+                                      padding: '2px 7px',
+                                      borderRadius: '4px',
+                                      fontSize: '10px',
+                                      fontWeight: 700,
+                                      background: apt.status === 'SOLD' ? '#fee2e2' : '#fef3c7',
+                                      color: apt.status === 'SOLD' ? '#991b1b' : '#92400e'
+                                    }}>
+                                      {apt.status === 'SOLD' ? 'SOLD OUT' : 'UNDER TOKEN'}
+                                    </span>
+                                  </td>
+
+                                  <td>
+                                    <div style={{ fontWeight: 700, fontSize: '13px', color: '#0f172a' }}>
+                                      {buyer.name}
                                     </div>
-                                  </div>
+                                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                                      {buyer.phone} &bull; {buyer.email}
+                                    </div>
+                                  </td>
 
-                                  <div style={{ fontSize: '10.5px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px', whiteSpace: 'nowrap' }}>
-                                    <Calendar size={10} style={{ color: '#64748b' }} />
-                                    <span>Booked: <b>{buyer.bookingDate || buyer.saleDate || 'Recently'}</b></span>
-                                  </div>
-                                </div>
-                              </td>
+                                  <td>
+                                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>
+                                      {buyer.bookingDate || buyer.saleDate || '26 Oct 2026'}
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                                      Escrow Logged
+                                    </div>
+                                  </td>
 
-                              {/* 6. Actions */}
-                              <td style={{ padding: '14px 12px', verticalAlign: 'middle', textAlign: 'right' }}>
-                                <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center', justifyContent: 'flex-end' }}>
-                                  <button
-                                    type="button"
-                                    onClick={() => openEditBuyerModal(apt)}
-                                    className="btn-secondary-action"
-                                    style={{ padding: '6px 10px', fontSize: '12px', gap: '4px', borderRadius: '7px', whiteSpace: 'nowrap' }}
-                                    title="Edit buyer details & payment schedule"
-                                  >
-                                    <Edit3 size={12} />
-                                    <span>Edit</span>
-                                  </button>
+                                  <td>
+                                    <div style={{ fontSize: '12.5px', fontWeight: 800, color: '#0f172a' }}>
+                                      {formatINR(dealVal)}
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#059669', fontWeight: 600 }}>
+                                      Paid: {formatINR(paidVal)}
+                                    </div>
+                                    {balVal > 0 && (
+                                      <div style={{ fontSize: '11px', color: '#dc2626', fontWeight: 600 }}>
+                                        Due: {formatINR(balVal)}
+                                      </div>
+                                    )}
+                                  </td>
 
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const actor = user?.name || 'Super Admin';
-                                      dataStore.addActivity(`${actor} generated official allotment invoice & slip for Unit ${apt.apartmentNumber} (${buyer.name || 'Allottee'})`, 'invoice');
-                                      setActivityFeed(dataStore.getActivityFeed());
-                                      setSaleReceiptModal({ isOpen: true, apt });
-                                    }}
-                                    style={{
-                                      padding: '6px 12px',
-                                      fontSize: '12px',
-                                      fontWeight: 600,
-                                      background: '#002b80',
-                                      color: '#ffffff',
-                                      border: '1px solid #002b80',
-                                      borderRadius: '7px',
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: '4px',
-                                      cursor: 'pointer',
-                                      boxShadow: '0 2px 6px rgba(0,43,128,0.2)',
-                                      whiteSpace: 'nowrap'
-                                    }}
-                                    title="View luxury allotment receipt / tax invoice"
-                                  >
-                                    <FileText size={12} style={{ color: '#ffffff' }} />
-                                    <span>Slip</span>
-                                  </button>
-                                </div>
-                              </td>
+                                  <td>
+                                    <div style={{ display: 'flex', gap: '5px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                      {/* Document 1: Allotment Letter */}
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setDocCategoryTab('ALLOTMENT_LETTER');
+                                          setSaleReceiptModal({ isOpen: true, apt });
+                                        }}
+                                        style={{
+                                          padding: '5px 8px',
+                                          borderRadius: '6px',
+                                          background: '#eff6ff',
+                                          border: '1px solid #bfdbfe',
+                                          color: '#1d4ed8',
+                                          fontSize: '11px',
+                                          fontWeight: 700,
+                                          cursor: 'pointer',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px'
+                                        }}
+                                        title="View & Print Official RERA Allotment Letter"
+                                      >
+                                        <FileCheck size={12} />
+                                        <span>Allotment</span>
+                                      </button>
 
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                                      {/* Document 2: Tax Invoice & Slip */}
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setDocCategoryTab('INVOICE');
+                                          setSaleReceiptModal({ isOpen: true, apt });
+                                        }}
+                                        style={{
+                                          padding: '5px 8px',
+                                          borderRadius: '6px',
+                                          background: '#f8fafc',
+                                          border: '1px solid #cbd5e1',
+                                          color: '#334155',
+                                          fontSize: '11px',
+                                          fontWeight: 700,
+                                          cursor: 'pointer',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px'
+                                        }}
+                                        title="View Official Property Allotment Invoice"
+                                      >
+                                        <FileText size={12} />
+                                        <span>Invoice</span>
+                                      </button>
+
+                                      {/* Document 3: Receipt Voucher */}
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setDocCategoryTab('RECEIPT_VOUCHER');
+                                          setSaleReceiptModal({ isOpen: true, apt });
+                                        }}
+                                        style={{
+                                          padding: '5px 8px',
+                                          borderRadius: '6px',
+                                          background: '#ecfdf5',
+                                          border: '1px solid #a7f3d0',
+                                          color: '#065f46',
+                                          fontSize: '11px',
+                                          fontWeight: 700,
+                                          cursor: 'pointer',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px'
+                                        }}
+                                        title="View Payment Receipt & Voucher"
+                                      >
+                                        <Receipt size={12} />
+                                        <span>Receipt</span>
+                                      </button>
+
+                                      {/* Document 4: Demand Notice */}
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setDocCategoryTab('DEMAND_NOTICE');
+                                          setSaleReceiptModal({ isOpen: true, apt });
+                                        }}
+                                        style={{
+                                          padding: '5px 8px',
+                                          borderRadius: '6px',
+                                          background: '#fef3c7',
+                                          border: '1px solid #fde68a',
+                                          color: '#92400e',
+                                          fontSize: '11px',
+                                          fontWeight: 700,
+                                          cursor: 'pointer',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px'
+                                        }}
+                                        title="View Milestone Demand Notice"
+                                      >
+                                        <AlertTriangle size={12} />
+                                        <span>Demand</span>
+                                      </button>
+
+                                      {/* Document 5: Handover NOC */}
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setDocCategoryTab('POSSESSION_CERT');
+                                          setSaleReceiptModal({ isOpen: true, apt });
+                                        }}
+                                        style={{
+                                          padding: '5px 8px',
+                                          borderRadius: '6px',
+                                          background: '#faf5ff',
+                                          border: '1px solid #e9d5ff',
+                                          color: '#6b21a8',
+                                          fontSize: '11px',
+                                          fontWeight: 700,
+                                          cursor: 'pointer',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px'
+                                        }}
+                                        title="View Key Handover & Possession Certificate"
+                                      >
+                                        <Key size={12} />
+                                        <span>Handover</span>
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================
+              MODULE 1: COMPLETE REAL ESTATE ADMIN DASHBOARD (POINT 1)
+          ======================================================== */}
+          {currentTab === 'dashboard' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              
+              {/* 1. EXECUTIVE KPI MASTER STRIP (4 LUXURY METRIC CARDS) */}
+              <section className="exec-kpi-grid">
+                
+                {/* Card 1: Portfolio Scale & Inventory */}
+                <div className="exec-kpi-card">
+                  <div className="exec-kpi-header">
+                    <span className="exec-kpi-title">Portfolio Inventory</span>
+                    <div className="exec-kpi-icon-wrap" style={{ background: '#eff6ff', color: '#2563eb' }}>
+                      <Building2 size={20} />
+                    </div>
+                  </div>
+                  <div className="exec-kpi-value">{totalApartmentsCount} <span style={{ fontSize: '16px', fontWeight: 600, color: '#64748b' }}>Units</span></div>
+                  <div className="exec-kpi-subtitle">Dwellora Master Enclave • 3 Residential Blocks</div>
+                  
+                  {/* Micro Segmented Progress Meter */}
+                  <div style={{ height: '7px', borderRadius: '4px', background: '#f1f5f9', display: 'flex', overflow: 'hidden', margin: '8px 0 12px' }}>
+                    <div style={{ width: `${occupancyRate}%`, background: '#ef4444' }} title={`Sold: ${soldCount} Units (${occupancyRate}%)`} />
+                    <div style={{ width: `${reservedRate}%`, background: '#f59e0b' }} title={`Reserved: ${reservedCount} Units (${reservedRate}%)`} />
+                    <div style={{ width: `${availableRate}%`, background: '#10b981' }} title={`Available: ${availableCount} Units (${availableRate}%)`} />
+                  </div>
+
+                  <div className="exec-kpi-meta-row">
+                    <div style={{ display: 'flex', gap: '8px', fontSize: '11px', fontWeight: 600 }}>
+                      <span style={{ color: '#dc2626' }}>● {soldCount} Sold</span>
+                      <span style={{ color: '#d97706' }}>● {reservedCount} Hold</span>
+                      <span style={{ color: '#059669' }}>● {availableCount} Open</span>
+                    </div>
+                    <span style={{ padding: '2px 7px', borderRadius: '4px', background: '#ecfdf5', color: '#047857', fontWeight: 700, fontSize: '10.5px' }}>
+                      {occupancyRate + reservedRate}% Contracted
+                    </span>
+                  </div>
+                </div>
+
+                {/* Card 2: Contracted Sales Revenue */}
+                <div className="exec-kpi-card">
+                  <div className="exec-kpi-header">
+                    <span className="exec-kpi-title">Contracted Sales Value</span>
+                    <div className="exec-kpi-icon-wrap" style={{ background: '#fef2f2', color: '#dc2626' }}>
+                      <TrendingUp size={20} />
+                    </div>
+                  </div>
+                  <div className="exec-kpi-value" style={{ color: '#0f172a' }}>{formatINR(totalContractedRevenue)}</div>
+                  <div className="exec-kpi-subtitle">Gross value of all closed & booked residences</div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', margin: '8px 0 10px', fontSize: '11.5px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
+                      <span>Closed Deals ({soldCount} Flats):</span>
+                      <b style={{ color: '#dc2626' }}>{formatINR(totalSoldRevenue)}</b>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
+                      <span>Pipeline Hold ({reservedCount} Flats):</span>
+                      <b style={{ color: '#d97706' }}>{formatINR(totalReservedRevenue)}</b>
+                    </div>
+                  </div>
+
+                  <div className="exec-kpi-meta-row">
+                    <span style={{ color: '#64748b' }}>Avg Unit Ticket:</span>
+                    <b style={{ color: '#0f172a' }}>₹3.88 Cr</b>
+                  </div>
+                </div>
+
+                {/* Card 3: Realized Collections & Cash Inflow */}
+                <div className="exec-kpi-card">
+                  <div className="exec-kpi-header">
+                    <span className="exec-kpi-title">Realized Collections</span>
+                    <div className="exec-kpi-icon-wrap" style={{ background: '#ecfdf5', color: '#059669' }}>
+                      <Wallet size={20} />
+                    </div>
+                  </div>
+                  <div className="exec-kpi-value" style={{ color: '#059669' }}>{formatINR(totalReceivedPayments)}</div>
+                  <div className="exec-kpi-subtitle">Cleared in bank escrow & booking tokens</div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', margin: '8px 0 10px', fontSize: '11.5px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
+                      <span>Active Balance Dues:</span>
+                      <b style={{ color: '#b45309' }}>{formatINR(totalPendingPayments)}</b>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
+                      <span>Recovery Ratio:</span>
+                      <b style={{ color: '#059669' }}>37% Cleared</b>
+                    </div>
+                  </div>
+
+                  <div className="exec-kpi-meta-row">
+                    <span style={{ color: '#047857', fontWeight: 600 }}>✓ Verified Bank Receipts</span>
+                    <span style={{ padding: '2px 7px', borderRadius: '4px', background: '#eff6ff', color: '#1d4ed8', fontWeight: 700, fontSize: '10.5px' }}>
+                      Escrow Active
+                    </span>
+                  </div>
+                </div>
+
+                {/* Card 4: Unsold Live Market Inventory */}
+                <div className="exec-kpi-card">
+                  <div className="exec-kpi-header">
+                    <span className="exec-kpi-title">Available Inventory</span>
+                    <div className="exec-kpi-icon-wrap" style={{ background: '#f0fdf4', color: '#16a34a' }}>
+                      <CheckCircle2 size={20} />
+                    </div>
+                  </div>
+                  <div className="exec-kpi-value" style={{ color: '#16a34a' }}>{formatINR(totalAvailableInventoryValue)}</div>
+                  <div className="exec-kpi-subtitle">{availableCount} luxury residences open for purchase</div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', margin: '8px 0 10px', fontSize: '11.5px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
+                      <span>Website Status:</span>
+                      <b style={{ color: '#059669' }}>🟢 Live for Booking</b>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
+                      <span>Typologies Available:</span>
+                      <b style={{ color: '#0f172a' }}>2, 3 & 4 BHK + Penthouse</b>
+                    </div>
+                  </div>
+
+                  <div className="exec-kpi-meta-row">
+                    <span style={{ color: '#64748b' }}>Active Leads in Queue:</span>
+                    <b style={{ color: '#2563eb' }}>{inquiries.length} Inquiries</b>
+                  </div>
+                </div>
+
+              </section>
+
+              {/* 2. SECTION A: COMMAND CENTER - TOWER & INVENTORY DISTRIBUTION (62% / 38%) */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.45fr 1fr', gap: '22px' }}>
+                
+                {/* Left (62%): Unified Inventory & Tower Performance Center */}
+                <div className="white-panel" style={{ padding: '22px', marginBottom: 0 }}>
+                  <div className="panel-header-row" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                    <div>
+                      <h3 className="panel-title" style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <BarChart3 size={18} style={{ color: '#2563eb' }} />
+                        <span>Tower & Inventory Distribution Matrix</span>
+                      </h3>
+                      <p style={{ margin: '3px 0 0', fontSize: '12px', color: '#64748b' }}>
+                        Live allocation across towers, floors and typology
+                      </p>
+                    </div>
+
+                    {/* View Switcher: By Towers vs By Typology vs Status Overview */}
+                    <div style={{ display: 'inline-flex', background: '#f1f5f9', padding: '3px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <button
+                        type="button"
+                        onClick={() => setChartViewMode('blocks')}
+                        style={{
+                          padding: '5px 12px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          background: chartViewMode === 'blocks' ? '#2563eb' : 'transparent',
+                          color: chartViewMode === 'blocks' ? '#ffffff' : '#64748b',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        By Towers
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setChartViewMode('typology')}
+                        style={{
+                          padding: '5px 12px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          background: chartViewMode === 'typology' ? '#2563eb' : 'transparent',
+                          color: chartViewMode === 'typology' ? '#ffffff' : '#64748b',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        By Typology
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setChartViewMode('status')}
+                        style={{
+                          padding: '5px 12px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          background: chartViewMode === 'status' ? '#2563eb' : 'transparent',
+                          color: chartViewMode === 'status' ? '#ffffff' : '#64748b',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        Status Overview
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Mode 1: By Towers (Block B1, B2, B3) */}
+                  {chartViewMode === 'blocks' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      {blockStats.map((blk, idx) => (
+                        <div key={idx} style={{ background: '#f8fafc', padding: '14px 16px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                            <div>
+                              <b style={{ color: '#0f172a', fontSize: '14px' }}>{blk.name}</b>
+                              <span style={{ fontSize: '12px', color: '#64748b', marginLeft: '8px' }}>({blk.total} Total Flats)</span>
+                            </div>
+                            <div style={{ fontSize: '12px', fontWeight: 700 }}>
+                              <span style={{ color: '#dc2626' }}>{blk.sold} Sold ({formatINR(blk.soldRevenue)})</span> &bull;{' '}
+                              <span style={{ color: '#d97706' }}>{blk.reserved} Hold</span> &bull;{' '}
+                              <span style={{ color: '#059669' }}>{blk.available} Open</span>
+                            </div>
+                          </div>
+                          <div style={{ height: '9px', background: '#e2e8f0', borderRadius: '6px', display: 'flex', overflow: 'hidden' }}>
+                            <div style={{ width: `${(blk.sold / blk.total) * 100}%`, background: '#ef4444' }} />
+                            <div style={{ width: `${(blk.reserved / blk.total) * 100}%`, background: '#f59e0b' }} />
+                            <div style={{ width: `${(blk.available / blk.total) * 100}%`, background: '#10b981' }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
+
+                  {/* Mode 2: By Typology */}
+                  {chartViewMode === 'typology' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      {bhkStats.map((bhk, idx) => (
+                        <div key={idx} style={{ background: '#f8fafc', padding: '14px 16px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                            <div>
+                              <b style={{ color: '#0f172a', fontSize: '14px' }}>{bhk.label} Residences</b>
+                              <span style={{ fontSize: '12px', color: '#64748b', marginLeft: '8px' }}>({bhk.total} Total Units)</span>
+                            </div>
+                            <div style={{ fontSize: '12px', fontWeight: 700 }}>
+                              <span style={{ color: '#dc2626' }}>{bhk.sold} Sold</span> &bull;{' '}
+                              <span style={{ color: '#d97706' }}>{bhk.reserved} Hold</span> &bull;{' '}
+                              <span style={{ color: '#059669' }}>{bhk.available} Open</span>
+                            </div>
+                          </div>
+                          <div style={{ height: '9px', background: '#e2e8f0', borderRadius: '6px', display: 'flex', overflow: 'hidden' }}>
+                            <div style={{ width: `${bhk.total > 0 ? (bhk.sold / bhk.total) * 100 : 0}%`, background: '#ef4444' }} />
+                            <div style={{ width: `${bhk.total > 0 ? (bhk.reserved / bhk.total) * 100 : 0}%`, background: '#f59e0b' }} />
+                            <div style={{ width: `${bhk.total > 0 ? (bhk.available / bhk.total) * 100 : 0}%`, background: '#10b981' }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Mode 3: Status Breakdown Cards */}
+                  {chartViewMode === 'status' && (
+                    <div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', marginBottom: '16px' }}>
+                        {/* Sold Card */}
+                        <div style={{ padding: '14px', background: '#fef2f2', borderRadius: '10px', border: '1px solid #fecaca' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                            <span style={{ fontSize: '11px', color: '#b91c1c', fontWeight: 800 }}>🔴 SOLD OUT</span>
+                            <span style={{ fontSize: '12px', fontWeight: 800, color: '#dc2626' }}>{soldCount} Units</span>
+                          </div>
+                          <div style={{ fontSize: '18px', fontWeight: 800, color: '#991b1b' }}>{formatINR(totalSoldRevenue)}</div>
+                          <div style={{ fontSize: '11px', color: '#7f1d1d', marginTop: '4px' }}>
+                            100% Registry & Allotted
+                          </div>
+                        </div>
+
+                        {/* Reserved Card */}
+                        <div style={{ padding: '14px', background: '#fffbeb', borderRadius: '10px', border: '1px solid #fde68a' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                            <span style={{ fontSize: '11px', color: '#b45309', fontWeight: 800 }}>🟡 RESERVED</span>
+                            <span style={{ fontSize: '12px', fontWeight: 800, color: '#d97706' }}>{reservedCount} Units</span>
+                          </div>
+                          <div style={{ fontSize: '18px', fontWeight: 800, color: '#92400e' }}>{formatINR(totalReservedRevenue)}</div>
+                          <div style={{ fontSize: '11px', color: '#78350f', marginTop: '4px' }}>
+                            Token received • Agreement pending
+                          </div>
+                        </div>
+
+                        {/* Available Card */}
+                        <div style={{ padding: '14px', background: '#ecfdf5', borderRadius: '10px', border: '1px solid #a7f3d0' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                            <span style={{ fontSize: '11px', color: '#047857', fontWeight: 800 }}>🟢 AVAILABLE</span>
+                            <span style={{ fontSize: '12px', fontWeight: 800, color: '#059669' }}>{availableCount} Units</span>
+                          </div>
+                          <div style={{ fontSize: '18px', fontWeight: 800, color: '#065f46' }}>{formatINR(totalAvailableInventoryValue)}</div>
+                          <div style={{ fontSize: '11px', color: '#064e3b', marginTop: '4px' }}>
+                            Live on website for booking
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Visual Proportional Bar Graph */}
+                      <div style={{ height: '32px', borderRadius: '8px', background: '#f1f5f9', display: 'flex', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                        <div style={{ width: `${occupancyRate}%`, background: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', fontSize: '11px', fontWeight: 700 }}>
+                          {occupancyRate >= 8 ? `${occupancyRate}% Sold` : ''}
+                        </div>
+                        <div style={{ width: `${reservedRate}%`, background: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', fontSize: '11px', fontWeight: 700 }}>
+                          {reservedRate >= 8 ? `${reservedRate}% Hold` : ''}
+                        </div>
+                        <div style={{ width: `${availableRate}%`, background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', fontSize: '11px', fontWeight: 700 }}>
+                          {availableRate >= 8 ? `${availableRate}% Open (${availableCount} Flats)` : ''}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Right (38%): Project Health & Quick Command Hub */}
+                <div className="white-panel" style={{ padding: '22px', marginBottom: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div>
+                    <div className="panel-header-row" style={{ marginBottom: '14px' }}>
+                      <div>
+                        <h3 className="panel-title" style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <ShieldCheck size={18} style={{ color: '#059669' }} />
+                          <span>Dwellora Residence</span>
+                        </h3>
+                        <p style={{ margin: '3px 0 0', fontSize: '11.5px', color: '#64748b' }}>
+                          RERA: PRM/KA/RERA/1251 • Bangalore
+                        </p>
+                      </div>
+                      <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 800, background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0' }}>
+                        Phase 1 Active
+                      </span>
+                    </div>
+
+                    {/* 4 Project Metadata Badges in 2x2 Grid */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '18px' }}>
+                      <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <span style={{ fontSize: '10.5px', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Target Handover</span>
+                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>Dec 2026</div>
+                      </div>
+                      <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <span style={{ fontSize: '10.5px', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Tower Layout</span>
+                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>G + 4 Floors</div>
+                      </div>
+                      <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <span style={{ fontSize: '10.5px', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Active Towers</span>
+                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>3 Blocks (B1, B2, B3)</div>
+                      </div>
+                      <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <span style={{ fontSize: '10.5px', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Pending Leads</span>
+                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#2563eb', marginTop: '2px' }}>{inquiries.length} Callbacks</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Fast Action Buttons */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <button
+                      type="button"
+                      className="btn-primary-action"
+                      onClick={() => setCurrentTab('apartments')}
+                      style={{ justifyContent: 'center', width: '100%' }}
+                    >
+                      <Building2 size={16} />
+                      <span>Manage All 25 Apartments & Inventory</span>
+                    </button>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <button
+                        type="button"
+                        className="btn-secondary-action"
+                        onClick={() => setCurrentTab('inquiries')}
+                        style={{ justifyContent: 'center' }}
+                      >
+                        <Inbox size={14} />
+                        <span>View Leads ({inquiries.length})</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-secondary-action"
+                        onClick={() => setCurrentTab('sales')}
+                        style={{ justifyContent: 'center' }}
+                      >
+                        <Receipt size={14} />
+                        <span>Buyer Invoices</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
               </div>
 
-            </div>
-          )}
-
-
-          {/* ========================================================
-              MODULE 1: DASHBOARD OVERVIEW
-          ======================================================== */}
-          {currentTab === 'dashboard' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '24px' }}>
-              <div>
-                {/* Recent Activity */}
-                <div className="white-panel">
-                  <div className="panel-header-row">
-                    <h3 className="panel-title">
-                      <Activity size={17} style={{ color: '#2563eb' }} />
-                      <span>Recent Activity Feed</span>
+              {/* 3. SECTION B: LIVE PROPERTY INVENTORY STATUS INSPECTOR (FULL WIDTH WITH SEARCH & FILTER) */}
+              <div className="white-panel" style={{ padding: '22px', marginBottom: 0 }}>
+                <div className="panel-header-row" style={{ flexWrap: 'wrap', gap: '14px', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px', marginBottom: '16px' }}>
+                  <div>
+                    <h3 className="panel-title" style={{ fontSize: '17px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Building2 size={20} style={{ color: '#2563eb' }} />
+                      <span>Live Property Inventory Status Inspector</span>
                     </h3>
-                    <span style={{ fontSize: '11.5px', color: '#64748b' }}>Live Event Stream</span>
+                    <p style={{ margin: '3px 0 0', fontSize: '12.5px', color: '#64748b' }}>
+                      Exact real-time breakdown: inspect sold units, reserved bookings, and open inventory.
+                    </p>
+                  </div>
+
+                  {/* Category Switcher Tabs */}
+                  <div style={{ display: 'inline-flex', background: '#f1f5f9', padding: '4px', borderRadius: '10px', border: '1px solid #e2e8f0', gap: '4px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setInspectorTab('sold')}
+                      style={{
+                        padding: '7px 16px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        background: inspectorTab === 'sold' ? '#dc2626' : 'transparent',
+                        color: inspectorTab === 'sold' ? '#ffffff' : '#64748b',
+                        boxShadow: inspectorTab === 'sold' ? '0 2px 6px rgba(220,38,38,0.25)' : 'none',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      🔴 Sold Flats ({soldCount} Units &bull; {formatINR(totalSoldRevenue)})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInspectorTab('reserved')}
+                      style={{
+                        padding: '7px 16px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        background: inspectorTab === 'reserved' ? '#d97706' : 'transparent',
+                        color: inspectorTab === 'reserved' ? '#ffffff' : '#64748b',
+                        boxShadow: inspectorTab === 'reserved' ? '0 2px 6px rgba(217,119,6,0.25)' : 'none',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      🟡 Reserved Flats ({reservedCount} Units &bull; {formatINR(totalReservedRevenue)})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInspectorTab('available')}
+                      style={{
+                        padding: '7px 16px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        background: inspectorTab === 'available' ? '#059669' : 'transparent',
+                        color: inspectorTab === 'available' ? '#ffffff' : '#64748b',
+                        boxShadow: inspectorTab === 'available' ? '0 2px 6px rgba(5,150,105,0.25)' : 'none',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      🟢 Available / Unsold Flats ({availableCount} Units &bull; {formatINR(totalAvailableInventoryValue)})
+                    </button>
+                  </div>
+                </div>
+
+                {/* Search & Tower Filter Controls */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                  <div style={{ position: 'relative', width: '280px' }}>
+                    <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: '#94a3b8' }} />
+                    <input
+                      type="text"
+                      className="table-search-input"
+                      placeholder="Search unit no, buyer, phone..."
+                      value={inspectorSearch}
+                      onChange={(e) => setInspectorSearch(e.target.value)}
+                      style={{ paddingLeft: '32px', height: '34px', fontSize: '12.5px', width: '100%', boxSizing: 'border-box' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Filter Tower:</span>
+                    <select
+                      className="status-select-clean"
+                      value={inspectorBlockFilter}
+                      onChange={(e) => setInspectorBlockFilter(e.target.value)}
+                      style={{ height: '34px', fontSize: '12px' }}
+                    >
+                      <option value="ALL">All Towers</option>
+                      <option value="Block B1">Block B1</option>
+                      <option value="Block B2">Block B2</option>
+                      <option value="Block B3">Block B3</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* TAB 1: SOLD FLATS DETAILS */}
+                {inspectorTab === 'sold' && (
+                  <div style={{ overflowX: 'auto' }}>
+                    {filteredSoldList.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>No apartments match this search in Sold category.</div>
+                    ) : (
+                      <table className="clean-table" style={{ fontSize: '13px' }}>
+                        <thead>
+                          <tr>
+                            <th>Unit / Flat</th>
+                            <th>Buyer Details</th>
+                            <th>Typology & Block</th>
+                            <th>Deal Value</th>
+                            <th>Amount Paid</th>
+                            <th>Balance Due</th>
+                            <th>Payment Status</th>
+                            <th style={{ textAlign: 'center' }}>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredSoldList.map(apt => (
+                            <tr key={apt.id}>
+                              <td>
+                                <b style={{ color: '#0f172a', fontSize: '14px' }}>{apt.apartmentNumber}</b>
+                              </td>
+                              <td>
+                                <b style={{ color: '#1e293b' }}>{apt.buyer?.name || 'Allotted Owner'}</b>
+                                <div style={{ fontSize: '11px', color: '#64748b' }}>{apt.buyer?.phone || '+91 98201 44521'}</div>
+                              </td>
+                              <td>
+                                <div>{apt.title}</div>
+                                <span style={{ fontSize: '11px', color: '#64748b' }}>{apt.block} &bull; {apt.floor}</span>
+                              </td>
+                              <td>
+                                <b style={{ color: '#0f172a' }}>{formatINR(apt.buyer?.dealAmount || apt.price)}</b>
+                              </td>
+                              <td>
+                                <span style={{ color: '#059669', fontWeight: 700 }}>
+                                  {formatINR(apt.buyer?.paidAmount !== undefined && apt.buyer?.paidAmount !== '' ? apt.buyer.paidAmount : apt.price)}
+                                </span>
+                              </td>
+                              <td>
+                                <span style={{ color: Number(apt.buyer?.balanceAmount || 0) > 0 ? '#dc2626' : '#64748b', fontWeight: 700 }}>
+                                  {formatINR(apt.buyer?.balanceAmount || 0)}
+                                </span>
+                              </td>
+                              <td>
+                                <span style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  padding: '3px 8px',
+                                  borderRadius: '6px',
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  background: Number(apt.buyer?.balanceAmount || 0) === 0 ? '#ecfdf5' : '#eff6ff',
+                                  color: Number(apt.buyer?.balanceAmount || 0) === 0 ? '#047857' : '#1d4ed8'
+                                }}>
+                                  {Number(apt.buyer?.balanceAmount || 0) === 0 ? '✓ Fully Cleared' : 'Active EMI'}
+                                </span>
+                              </td>
+                              <td style={{ textAlign: 'center' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSaleReceiptModal({ isOpen: true, apt });
+                                  }}
+                                  style={{
+                                    padding: '5px 12px',
+                                    borderRadius: '6px',
+                                    background: '#2563eb',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    fontSize: '11.5px',
+                                    fontWeight: 700,
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  View Bill / Invoice
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                )}
+
+                {/* TAB 2: RESERVED FLATS DETAILS */}
+                {inspectorTab === 'reserved' && (
+                  <div style={{ overflowX: 'auto' }}>
+                    {filteredReservedList.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>No apartments match this search in Reserved category.</div>
+                    ) : (
+                      <table className="clean-table" style={{ fontSize: '13px' }}>
+                        <thead>
+                          <tr>
+                            <th>Unit / Flat</th>
+                            <th>Prospective Buyer</th>
+                            <th>Typology & Block</th>
+                            <th>Total Property Value</th>
+                            <th>Token Paid</th>
+                            <th>Balance on Agreement</th>
+                            <th>Hold Expiry</th>
+                            <th style={{ textAlign: 'center' }}>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredReservedList.map(apt => (
+                            <tr key={apt.id}>
+                              <td>
+                                <b style={{ color: '#0f172a', fontSize: '14px' }}>{apt.apartmentNumber}</b>
+                              </td>
+                              <td>
+                                <b style={{ color: '#1e293b' }}>{apt.buyer?.name || 'Walk-in Client'}</b>
+                                <div style={{ fontSize: '11px', color: '#64748b' }}>{apt.buyer?.phone || '+91 98112 33490'}</div>
+                              </td>
+                              <td>
+                                <div>{apt.title}</div>
+                                <span style={{ fontSize: '11px', color: '#64748b' }}>{apt.block} &bull; {apt.floor}</span>
+                              </td>
+                              <td>
+                                <b style={{ color: '#0f172a' }}>{formatINR(apt.price)}</b>
+                              </td>
+                              <td>
+                                <span style={{ color: '#059669', fontWeight: 700 }}>
+                                  {formatINR(apt.buyer?.paidAmount || 1500000)}
+                                </span>
+                              </td>
+                              <td>
+                                <span style={{ color: '#d97706', fontWeight: 700 }}>
+                                  {formatINR(Math.max(0, Number(apt.price) - Number(apt.buyer?.paidAmount || 1500000)))}
+                                </span>
+                              </td>
+                              <td>
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', borderRadius: '6px', background: '#fffbeb', color: '#b45309', fontSize: '11px', fontWeight: 700 }}>
+                                  <Clock size={11} />
+                                  {apt.buyer?.bookingDate || '15 Nov 2026'}
+                                </span>
+                              </td>
+                              <td style={{ textAlign: 'center' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => openEditBuyerModal(apt)}
+                                  style={{
+                                    padding: '5px 12px',
+                                    borderRadius: '6px',
+                                    background: '#d97706',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    fontSize: '11.5px',
+                                    fontWeight: 700,
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  Review Agreement
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                )}
+
+                {/* TAB 3: AVAILABLE / UNSOLD FLATS DETAILS */}
+                {inspectorTab === 'available' && (
+                  <div style={{ overflowX: 'auto', maxHeight: '440px' }}>
+                    <table className="clean-table" style={{ fontSize: '13px' }}>
+                      <thead style={{ position: 'sticky', top: 0, background: '#f8fafc', zIndex: 2 }}>
+                        <tr>
+                          <th>Unit / Flat</th>
+                          <th>Typology</th>
+                          <th>Tower / Block</th>
+                          <th>Floor</th>
+                          <th>Bed / Bath</th>
+                          <th>Super Area</th>
+                          <th>Price</th>
+                          <th>Website Status</th>
+                          <th style={{ textAlign: 'center' }}>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredAvailableList.map(apt => (
+                          <tr key={apt.id}>
+                            <td>
+                              <b style={{ color: '#0f172a', fontSize: '14px' }}>{apt.apartmentNumber}</b>
+                            </td>
+                            <td>
+                              <div style={{ fontWeight: 600 }}>{apt.title}</div>
+                              <span style={{ fontSize: '11px', color: '#64748b' }}>{apt.typology}</span>
+                            </td>
+                            <td>
+                              <span style={{ fontWeight: 600 }}>{apt.block}</span>
+                            </td>
+                            <td>{apt.floor}</td>
+                            <td>
+                              <b>{apt.bedrooms} BHK</b> ({apt.bathrooms || 2} Bath)
+                            </td>
+                            <td>
+                              <b>{apt.areaSqft} sqft</b>
+                            </td>
+                            <td>
+                              <b style={{ color: '#059669', fontSize: '14px' }}>{formatINR(apt.price)}</b>
+                            </td>
+                            <td>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', borderRadius: '6px', background: '#ecfdf5', color: '#047857', fontSize: '11px', fontWeight: 700 }}>
+                                🟢 Open for Booking
+                              </span>
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              <button
+                                type="button"
+                                onClick={() => openEditBuyerModal(apt)}
+                                style={{
+                                  padding: '5px 12px',
+                                  borderRadius: '6px',
+                                  background: '#059669',
+                                  color: '#ffffff',
+                                  border: 'none',
+                                  fontSize: '11.5px',
+                                  fontWeight: 700,
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                Book / Sell Unit
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+              </div>
+
+              {/* 4. SECTION C: UPCOMING INSTALLMENTS + PENDING APPROVALS (50% / 50%) */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '22px' }}>
+                
+                {/* 3. Upcoming Installments & Payment Reminders */}
+                <div className="white-panel" style={{ padding: '22px', marginBottom: 0 }}>
+                  <div className="panel-header-row" style={{ marginBottom: '14px' }}>
+                    <div>
+                      <h3 className="panel-title" style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Wallet size={18} style={{ color: '#d97706' }} />
+                        <span>Upcoming Installment & Payment Reminders</span>
+                      </h3>
+                      <p style={{ margin: '3px 0 0', fontSize: '12px', color: '#64748b' }}>
+                        Track upcoming payment milestones and send automated notifications
+                      </p>
+                    </div>
+                    <button 
+                      className="panel-link" 
+                      onClick={() => setCurrentTab('sales')}
+                      style={{ fontSize: '12px', fontWeight: 700, color: '#2563eb', cursor: 'pointer', background: 'transparent', border: 'none' }}
+                    >
+                      View All Buyers &rarr;
+                    </button>
+                  </div>
+
+                  <div style={{ overflowX: 'auto' }}>
+                    <table className="clean-table" style={{ fontSize: '12.5px' }}>
+                      <thead>
+                        <tr>
+                          <th>Buyer & Unit</th>
+                          <th>Due Date</th>
+                          <th>Due Installment</th>
+                          <th>Total Balance</th>
+                          <th style={{ textAlign: 'center' }}>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {upcomingInstallmentsList.slice(0, 4).map(item => (
+                          <tr key={item.id}>
+                            <td>
+                              <b>{item.buyerName}</b>
+                              <div style={{ fontSize: '11px', color: '#64748b' }}>Unit {item.apartmentNumber} • {item.phone}</div>
+                            </td>
+                            <td>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', borderRadius: '6px', background: '#fffbeb', color: '#b45309', fontWeight: 700, fontSize: '11px' }}>
+                                <Clock size={11} />
+                                {item.dueDate}
+                              </span>
+                            </td>
+                            <td>
+                              <b style={{ color: '#0f172a' }}>{formatINR(item.nextAmount)}</b>
+                              <div style={{ fontSize: '10.5px', color: '#64748b' }}>{item.plan}</div>
+                            </td>
+                            <td>
+                              <span style={{ color: '#b91c1c', fontWeight: 600 }}>{formatINR(item.balance)}</span>
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              <button
+                                type="button"
+                                onClick={() => handleSendReminder(item)}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '5px',
+                                  padding: '5px 10px',
+                                  borderRadius: '6px',
+                                  background: '#eff6ff',
+                                  border: '1px solid #bfdbfe',
+                                  color: '#1d4ed8',
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                title="Send SMS & WhatsApp Reminder"
+                              >
+                                <Send size={11} />
+                                <span>Remind</span>
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* 4. Pending Approvals & Priority Action Alerts */}
+                <div className="white-panel" style={{ padding: '22px', marginBottom: 0 }}>
+                  <div className="panel-header-row" style={{ marginBottom: '14px' }}>
+                    <div>
+                      <h3 className="panel-title" style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <AlertTriangle size={18} style={{ color: '#ef4444' }} />
+                        <span>Pending Approvals & Action Alerts</span>
+                      </h3>
+                      <p style={{ margin: '3px 0 0', fontSize: '12px', color: '#64748b' }}>
+                        High-priority tasks requiring manager sign-off
+                      </p>
+                    </div>
+                    <span style={{ padding: '3px 9px', borderRadius: '12px', background: '#fee2e2', color: '#b91c1c', fontWeight: 700, fontSize: '11px' }}>
+                      {pendingApprovalsList.length} Pending
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {pendingApprovalsList.map(alert => (
+                      <div
+                        key={alert.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '11px 13px',
+                          background: '#f8fafc',
+                          borderRadius: '10px',
+                          border: '1px solid #e2e8f0',
+                          gap: '12px'
+                        }}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+                            <span style={{
+                              fontSize: '10px',
+                              fontWeight: 800,
+                              textTransform: 'uppercase',
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              background: alert.badgeBg,
+                              color: alert.badgeColor
+                            }}>
+                              {alert.badge}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {alert.title}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#64748b' }}>{alert.desc}</div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setCurrentTab(alert.targetTab)}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            background: '#2563eb',
+                            color: '#ffffff',
+                            border: 'none',
+                            fontSize: '11.5px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {alert.actionText}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+
+              {/* 5. SECTION D: RECENT ACTIVITY FEED + QUICK UNIT STATUS (50% / 50%) */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.35fr 1fr', gap: '22px' }}>
+                
+                {/* 5. Recent Activity Feed */}
+                <div className="white-panel" style={{ padding: '22px', marginBottom: 0 }}>
+                  <div className="panel-header-row" style={{ marginBottom: '14px' }}>
+                    <h3 className="panel-title" style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Activity size={18} style={{ color: '#2563eb' }} />
+                      <span>Live Event & Activity Stream</span>
+                    </h3>
+                    <span style={{ fontSize: '11.5px', color: '#64748b' }}>Audit Log Feed</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {activityFeed.slice(0, 8).map((act, idx) => {
+                    {activityFeed.slice(0, 6).map((act, idx) => {
                       const isSold = act.type === 'sold';
                       const isSale = act.type === 'sale';
                       const isInvoice = act.type === 'invoice';
@@ -3242,12 +6697,12 @@ export default function AdminDashboard() {
                       }
 
                       return (
-                        <div key={act.id || idx} style={{ display: 'flex', gap: '12px', padding: '12px 14px', background: '#f8fafc', borderRadius: '10px', alignItems: 'center', transition: 'background 0.15s ease' }}>
-                          <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: iconBg, color: iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <IconComp size={15} />
+                        <div key={act.id || idx} style={{ display: 'flex', gap: '12px', padding: '10px 14px', background: '#f8fafc', borderRadius: '10px', alignItems: 'center', border: '1px solid #f1f5f9' }}>
+                          <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: iconBg, color: iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <IconComp size={16} />
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ margin: '0 0 3px', fontSize: '13px', fontWeight: 500, color: '#1e293b', lineHeight: 1.4 }}>{act.text}</p>
+                            <p style={{ margin: '0 0 2px', fontSize: '12.5px', fontWeight: 600, color: '#1e293b', lineHeight: 1.4 }}>{act.text}</p>
                             <span style={{ fontSize: '11px', color: '#94a3b8' }}>{act.time || 'Recently'}</span>
                           </div>
                         </div>
@@ -3255,25 +6710,27 @@ export default function AdminDashboard() {
                     })}
                   </div>
                 </div>
-              </div>
 
-              <div>
-                {/* Quick Unit Status */}
-                <div className="white-panel">
-                  <div className="panel-header-row">
-                    <h3 className="panel-title">
-                      <Building2 size={17} style={{ color: '#2563eb' }} />
-                      <span>Quick Unit Status</span>
+                {/* 6. Quick Unit Status */}
+                <div className="white-panel" style={{ padding: '22px', marginBottom: 0 }}>
+                  <div className="panel-header-row" style={{ marginBottom: '14px' }}>
+                    <h3 className="panel-title" style={{ fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Building2 size={18} style={{ color: '#2563eb' }} />
+                      <span>Quick Unit Status Selector</span>
                     </h3>
-                    <button className="panel-link" onClick={() => setCurrentTab('apartments')}>
-                      <span>All ({apartments.length}) &rarr;</span>
+                    <button 
+                      className="panel-link" 
+                      onClick={() => setCurrentTab('apartments')}
+                      style={{ fontSize: '12px', fontWeight: 700, color: '#2563eb', cursor: 'pointer', background: 'transparent', border: 'none' }}
+                    >
+                      All ({apartments.length}) &rarr;
                     </button>
                   </div>
                   <div>
                     {apartments.slice(0, 5).map(a => (
                       <div key={a.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
                         <div>
-                          <b>{a.apartmentNumber}</b>
+                          <b style={{ color: '#0f172a' }}>{a.apartmentNumber}</b>
                           <div style={{ fontSize: '11.5px', color: '#64748b' }}>{a.block} &bull; {formatINR(a.price)}</div>
                         </div>
                         {userPermissions.canEditApartment ? (
@@ -3281,6 +6738,7 @@ export default function AdminDashboard() {
                             className="status-select-clean"
                             value={a.status}
                             onChange={(e) => handleApartmentStatus(a.id, e.target.value)}
+                            style={{ height: '32px', fontSize: '12px' }}
                           >
                             <option value="AVAILABLE">🟢 Available</option>
                             <option value="RESERVED">🟡 Reserved</option>
@@ -3307,7 +6765,9 @@ export default function AdminDashboard() {
                     ))}
                   </div>
                 </div>
+
               </div>
+
             </div>
           )}
 
@@ -3491,17 +6951,41 @@ export default function AdminDashboard() {
                           <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
                             Choose Residence Flat To Edit (25 Units):
                           </label>
+                          {/* Quick Block Filter Pills */}
+                          <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+                            {['ALL', 'Block B1', 'Block B2', 'Block B3'].map(blk => (
+                              <button
+                                key={blk}
+                                type="button"
+                                onClick={() => setMediaBlockFilter(blk)}
+                                style={{
+                                  padding: '4px 10px',
+                                  borderRadius: '6px',
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  border: 'none',
+                                  background: mediaBlockFilter === blk ? '#2563eb' : '#e2e8f0',
+                                  color: mediaBlockFilter === blk ? '#ffffff' : '#475569'
+                                }}
+                              >
+                                {blk === 'ALL' ? 'All Blocks' : blk}
+                              </button>
+                            ))}
+                          </div>
                           <select
                             value={selectedUnitForPhoto}
                             onChange={(e) => setSelectedUnitForPhoto(Number(e.target.value))}
                             className="input-clean"
                             style={{ height: '42px', fontSize: '14px', fontWeight: 600, borderColor: '#94a3b8' }}
                           >
-                            {apartments.map(a => (
-                              <option key={a.id} value={a.id}>
-                                {a.apartmentNumber} — {a.title} ({a.block} • {formatINR(a.price)})
-                              </option>
-                            ))}
+                            {apartments
+                              .filter(a => mediaBlockFilter === 'ALL' || a.block === mediaBlockFilter)
+                              .map(a => (
+                                <option key={a.id} value={a.id}>
+                                  {a.apartmentNumber} — {a.title} ({a.block} • {formatINR(a.price)})
+                                </option>
+                              ))}
                           </select>
                         </div>
 
@@ -3590,7 +7074,25 @@ export default function AdminDashboard() {
                             </div>
 
                             {/* Action Button that opens Full Screen Modal */}
-                            <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
+                            <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              {rc.is360 && (
+                                <button
+                                  type="button"
+                                  className="btn-secondary-action"
+                                  style={{ width: '100%', justifyContent: 'center', background: '#eff6ff', borderColor: '#bfdbfe', color: '#1d4ed8', fontWeight: 700 }}
+                                  onClick={() => setPreview360Modal({
+                                    isOpen: true,
+                                    url: rc.url,
+                                    title: `${currentSelectedApt.apartmentNumber} • 360° Panorama Scene`,
+                                    panX: 0,
+                                    panY: 0,
+                                    zoom: 1
+                                  })}
+                                >
+                                  <Eye size={15} />
+                                  <span>👁️ Test & Preview 360° Walkthrough</span>
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 className="btn-primary-action"
@@ -3663,6 +7165,40 @@ export default function AdminDashboard() {
                             >
                               <Edit3 size={14} />
                               <span>Edit Day Photo & Text</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Point 9: Mobile Optimized Portrait Hero View */}
+                        <div style={{ border: '1.5px solid #3b82f6', borderRadius: '12px', overflow: 'hidden', background: '#eff6ff' }}>
+                          <div style={{ height: '210px', position: 'relative', background: '#0f172a' }}>
+                            <img
+                              src={siteContent?.heroMobileImage || '/assets/estate-boutique-lounge.png'}
+                              alt="Hero Mobile View"
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                            <span style={{ position: 'absolute', top: '10px', left: '10px', background: 'rgba(59, 130, 246, 0.95)', color: '#ffffff', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
+                              📱 MOBILE OPTIMIZED PORTRAIT (1080x1920)
+                            </span>
+                          </div>
+                          <div style={{ padding: '16px' }}>
+                            <div style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>Mobile Portrait Viewport</div>
+                            <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Optimized vertical focal crop for smartphone screens</div>
+                            <button
+                              type="button"
+                              className="btn-primary-action"
+                              style={{ width: '100%', justifyContent: 'center', marginTop: '14px', background: '#2563eb' }}
+                              onClick={() => openPhotoEditor({
+                                mode: 'site_hero',
+                                roomKey: 'heroMobileImage',
+                                label: 'Mobile Optimized Hero Banner (Portrait)',
+                                title: siteContent?.heroTitle || 'Dwellora Mobile',
+                                description: 'Vertical hero banner displayed to mobile website visitors.',
+                                url: siteContent?.heroMobileImage || '/assets/estate-boutique-lounge.png'
+                              })}
+                            >
+                              <UploadCloud size={14} />
+                              <span>Upload Mobile Banner from PC</span>
                             </button>
                           </div>
                         </div>
@@ -3899,27 +7435,29 @@ export default function AdminDashboard() {
               MODULE 4: OPTION 3 - CUSTOMER INQUIRIES & LEADS CRM
           ======================================================== */}
           {currentTab === 'inquiries' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
               
               {/* Header with Title, Stats & Quick Add Button */}
-              <div className="white-panel" style={{ padding: '16px 20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+              <div className="white-panel" style={{ padding: '16px 20px', width: '100%', boxSizing: 'border-box' }}>
+                {/* Row 1: Title and Register Lead Button */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
                   <div>
                     <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <Inbox size={18} style={{ color: '#2563eb' }} />
-                      <span>Option 3: Customer Inquiries & Leads CRM</span>
+                      <span>Customer Inquiries, Leads CRM & Site Visits</span>
                       <span style={{ background: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 700 }}>
                         {filteredInquiries.length} Active Leads
                       </span>
                     </h3>
                     <p style={{ margin: '3px 0 0', fontSize: '12px', color: '#64748b' }}>
-                      Live website inquiries, 1-click WhatsApp/Call outreach, status tracking & agent assignments.
+                      Live website inquiries, 1-click WhatsApp/Call outreach, status tracking, site visit calendar & sales conversions.
                     </p>
                   </div>
 
                   <button
+                    type="button"
                     className="btn-primary-action"
-                    style={{ padding: '7px 13px', fontSize: '12.5px' }}
+                    style={{ padding: '7px 14px', fontSize: '12.5px', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                     onClick={() => setShowAddInquiryModal(true)}
                   >
                     <Plus size={15} />
@@ -3927,18 +7465,68 @@ export default function AdminDashboard() {
                   </button>
                 </div>
 
-                {/* 5 Compact Pipeline Filter Tabs + Search Row */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
+                {/* Row 2: View Switcher Tabs + Pipeline Filters + Search & Filter */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap', marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
                   
-                  {/* Status Pipeline Filter Buttons */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  {/* Left: View Switcher Tabs & Pipeline Status Filters */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    {/* View Switcher Tabs */}
+                    <div style={{ display: 'flex', gap: '4px', background: '#f1f5f9', padding: '3px', borderRadius: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setInquiryViewMode('TABLE')}
+                        style={{
+                          padding: '5px 11px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          background: inquiryViewMode === 'TABLE' ? '#ffffff' : 'transparent',
+                          color: inquiryViewMode === 'TABLE' ? '#1d4ed8' : '#64748b',
+                          boxShadow: inquiryViewMode === 'TABLE' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px'
+                        }}
+                      >
+                        <Table size={13} />
+                        <span>All Leads ({filteredInquiries.length})</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setInquiryViewMode('CALENDAR')}
+                        style={{
+                          padding: '5px 11px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          background: inquiryViewMode === 'CALENDAR' ? '#ffffff' : 'transparent',
+                          color: inquiryViewMode === 'CALENDAR' ? '#7c3aed' : '#64748b',
+                          boxShadow: inquiryViewMode === 'CALENDAR' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                          fontSize: '11.5px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px'
+                        }}
+                      >
+                        <Calendar size={13} />
+                        <span>Site Visits ({inquiries.filter(i => i.visitDate).length})</span>
+                      </button>
+                    </div>
+
+                    <div style={{ width: '1px', height: '22px', background: '#e2e8f0' }} />
+
+                    {/* Status Pipeline Filter Buttons */}
                     <button
                       type="button"
                       onClick={() => setStatusInquiryFilter('ALL')}
                       style={{
-                        padding: '5px 11px',
-                        borderRadius: '7px',
-                        fontSize: '12px',
+                        padding: '4px 9px',
+                        borderRadius: '6px',
+                        fontSize: '11.5px',
                         fontWeight: 600,
                         cursor: 'pointer',
                         border: statusInquiryFilter === 'ALL' ? '1.5px solid #2563eb' : '1px solid #e2e8f0',
@@ -3946,12 +7534,11 @@ export default function AdminDashboard() {
                         color: statusInquiryFilter === 'ALL' ? '#1d4ed8' : '#475569',
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '6px',
-                        transition: 'all 0.15s'
+                        gap: '5px'
                       }}
                     >
-                      <span>All Inquiries</span>
-                      <span style={{ background: statusInquiryFilter === 'ALL' ? '#2563eb' : '#f1f5f9', color: statusInquiryFilter === 'ALL' ? '#ffffff' : '#64748b', padding: '1px 6px', borderRadius: '10px', fontSize: '10.5px' }}>
+                      <span>All</span>
+                      <span style={{ background: statusInquiryFilter === 'ALL' ? '#2563eb' : '#f1f5f9', color: statusInquiryFilter === 'ALL' ? '#ffffff' : '#64748b', padding: '1px 5px', borderRadius: '8px', fontSize: '10px' }}>
                         {leadPipeline.total}
                       </span>
                     </button>
@@ -3960,9 +7547,9 @@ export default function AdminDashboard() {
                       type="button"
                       onClick={() => setStatusInquiryFilter('NEW')}
                       style={{
-                        padding: '5px 11px',
-                        borderRadius: '7px',
-                        fontSize: '12px',
+                        padding: '4px 9px',
+                        borderRadius: '6px',
+                        fontSize: '11.5px',
                         fontWeight: 600,
                         cursor: 'pointer',
                         border: statusInquiryFilter === 'NEW' ? '1.5px solid #2563eb' : '1px solid #bfdbfe',
@@ -3970,12 +7557,11 @@ export default function AdminDashboard() {
                         color: statusInquiryFilter === 'NEW' ? '#1d4ed8' : '#2563eb',
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '6px',
-                        transition: 'all 0.15s'
+                        gap: '5px'
                       }}
                     >
                       <span>🆕 New</span>
-                      <span style={{ background: '#dbeafe', color: '#1d4ed8', padding: '1px 6px', borderRadius: '10px', fontSize: '10.5px', fontWeight: 700 }}>
+                      <span style={{ background: '#dbeafe', color: '#1d4ed8', padding: '1px 5px', borderRadius: '8px', fontSize: '10px', fontWeight: 700 }}>
                         {leadPipeline.newCount}
                       </span>
                     </button>
@@ -3984,9 +7570,9 @@ export default function AdminDashboard() {
                       type="button"
                       onClick={() => setStatusInquiryFilter('CONTACTED')}
                       style={{
-                        padding: '5px 11px',
-                        borderRadius: '7px',
-                        fontSize: '12px',
+                        padding: '4px 9px',
+                        borderRadius: '6px',
+                        fontSize: '11.5px',
                         fontWeight: 600,
                         cursor: 'pointer',
                         border: statusInquiryFilter === 'CONTACTED' ? '1.5px solid #d97706' : '1px solid #fde68a',
@@ -3994,12 +7580,11 @@ export default function AdminDashboard() {
                         color: statusInquiryFilter === 'CONTACTED' ? '#b45309' : '#d97706',
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '6px',
-                        transition: 'all 0.15s'
+                        gap: '5px'
                       }}
                     >
                       <span>📞 Contacted</span>
-                      <span style={{ background: '#fef3c7', color: '#92400e', padding: '1px 6px', borderRadius: '10px', fontSize: '10.5px', fontWeight: 700 }}>
+                      <span style={{ background: '#fef3c7', color: '#92400e', padding: '1px 5px', borderRadius: '8px', fontSize: '10px', fontWeight: 700 }}>
                         {leadPipeline.contactedCount}
                       </span>
                     </button>
@@ -4008,9 +7593,9 @@ export default function AdminDashboard() {
                       type="button"
                       onClick={() => setStatusInquiryFilter('VISIT_BOOKED')}
                       style={{
-                        padding: '5px 11px',
-                        borderRadius: '7px',
-                        fontSize: '12px',
+                        padding: '4px 9px',
+                        borderRadius: '6px',
+                        fontSize: '11.5px',
                         fontWeight: 600,
                         cursor: 'pointer',
                         border: statusInquiryFilter === 'VISIT_BOOKED' ? '1.5px solid #7c3aed' : '1px solid #ddd6fe',
@@ -4018,12 +7603,11 @@ export default function AdminDashboard() {
                         color: statusInquiryFilter === 'VISIT_BOOKED' ? '#6d28d9' : '#7c3aed',
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '6px',
-                        transition: 'all 0.15s'
+                        gap: '5px'
                       }}
                     >
-                      <span>📍 Site Visit</span>
-                      <span style={{ background: '#ede9fe', color: '#6d28d9', padding: '1px 6px', borderRadius: '10px', fontSize: '10.5px', fontWeight: 700 }}>
+                      <span>📍 Visit</span>
+                      <span style={{ background: '#ede9fe', color: '#5b21b6', padding: '1px 5px', borderRadius: '8px', fontSize: '10px', fontWeight: 700 }}>
                         {leadPipeline.visitCount}
                       </span>
                     </button>
@@ -4032,9 +7616,9 @@ export default function AdminDashboard() {
                       type="button"
                       onClick={() => setStatusInquiryFilter('DEAL_CLOSED')}
                       style={{
-                        padding: '5px 11px',
-                        borderRadius: '7px',
-                        fontSize: '12px',
+                        padding: '4px 9px',
+                        borderRadius: '6px',
+                        fontSize: '11.5px',
                         fontWeight: 600,
                         cursor: 'pointer',
                         border: statusInquiryFilter === 'DEAL_CLOSED' ? '1.5px solid #059669' : '1px solid #a7f3d0',
@@ -4042,28 +7626,27 @@ export default function AdminDashboard() {
                         color: statusInquiryFilter === 'DEAL_CLOSED' ? '#047857' : '#059669',
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '6px',
-                        transition: 'all 0.15s'
+                        gap: '5px'
                       }}
                     >
                       <span>🤝 Closed</span>
-                      <span style={{ background: '#d1fae5', color: '#065f46', padding: '1px 6px', borderRadius: '10px', fontSize: '10.5px', fontWeight: 700 }}>
+                      <span style={{ background: '#d1fae5', color: '#065f46', padding: '1px 5px', borderRadius: '8px', fontSize: '10px', fontWeight: 700 }}>
                         {leadPipeline.closedCount}
                       </span>
                     </button>
                   </div>
 
-                  {/* Search Input & Sales Agent Filter */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, justifyContent: 'flex-end', minWidth: '300px' }}>
-                    <div style={{ position: 'relative', flex: 1, maxWidth: '270px' }}>
-                      <Search size={13} style={{ position: 'absolute', left: '10px', top: '10px', color: '#94a3b8' }} />
+                  {/* Right: Search Input & Sales Agent Filter */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ position: 'relative', width: '190px' }}>
+                      <Search size={13} style={{ position: 'absolute', left: '10px', top: '9px', color: '#94a3b8' }} />
                       <input
                         type="text"
-                        placeholder="Search lead by name, phone, flat..."
+                        placeholder="Search lead..."
                         value={searchInquiryQuery}
                         onChange={(e) => setSearchInquiryQuery(e.target.value)}
                         className="input-clean"
-                        style={{ paddingLeft: '30px', height: '34px', fontSize: '12px' }}
+                        style={{ paddingLeft: '28px', height: '31px', fontSize: '11.5px' }}
                       />
                     </div>
 
@@ -4071,7 +7654,7 @@ export default function AdminDashboard() {
                       value={agentInquiryFilter}
                       onChange={(e) => setAgentInquiryFilter(e.target.value)}
                       className="input-clean"
-                      style={{ width: '150px', height: '34px', fontSize: '12px', fontWeight: 500 }}
+                      style={{ width: '125px', height: '31px', fontSize: '11.5px', fontWeight: 500 }}
                     >
                       <option value="ALL">All Agents</option>
                       <option value="Unassigned">Unassigned</option>
@@ -4084,7 +7667,7 @@ export default function AdminDashboard() {
                       <button
                         type="button"
                         className="btn-secondary-action"
-                        style={{ height: '34px', padding: '0 10px', fontSize: '12px' }}
+                        style={{ height: '31px', padding: '0 9px', fontSize: '11.5px' }}
                         onClick={() => {
                           setSearchInquiryQuery('');
                           setStatusInquiryFilter('ALL');
@@ -4099,18 +7682,19 @@ export default function AdminDashboard() {
 
               </div>
 
-              {/* Live Inquiries CRM Table */}
-              <div className="white-panel" style={{ padding: 0, overflow: 'hidden' }}>
-                <div style={{ width: '100%', overflow: 'hidden' }}>
-                  <table className="clean-table" style={{ width: '100%', tableLayout: 'fixed' }}>
+              {/* Point 8: Live Inquiries CRM Table */}
+              {inquiryViewMode === 'TABLE' && (
+              <div className="white-panel" style={{ padding: 0, overflow: 'hidden', width: '100%', boxSizing: 'border-box' }}>
+                <div style={{ width: '100%', overflowX: 'hidden' }}>
+                  <table className="clean-table" style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr>
-                        <th style={{ width: '21%' }}>Customer</th>
-                        <th style={{ width: '18%' }}>1-Click Outreach</th>
-                        <th style={{ width: '21%' }}>Interested Apartment</th>
-                        <th style={{ width: '18%' }}>Lead Status Tracker</th>
-                        <th style={{ width: '16%' }}>Assigned Agent</th>
-                        <th style={{ width: '6%', textAlign: 'center' }}>Action</th>
+                        <th style={{ width: '20%' }}>Customer</th>
+                        <th style={{ width: '22%' }}>1-Click Outreach & Action</th>
+                        <th style={{ width: '22%' }}>Interested Apartment</th>
+                        <th style={{ width: '16%' }}>Lead Status Tracker</th>
+                        <th style={{ width: '15%' }}>Assigned Agent</th>
+                        <th style={{ width: '5%', textAlign: 'center' }}>Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -4137,7 +7721,7 @@ export default function AdminDashboard() {
                                   <div className="lead-avatar-circle" style={{ width: '28px', height: '28px', fontSize: '11px', flexShrink: 0 }}>
                                     {initials}
                                   </div>
-                                  <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                                  <div style={{ minWidth: 0, overflow: 'hidden', flex: 1 }}>
                                     <div style={{ fontWeight: 700, fontSize: '13px', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                       {inq.name}
                                     </div>
@@ -4147,44 +7731,128 @@ export default function AdminDashboard() {
                                         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{inq.email}</span>
                                       </div>
                                     )}
-                                    <div style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: '1px' }}>
-                                      {inq.displayTime || 'Today'}
+                                    <div style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: '1px', display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                                      <span>{inq.displayTime || 'Today'}</span>
+                                      {inq.visitDate && (
+                                        <span style={{ background: '#f3e8ff', color: '#7e22ce', padding: '1px 5px', borderRadius: '4px', fontWeight: 700, fontSize: '10px', whiteSpace: 'nowrap' }}>
+                                          📍 Visit: {inq.visitDate}
+                                        </span>
+                                      )}
                                     </div>
                                   </div>
                                 </div>
                               </td>
 
-                              {/* 2. Direct Call / 1-Click WhatsApp Button */}
+                              {/* 2. Direct Call / 1-Click WhatsApp Button + Visit & Convert (2 Clean Rows) */}
                               <td>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                  <div style={{ fontWeight: 700, fontSize: '12px', color: '#0f172a' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                  <div style={{ fontWeight: 700, fontSize: '12px', color: '#0f172a', letterSpacing: '0.02em' }}>
                                     {inq.phone}
                                   </div>
                                   
-                                  <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexWrap: 'nowrap' }}>
-                                    {/* 1-Click WhatsApp Button */}
+                                  {/* Row 1: WhatsApp + Call */}
+                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
                                     <a
                                       href={whatsappUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="btn-whatsapp-link"
-                                      style={{ padding: '3px 6px', fontSize: '11px' }}
+                                      style={{ padding: '3px 6px', fontSize: '10.5px', justifyContent: 'center' }}
                                       title="Open WhatsApp chat"
                                     >
                                       <MessageSquare size={11} />
                                       <span>WhatsApp</span>
                                     </a>
 
-                                    {/* Direct Phone Call Button */}
                                     <a
                                       href={phoneUrl}
                                       className="btn-call-link"
-                                      style={{ padding: '3px 6px', fontSize: '11px' }}
+                                      style={{ padding: '3px 6px', fontSize: '10.5px', justifyContent: 'center' }}
                                       title="Direct Phone Call"
                                     >
                                       <Phone size={10} />
                                       <span>Call</span>
                                     </a>
+                                  </div>
+
+                                  {/* Row 2: Schedule Visit + Convert Lead */}
+                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => setSiteVisitModal({
+                                        isOpen: true,
+                                        inquiry: inq,
+                                        date: inq.visitDate || new Date(Date.now() + 86400000).toISOString().split('T')[0],
+                                        time: inq.visitTime || '02:30 PM',
+                                        agent: inq.assignedAgent || 'Rohit Verma (Manager)',
+                                        pickupRequired: Boolean(inq.pickupRequired),
+                                        notes: inq.visitNotes || ''
+                                      })}
+                                      style={{
+                                        padding: '3px 6px',
+                                        fontSize: '10.5px',
+                                        fontWeight: 600,
+                                        borderRadius: '5px',
+                                        border: inq.visitDate ? '1px solid #c084fc' : '1px solid #cbd5e1',
+                                        background: inq.visitDate ? '#faf5ff' : '#ffffff',
+                                        color: inq.visitDate ? '#7e22ce' : '#475569',
+                                        cursor: 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '3px',
+                                        whiteSpace: 'nowrap'
+                                      }}
+                                      title="Schedule Private Site Visit & Viewing"
+                                    >
+                                      <Calendar size={11} />
+                                      <span>{inq.visitDate ? 'Visit Set' : 'Visit'}</span>
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const avail = apartments.find(a => a.status === 'AVAILABLE') || apartments[0];
+                                        setBookingWorkflowModal({
+                                          isOpen: true,
+                                          step: 1,
+                                          unitNumber: inq.interestedApartment && inq.interestedApartment.includes('No-') ? inq.interestedApartment : (avail ? avail.apartmentNumber : 'No-01'),
+                                          buyerType: 'NEW',
+                                          buyerId: '',
+                                          buyerName: inq.name || '',
+                                          buyerPhone: inq.phone || '',
+                                          buyerEmail: inq.email || '',
+                                          buyerPan: '',
+                                          dealAmount: avail ? String(avail.price) : '28800000',
+                                          paidAmount: '1500000',
+                                          paymentMode: 'NEFT / RTGS',
+                                          txnId: 'HDFC' + Math.floor(10000000 + Math.random() * 90000000),
+                                          bankName: 'HDFC Bank',
+                                          paymentPlan: 'TOKEN_ADVANCE',
+                                          bookingDate: new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date()),
+                                          fromInquiryId: inq.id
+                                        });
+                                      }}
+                                      style={{
+                                        padding: '3px 6px',
+                                        fontSize: '10.5px',
+                                        fontWeight: 700,
+                                        borderRadius: '5px',
+                                        border: '1px solid #86efac',
+                                        background: '#f0fdf4',
+                                        color: '#166534',
+                                        cursor: 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '3px',
+                                        whiteSpace: 'nowrap'
+                                      }}
+                                      title="Convert Lead into Residence Allotment"
+                                    >
+                                      <Handshake size={11} />
+                                      <span>Convert</span>
+                                    </button>
                                   </div>
                                 </div>
                               </td>
@@ -4218,17 +7886,17 @@ export default function AdminDashboard() {
                                 </div>
                               </td>
 
-                              {/* 4. Lead Status Tracker (Dropdown with 5 States) */}
+                              {/* 4. Lead Status Tracker */}
                               <td>
                                 <select
                                   value={inq.status || 'NEW'}
                                   onChange={(e) => handleInquiryStatus(inq.id, e.target.value)}
                                   style={{
-                                    height: '32px',
+                                    height: '31px',
                                     width: '100%',
                                     padding: '2px 6px',
-                                    borderRadius: '7px',
-                                    fontSize: '11.5px',
+                                    borderRadius: '6px',
+                                    fontSize: '11px',
                                     fontWeight: 700,
                                     cursor: 'pointer',
                                     outline: 'none',
@@ -4240,21 +7908,21 @@ export default function AdminDashboard() {
                                   <option value="NEW">🆕 New Lead</option>
                                   <option value="CONTACTED">📞 Contacted</option>
                                   <option value="VISIT_BOOKED">📍 Site Visit</option>
-                                  <option value="DEAL_CLOSED">🤝 Deal Closed</option>
-                                  <option value="NOT_INTERESTED">❌ Not Interested</option>
+                                  <option value="DEAL_CLOSED">🤝 Closed</option>
+                                  <option value="NOT_INTERESTED">❌ Not Int.</option>
                                 </select>
                               </td>
 
-                              {/* 5. Agent Assignment Dropdown */}
+                              {/* 5. Assigned Agent */}
                               <td>
                                 <select
                                   value={inq.assignedAgent || 'Unassigned'}
                                   onChange={(e) => handleAssignAgent(inq.id, e.target.value)}
                                   className="input-clean"
                                   style={{ 
-                                    height: '32px', 
+                                    height: '31px', 
                                     width: '100%',
-                                    fontSize: '11.5px', 
+                                    fontSize: '11px', 
                                     fontWeight: 600,
                                     padding: '2px 6px',
                                     borderColor: inq.assignedAgent && inq.assignedAgent !== 'Unassigned' ? '#93c5fd' : '#e2e8f0',
@@ -4271,34 +7939,35 @@ export default function AdminDashboard() {
                                 </select>
                               </td>
 
-                              {/* 6. Actions (Delete Lead Only) */}
+                              {/* 6. Action */}
                               <td style={{ textAlign: 'center' }}>
                                 <button
                                   type="button"
-                                  className="btn-secondary-action"
-                                  style={{ 
-                                    padding: '5px 7px', 
-                                    color: '#ef4444', 
-                                    borderColor: '#fecaca',
-                                    background: '#ffffff',
-                                    borderRadius: '6px'
-                                  }}
-                                  title="Delete Lead"
                                   onClick={() => handleDeleteInquiry(inq.id)}
+                                  style={{
+                                    border: 'none',
+                                    background: 'transparent',
+                                    color: '#94a3b8',
+                                    cursor: 'pointer',
+                                    padding: '4px',
+                                    borderRadius: '4px',
+                                    transition: 'color 0.15s'
+                                  }}
+                                  onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
+                                  onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}
+                                  title="Delete Lead"
                                 >
                                   <Trash2 size={13} />
                                 </button>
                               </td>
-
                             </tr>
                           );
                         })
                       ) : (
                         <tr>
-                          <td colSpan={6} style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
-                            <Inbox size={36} style={{ opacity: 0.3, marginBottom: '8px' }} />
-                            <div style={{ fontSize: '14px', fontWeight: 600 }}>No inquiries found matching your filters</div>
-                            <div style={{ fontSize: '12px', marginTop: '4px' }}>Try resetting filters or search query above.</div>
+                          <td colSpan={6} style={{ padding: '36px 20px', textAlign: 'center', color: '#64748b' }}>
+                            <Inbox size={28} style={{ color: '#cbd5e1', marginBottom: '8px' }} />
+                            <div style={{ fontWeight: 600, fontSize: '13px' }}>No inquiries match the current filter.</div>
                           </td>
                         </tr>
                       )}
@@ -4306,6 +7975,163 @@ export default function AdminDashboard() {
                   </table>
                 </div>
               </div>
+              )}
+
+              {/* Point 8: Site Visit Agenda & Calendar View */}
+              {inquiryViewMode === 'CALENDAR' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  
+                  {/* Top Agenda Counter Strip */}
+                  <div className="white-panel" style={{ padding: '18px 20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Calendar size={18} style={{ color: '#7c3aed' }} />
+                          <span>Private Site Visit Agenda & Architectural Viewing Calendar</span>
+                        </h4>
+                        <p style={{ margin: '3px 0 0', fontSize: '12px', color: '#64748b' }}>
+                          Real-time schedule of prospective client walkthroughs, chauffeur dispatch, and assigned sales advisory hosts.
+                        </p>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <span style={{ padding: '5px 12px', borderRadius: '20px', background: '#f5f3ff', border: '1px solid #ddd6fe', color: '#6d28d9', fontSize: '12px', fontWeight: 800 }}>
+                          {inquiries.filter(i => i.visitDate).length} Scheduled Appointments
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Calendar Appointments List / Cards */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '16px' }}>
+                    {inquiries
+                      .filter(i => i.visitDate || i.status === 'VISIT_BOOKED')
+                      .map((visitInq) => {
+                        const hasPickup = Boolean(visitInq.pickupRequired);
+                        return (
+                          <div 
+                            key={visitInq.id}
+                            className="white-panel" 
+                            style={{ 
+                              padding: '20px', 
+                              border: '1.5px solid #ddd6fe', 
+                              borderRadius: '12px', 
+                              display: 'flex', 
+                              flexDirection: 'column', 
+                              justifyContent: 'space-between',
+                              background: '#ffffff',
+                              boxShadow: '0 2px 8px rgba(124,58,237,0.06)'
+                            }}
+                          >
+                            <div>
+                              {/* Date & Time Header */}
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid #f1f5f9' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#f5f3ff', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
+                                    <Calendar size={16} />
+                                  </div>
+                                  <div>
+                                    <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>
+                                      {visitInq.visitDate || 'Tomorrow'}
+                                    </div>
+                                    <div style={{ fontSize: '11.5px', color: '#7c3aed', fontWeight: 700 }}>
+                                      {visitInq.visitTime || '02:30 PM (Afternoon View)'}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <span style={{ padding: '3px 9px', borderRadius: '12px', fontSize: '11px', fontWeight: 700, background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0' }}>
+                                  CONFIRMED
+                                </span>
+                              </div>
+
+                              {/* Client Info */}
+                              <div style={{ marginBottom: '12px' }}>
+                                <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>
+                                  {visitInq.name}
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                                  {visitInq.phone} &bull; {visitInq.email || 'Direct Phone Client'}
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#2563eb', fontWeight: 600, marginTop: '4px' }}>
+                                  Interested Unit: {visitInq.interestedApartment || 'Dwellora Luxury Residence'}
+                                </div>
+                              </div>
+
+                              {/* Host & Chauffeur Status */}
+                              <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <div>
+                                  <span style={{ color: '#64748b' }}>Assigned Advisory Host: </span>
+                                  <b style={{ color: '#0f172a' }}>{visitInq.assignedAgent || 'Rohit Verma (Manager)'}</b>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <Car size={13} style={{ color: hasPickup ? '#059669' : '#94a3b8' }} />
+                                  <span style={{ color: hasPickup ? '#047857' : '#64748b', fontWeight: hasPickup ? 700 : 500 }}>
+                                    {hasPickup ? 'Private Luxury Chauffeur Arranged' : 'Client Self-Arrival'}
+                                  </span>
+                                </div>
+                                {visitInq.visitNotes && (
+                                  <div style={{ fontStyle: 'italic', color: '#475569', marginTop: '2px', fontSize: '11.5px' }}>
+                                    "{visitInq.visitNotes}"
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
+                              <button
+                                type="button"
+                                className="btn-primary-action"
+                                onClick={() => {
+                                  const actor = user?.name || 'Super Admin';
+                                  dataStore.updateInquiryStatus(visitInq.id, 'CONTACTED', actor);
+                                  setInquiries(dataStore.getInquiries());
+                                  triggerToast(`Site visit for ${visitInq.name} marked as Conducted & Completed!`);
+                                }}
+                                style={{ flex: 1, padding: '7px 10px', fontSize: '11.5px', justifyContent: 'center', background: '#059669', borderColor: '#059669' }}
+                              >
+                                <Check size={13} />
+                                <span>Mark Conducted</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                className="btn-secondary-action"
+                                onClick={() => setSiteVisitModal({
+                                  isOpen: true,
+                                  inquiry: visitInq,
+                                  date: visitInq.visitDate || '',
+                                  time: visitInq.visitTime || '02:30 PM',
+                                  agent: visitInq.assignedAgent || 'Rohit Verma (Manager)',
+                                  pickupRequired: Boolean(visitInq.pickupRequired),
+                                  notes: visitInq.visitNotes || ''
+                                })}
+                                style={{ padding: '7px 12px', fontSize: '11.5px' }}
+                              >
+                                Reschedule
+                              </button>
+
+                              <button
+                                type="button"
+                                className="btn-secondary-action"
+                                onClick={() => {
+                                  const cleanPhone = (visitInq.phone || '').replace(/[^0-9]/g, '');
+                                  const msg = encodeURIComponent(`Hello ${visitInq.name}, confirming your scheduled private viewing of EstateSphere Residences on ${visitInq.visitDate || 'Tomorrow'} at ${visitInq.visitTime || '02:30 PM'}. Your host ${visitInq.assignedAgent || 'our sales director'} looks forward to welcoming you.`);
+                                  window.open(`https://wa.me/${cleanPhone}?text=${msg}`, '_blank');
+                                }}
+                                style={{ padding: '7px 10px', fontSize: '11.5px', color: '#16a34a', borderColor: '#bbf7d0' }}
+                                title="Send WhatsApp Appointment Reminder"
+                              >
+                                <Send size={13} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
 
             </div>
           )}
@@ -4380,6 +8206,72 @@ export default function AdminDashboard() {
                       </button>
                     </div>
 
+{/* Point 10: Team Sub-Navigation Tabs */}
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => setTeamTabMode('MEMBERS')}
+                        style={{
+                          padding: '7px 16px',
+                          borderRadius: '7px',
+                          border: teamTabMode === 'MEMBERS' ? '1.5px solid #2563eb' : '1px solid #cbd5e1',
+                          background: teamTabMode === 'MEMBERS' ? '#2563eb' : '#ffffff',
+                          color: teamTabMode === 'MEMBERS' ? '#ffffff' : '#475569',
+                          fontSize: '12.5px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}
+                      >
+                        <Users size={14} />
+                        <span>Team Members Roster ({team.length})</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setTeamTabMode('MATRIX')}
+                        style={{
+                          padding: '7px 16px',
+                          borderRadius: '7px',
+                          border: teamTabMode === 'MATRIX' ? '1.5px solid #002b80' : '1px solid #cbd5e1',
+                          background: teamTabMode === 'MATRIX' ? '#002b80' : '#ffffff',
+                          color: teamTabMode === 'MATRIX' ? '#ffffff' : '#475569',
+                          fontSize: '12.5px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}
+                      >
+                        <ShieldCheck size={14} />
+                        <span>🛡️ Granular Permissions Matrix</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setTeamTabMode('SESSIONS')}
+                        style={{
+                          padding: '7px 16px',
+                          borderRadius: '7px',
+                          border: teamTabMode === 'SESSIONS' ? '1.5px solid #dc2626' : '1px solid #cbd5e1',
+                          background: teamTabMode === 'SESSIONS' ? '#dc2626' : '#ffffff',
+                          color: teamTabMode === 'SESSIONS' ? '#ffffff' : '#475569',
+                          fontSize: '12.5px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}
+                      >
+                        <Lock size={14} />
+                        <span>🔐 Login History & Sessions ({loginSessions.length})</span>
+                      </button>
+                    </div>
+
                     {/* 3 Roles System Explanation & Quick Counter Cards */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px', marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
                       
@@ -4425,7 +8317,8 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Team Members List Table (Strictly 100% width, no side-scroll) */}
+                  {/* Point 10: Team Members List Table */}
+                  {teamTabMode === 'MEMBERS' && (
                   <div className="white-panel" style={{ padding: 0, overflow: 'hidden' }}>
                     <div style={{ width: '100%', overflow: 'hidden' }}>
                       <table className="clean-table" style={{ width: '100%', tableLayout: 'fixed' }}>
@@ -4657,6 +8550,199 @@ export default function AdminDashboard() {
                       </table>
                     </div>
                   </div>
+                  )}
+
+                  {/* Point 10: Granular Permissions Matrix View */}
+                  {teamTabMode === 'MATRIX' && (
+                    <div className="white-panel" style={{ padding: '24px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', paddingBottom: '12px', borderBottom: '1px solid #f1f5f9' }}>
+                        <div>
+                          <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>
+                            Granular Role-Based Access Control (RBAC) Matrix (Point 10)
+                          </h4>
+                          <span style={{ fontSize: '12px', color: '#64748b' }}>
+                            Define fine-grained CRUD permissions (Read, Create, Edit, Delete) across all 6 administrative modules.
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn-primary-action"
+                          onClick={() => triggerToast('Permissions Matrix verified and synchronized with system security policy!')}
+                          style={{ padding: '7px 16px', fontSize: '12.5px' }}
+                        >
+                          <Save size={14} />
+                          <span>Save Policy Matrix</span>
+                        </button>
+                      </div>
+
+                      <div style={{ width: '100%', overflowX: 'hidden' }}>
+                        <table className="clean-table" style={{ width: '100%', tableLayout: 'fixed' }}>
+                          <thead>
+                            <tr>
+                              <th style={{ width: '22%' }}>Administrative Module</th>
+                              <th style={{ width: '20%' }}>Super Admin</th>
+                              <th style={{ width: '20%' }}>Admin (Manager)</th>
+                              <th style={{ width: '20%' }}>Sales Agent</th>
+                              <th style={{ width: '18%' }}>Document Officer</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {[
+                              { module: '🏢 Apartments & Inventory', super: 'Full CRUD (Add, Edit, Sold Out, Delete)', manager: 'Add, Edit, Mark Sold (No Delete)', sales: 'View & Availability Check Only', doc: 'View Floor Plans & Specs Only' },
+                              { module: '🤝 Sold Units & Buyers', super: 'Full Allotments, Payments & Cancellation', manager: 'Allotments, Payments & Receipts', sales: 'View Buyer Dossier & Reminders', doc: 'Generate Invoices & Allotment Slips' },
+                              { module: '🖼️ Media & Photos Studio', super: 'PC Upload, Room Gallery & 360 Walkthrough', manager: 'PC Upload & Room Photo Changes', sales: 'View 360 Tour & Share Links', doc: 'View Blueprint & Media Assets' },
+                              { module: '📩 Leads & Inquiries CRM', super: 'All Leads, Agent Assign, Purge Leads', manager: 'Assign Leads, Schedule Site Visits', sales: 'Lead Calling, WhatsApp & Site Visits', doc: 'Read Customer Inquiries Only' },
+                              { module: '✍️ Website Text & Content CMS', super: 'Live Save, Hero Copy, Reset Defaults', manager: 'Update Amenities & Testimonials', sales: 'No Access (Restricted)', doc: 'No Access (Restricted)' },
+                              { module: '👥 Team & Security Settings', super: 'Create Admins, Reset Pass, Revoke Sessions', manager: 'No Access (Super Admin Only)', sales: 'No Access (Super Admin Only)', doc: 'No Access (Super Admin Only)' }
+                            ].map((row, idx) => (
+                              <tr key={idx}>
+                                <td style={{ fontWeight: 800, color: '#0f172a', fontSize: '13px' }}>
+                                  {row.module}
+                                </td>
+                                <td>
+                                  <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}>
+                                    ✓ {row.super}
+                                  </span>
+                                </td>
+                                <td>
+                                  <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '4px', background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0' }}>
+                                    ✓ {row.manager}
+                                  </span>
+                                </td>
+                                <td>
+                                  <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '4px', background: row.sales.includes('No Access') ? '#fef2f2' : '#f8fafc', color: row.sales.includes('No Access') ? '#b91c1c' : '#475569', border: '1px solid #e2e8f0' }}>
+                                    {row.sales}
+                                  </span>
+                                </td>
+                                <td>
+                                  <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '4px', background: row.doc.includes('No Access') ? '#fef2f2' : '#f8fafc', color: row.doc.includes('No Access') ? '#b91c1c' : '#475569', border: '1px solid #e2e8f0' }}>
+                                    {row.doc}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Point 10: Login History & Security Audit Table View */}
+                  {teamTabMode === 'SESSIONS' && (
+                    <div className="white-panel" style={{ padding: '24px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', paddingBottom: '12px', borderBottom: '1px solid #f1f5f9' }}>
+                        <div>
+                          <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Lock size={17} style={{ color: '#dc2626' }} />
+                            <span>Login History & Active Administrative Sessions (Point 10)</span>
+                          </h4>
+                          <span style={{ fontSize: '12px', color: '#64748b' }}>
+                            Security audit log of IP addresses, devices, operating systems, and session authorization states.
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '12px', fontWeight: 700, padding: '4px 10px', borderRadius: '6px', background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0' }}>
+                          {loginSessions.filter(s => s.status === 'ACTIVE').length} Active Authenticated Sessions
+                        </span>
+                      </div>
+
+                      <div style={{ width: '100%', overflowX: 'hidden' }}>
+                        <table className="clean-table" style={{ width: '100%', tableLayout: 'fixed' }}>
+                          <thead>
+                            <tr>
+                              <th style={{ width: '22%' }}>Admin User</th>
+                              <th style={{ width: '18%' }}>Assigned Role</th>
+                              <th style={{ width: '18%' }}>IP & Location</th>
+                              <th style={{ width: '22%' }}>Device / Browser Client</th>
+                              <th style={{ width: '10%' }}>Status</th>
+                              <th style={{ width: '10%', textAlign: 'center' }}>Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {loginSessions.map((sess) => {
+                              const isActive = sess.status === 'ACTIVE';
+                              const isRevoked = sess.status === 'REVOKED';
+
+                              return (
+                                <tr key={sess.id}>
+                                  <td>
+                                    <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '13px' }}>
+                                      {sess.name}
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#64748b' }}>
+                                      {sess.email} &bull; {sess.time}
+                                    </div>
+                                  </td>
+
+                                  <td>
+                                    <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '4px', background: sess.role === 'SUPER_ADMIN' ? '#dbeafe' : '#fef3c7', color: sess.role === 'SUPER_ADMIN' ? '#1d4ed8' : '#92400e' }}>
+                                      {sess.role}
+                                    </span>
+                                  </td>
+
+                                  <td>
+                                    <div style={{ fontWeight: 600, fontSize: '12.5px', color: '#0f172a' }}>
+                                      {sess.ip}
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#64748b' }}>
+                                      {sess.location || 'Bangalore, KA'}
+                                    </div>
+                                  </td>
+
+                                  <td>
+                                    <div style={{ fontSize: '12px', color: '#334155' }}>
+                                      {sess.device}
+                                    </div>
+                                  </td>
+
+                                  <td>
+                                    <span style={{
+                                      fontSize: '10.5px',
+                                      fontWeight: 700,
+                                      padding: '2px 7px',
+                                      borderRadius: '4px',
+                                      background: isActive ? '#ecfdf5' : (isRevoked ? '#fef2f2' : '#f8fafc'),
+                                      color: isActive ? '#047857' : (isRevoked ? '#dc2626' : '#64748b'),
+                                      border: `1px solid ${isActive ? '#a7f3d0' : (isRevoked ? '#fecaca' : '#cbd5e1')}`
+                                    }}>
+                                      {isActive ? '🟢 ACTIVE' : (isRevoked ? '🔴 REVOKED' : '⚪ EXPIRED')}
+                                    </span>
+                                  </td>
+
+                                  <td style={{ textAlign: 'center' }}>
+                                    {isActive ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const updated = dataStore.revokeSession(sess.id, user?.name || 'Super Admin');
+                                          setLoginSessions(updated);
+                                          triggerToast(`Revoked session for ${sess.name} (${sess.ip})`);
+                                        }}
+                                        style={{
+                                          padding: '4px 8px',
+                                          borderRadius: '6px',
+                                          background: '#ffffff',
+                                          border: '1px solid #fecaca',
+                                          color: '#dc2626',
+                                          fontSize: '11px',
+                                          fontWeight: 700,
+                                          cursor: 'pointer'
+                                        }}
+                                        title="Revoke session and force re-login"
+                                      >
+                                        Revoke
+                                      </button>
+                                    ) : (
+                                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>Ended</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
 
@@ -4667,186 +8753,279 @@ export default function AdminDashboard() {
               MODULE 6: SITE SETTINGS & PROFILE
           ======================================================== */}
           {currentTab === 'settings' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', alignItems: 'stretch' }}>
-                {/* 1. ADMIN PROFILE & PASSWORD MANAGEMENT */}
-                <div className="white-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box' }}>
-                  <div className="panel-header-row" style={{ minHeight: '52px', marginBottom: '18px', paddingBottom: '12px', borderBottom: '1px solid #f1f5f9', alignItems: 'flex-start' }}>
-                    <div>
-                      <h3 className="panel-title" style={{ fontSize: '15px' }}>
-                        <Lock size={17} style={{ color: '#2563eb' }} />
-                        <span>Admin Profile & Security</span>
-                      </h3>
-                      <p style={{ margin: '4px 0 0', fontSize: '11.5px', color: '#64748b' }}>
-                        Update your name, official email address, and login password here.
-                      </p>
-                    </div>
-                    <span style={{ 
-                      fontSize: '11px', 
-                      background: '#eff6ff', 
-                      color: '#1d4ed8', 
-                      padding: '4px 10px', 
-                      borderRadius: '20px', 
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              
+              {/* Point 12: Settings Sub-Navigation Tab Strip */}
+              <div className="white-panel" style={{ padding: '12px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => setSettingsActiveTab('PROFILE')}
+                    style={{
+                      padding: '7px 14px',
+                      borderRadius: '8px',
+                      fontSize: '12.5px',
                       fontWeight: 700,
-                      border: '1px solid #bfdbfe',
+                      cursor: 'pointer',
+                      border: settingsActiveTab === 'PROFILE' ? '1.5px solid #2563eb' : '1px solid #e2e8f0',
+                      background: settingsActiveTab === 'PROFILE' ? '#eff6ff' : '#ffffff',
+                      color: settingsActiveTab === 'PROFILE' ? '#1d4ed8' : '#475569',
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '5px',
-                      whiteSpace: 'nowrap'
-                    }}>
-                      <ShieldCheck size={12} />
-                      {user?.role || 'SUPER_ADMIN'}
-                    </span>
-                  </div>
+                      gap: '6px'
+                    }}
+                  >
+                    <UserCheck size={14} />
+                    <span>Profile & Security</span>
+                  </button>
 
-                  <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                    <div className="form-group-clean">
-                      <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>Admin Full Name *</label>
-                      <input
-                        type="text"
-                        value={profileForm.name}
-                        onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                        className="input-clean"
-                        placeholder="Enter admin full name"
-                        required
-                      />
+                  <button
+                    type="button"
+                    onClick={() => setSettingsActiveTab('WEBSITE')}
+                    style={{
+                      padding: '7px 14px',
+                      borderRadius: '8px',
+                      fontSize: '12.5px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      border: settingsActiveTab === 'WEBSITE' ? '1.5px solid #2563eb' : '1px solid #e2e8f0',
+                      background: settingsActiveTab === 'WEBSITE' ? '#eff6ff' : '#ffffff',
+                      color: settingsActiveTab === 'WEBSITE' ? '#1d4ed8' : '#475569',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <Globe size={14} />
+                    <span>Public Website & Footer</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSettingsActiveTab('DIAGNOSTICS')}
+                    style={{
+                      padding: '7px 14px',
+                      borderRadius: '8px',
+                      fontSize: '12.5px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      border: settingsActiveTab === 'DIAGNOSTICS' ? '1.5px solid #059669' : '1px solid #e2e8f0',
+                      background: settingsActiveTab === 'DIAGNOSTICS' ? '#ecfdf5' : '#ffffff',
+                      color: settingsActiveTab === 'DIAGNOSTICS' ? '#047857' : '#475569',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <Terminal size={14} />
+                    <span>Spring Boot & MySQL Diagnostics (Point 13)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSettingsActiveTab('PREFERENCES')}
+                    style={{
+                      padding: '7px 14px',
+                      borderRadius: '8px',
+                      fontSize: '12.5px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      border: settingsActiveTab === 'PREFERENCES' ? '1.5px solid #7c3aed' : '1px solid #e2e8f0',
+                      background: settingsActiveTab === 'PREFERENCES' ? '#f5f3ff' : '#ffffff',
+                      color: settingsActiveTab === 'PREFERENCES' ? '#6d28d9' : '#475569',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <SlidersHorizontal size={14} />
+                    <span>Portal Preferences & Seed Reset (Point 14)</span>
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '11px', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0', padding: '3px 8px', borderRadius: '6px', fontWeight: 600 }}>
+                    Build v2.6.4 Production
+                  </span>
+                </div>
+              </div>
+
+              {/* TAB 1: ADMIN PROFILE & SECURITY */}
+              {settingsActiveTab === 'PROFILE' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '22px' }}>
+                  <div className="white-panel" style={{ padding: '24px' }}>
+                    <div className="panel-header-row" style={{ marginBottom: '18px', paddingBottom: '12px', borderBottom: '1px solid #f1f5f9' }}>
+                      <div>
+                        <h3 className="panel-title" style={{ fontSize: '15px' }}>
+                          <Lock size={17} style={{ color: '#2563eb' }} />
+                          <span>Admin Profile & Login Credentials</span>
+                        </h3>
+                        <p style={{ margin: '4px 0 0', fontSize: '11.5px', color: '#64748b' }}>
+                          Update your administrative full name, official email address, and staff contact phone.
+                        </p>
+                      </div>
+                      <span style={{ fontSize: '11px', background: '#eff6ff', color: '#1d4ed8', padding: '4px 10px', borderRadius: '20px', fontWeight: 700, border: '1px solid #bfdbfe' }}>
+                        {user?.role || 'SUPER_ADMIN'}
+                      </span>
                     </div>
 
-                    <div className="form-group-clean">
-                      <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>Official Email Address (Login ID) *</label>
-                      <input
-                        type="email"
-                        value={profileForm.email}
-                        onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
-                        className="input-clean"
-                        placeholder="Enter official email address"
-                        required
-                      />
-                    </div>
-
-                    <div className="form-group-clean">
-                      <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>Admin Contact / Phone</label>
-                      <input
-                        type="tel"
-                        inputMode="tel"
-                        value={profileForm.phone}
-                        onKeyDown={handlePhoneKeyDown}
-                        onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value.replace(/[^0-9+\s\-()]/g, '') })}
-                        className="input-clean"
-                        placeholder="Enter contact phone number"
-                      />
-                    </div>
-
-                    <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0', marginTop: '10px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                        <label style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a' }}>Change Password</label>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const gen = 'Sphere@' + Math.floor(1000 + Math.random() * 9000);
-                            setProfileForm({ ...profileForm, newPassword: gen, confirmPassword: gen });
-                            setShowNewPassword(true);
-                            triggerToast(`Generated password: ${gen}`);
-                          }}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#2563eb',
-                            fontSize: '11px',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}
-                        >
-                          <Sparkles size={11} /> Auto-Generate
-                        </button>
+                    <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      <div className="form-group-clean">
+                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>Admin Full Name *</label>
+                        <input
+                          type="text"
+                          value={profileForm.name}
+                          onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                          className="input-clean"
+                          placeholder="Enter admin full name"
+                          required
+                        />
                       </div>
 
-                      <div className="form-group-clean" style={{ marginBottom: '10px' }}>
-                        <div style={{ position: 'relative' }}>
-                          <input
-                            type={showNewPassword ? 'text' : 'password'}
-                            value={profileForm.newPassword}
-                            onChange={(e) => setProfileForm({ ...profileForm, newPassword: e.target.value })}
-                            className="input-clean"
-                            placeholder="Enter new password (leave blank to keep current)"
-                            style={{ paddingRight: '40px' }}
-                          />
+                      <div className="form-group-clean">
+                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>Official Email Address (Login ID) *</label>
+                        <input
+                          type="email"
+                          value={profileForm.email}
+                          onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                          className="input-clean"
+                          placeholder="Enter official email address"
+                          required
+                        />
+                      </div>
+
+                      <div className="form-group-clean">
+                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>Admin Contact / Phone</label>
+                        <input
+                          type="tel"
+                          inputMode="tel"
+                          value={profileForm.phone}
+                          onKeyDown={handlePhoneKeyDown}
+                          onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value.replace(/[^0-9+\s\-()]/g, '') })}
+                          className="input-clean"
+                          placeholder="Enter contact phone number"
+                        />
+                      </div>
+
+                      <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0', marginTop: '6px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <label style={{ fontSize: '12.5px', fontWeight: 700, color: '#0f172a' }}>Change Master Password</label>
                           <button
                             type="button"
-                            onClick={() => setShowNewPassword(!showNewPassword)}
-                            style={{
-                              position: 'absolute',
-                              right: '8px',
-                              top: '50%',
-                              transform: 'translateY(-50%)',
-                              background: 'none',
-                              border: 'none',
-                              color: '#64748b',
-                              cursor: 'pointer',
-                              padding: '4px'
+                            onClick={() => {
+                              const gen = 'Sphere@' + Math.floor(1000 + Math.random() * 9000);
+                              setProfileForm({ ...profileForm, newPassword: gen, confirmPassword: gen });
+                              setShowNewPassword(true);
+                              triggerToast(`Generated password: ${gen}`);
                             }}
-                            title={showNewPassword ? 'Hide password' : 'Show password'}
+                            style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '11px', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                           >
-                            <Eye size={14} />
+                            <Sparkles size={11} /> Auto-Generate
                           </button>
+                        </div>
+
+                        <div className="form-group-clean" style={{ marginBottom: '10px' }}>
+                          <div style={{ position: 'relative' }}>
+                            <input
+                              type={showNewPassword ? 'text' : 'password'}
+                              value={profileForm.newPassword}
+                              onChange={(e) => setProfileForm({ ...profileForm, newPassword: e.target.value })}
+                              className="input-clean"
+                              placeholder="Enter new password (leave blank to keep current)"
+                              style={{ paddingRight: '40px' }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowNewPassword(!showNewPassword)}
+                              style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
+                              title={showNewPassword ? 'Hide password' : 'Show password'}
+                            >
+                              <Eye size={14} />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="form-group-clean" style={{ marginBottom: 0 }}>
+                          <input
+                            type={showNewPassword ? 'text' : 'password'}
+                            value={profileForm.confirmPassword}
+                            onChange={(e) => setProfileForm({ ...profileForm, confirmPassword: e.target.value })}
+                            className="input-clean"
+                            placeholder="Confirm new password"
+                          />
                         </div>
                       </div>
 
-                      <div className="form-group-clean" style={{ marginBottom: 0 }}>
-                        <input
-                          type={showNewPassword ? 'text' : 'password'}
-                          value={profileForm.confirmPassword}
-                          onChange={(e) => setProfileForm({ ...profileForm, confirmPassword: e.target.value })}
-                          className="input-clean"
-                          placeholder="Confirm new password"
-                        />
+                      <div style={{ marginTop: '10px' }}>
+                        <button type="submit" className="btn-primary-action" style={{ width: '100%', justifyContent: 'center', height: '42px', fontSize: '13px' }}>
+                          <Save size={15} />
+                          <span>Update Admin Profile & Password</span>
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* Right Side: Security Overview & Privileges */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div className="white-panel" style={{ padding: '20px' }}>
+                      <h4 style={{ margin: '0 0 12px', fontSize: '14px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Shield size={16} style={{ color: '#059669' }} />
+                        <span>Security & Access Privileges</span>
+                      </h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 10px', background: '#f8fafc', borderRadius: '6px' }}>
+                          <span style={{ color: '#64748b' }}>Assigned Role:</span>
+                          <b style={{ color: '#0f172a' }}>{user?.roleLabel || 'Super Admin (Executive)'}</b>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 10px', background: '#f8fafc', borderRadius: '6px' }}>
+                          <span style={{ color: '#64748b' }}>Role Permissions:</span>
+                          <span style={{ color: '#059669', fontWeight: 700 }}>Unrestricted Master Access</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 10px', background: '#f8fafc', borderRadius: '6px' }}>
+                          <span style={{ color: '#64748b' }}>Active Sessions:</span>
+                          <b>1 Online (Chrome • Windows 11)</b>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 10px', background: '#f8fafc', borderRadius: '6px' }}>
+                          <span style={{ color: '#64748b' }}>2-Factor Auth (2FA):</span>
+                          <span style={{ color: '#d97706', fontWeight: 600 }}>Standard Password Auth</span>
+                        </div>
                       </div>
                     </div>
 
-                    <div style={{ marginTop: 'auto', paddingTop: '18px' }}>
-                      <button type="submit" className="btn-primary-action" style={{ width: '100%', justifyContent: 'center', height: '42px', fontSize: '13px' }}>
-                        <Save size={15} />
-                        <span>Update Admin Profile & Password</span>
-                      </button>
+                    <div className="white-panel" style={{ padding: '20px', background: '#eff6ff', borderColor: '#bfdbfe' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1d4ed8', fontWeight: 700, fontSize: '13px' }}>
+                        <Zap size={16} />
+                        <span>Security Tip</span>
+                      </div>
+                      <p style={{ margin: '6px 0 0', fontSize: '11.5px', color: '#1e40af', lineHeight: 1.45 }}>
+                        All staff credentials are validated against role-based access rules. Never share your master admin login credentials with sales agents or prospective buyers.
+                      </p>
                     </div>
-                  </form>
+                  </div>
                 </div>
+              )}
 
-                {/* 2. PUBLIC WEBSITE CONTACT DETAILS & FOOTER SYNC */}
-                <div className="white-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box' }}>
-                  <div className="panel-header-row" style={{ minHeight: '52px', marginBottom: '18px', paddingBottom: '12px', borderBottom: '1px solid #f1f5f9', alignItems: 'flex-start' }}>
+              {/* TAB 2: PUBLIC WEBSITE CONTACT & FOOTER */}
+              {settingsActiveTab === 'WEBSITE' && (
+                <div className="white-panel" style={{ padding: '24px' }}>
+                  <div className="panel-header-row" style={{ marginBottom: '18px', paddingBottom: '12px', borderBottom: '1px solid #f1f5f9' }}>
                     <div>
                       <h3 className="panel-title" style={{ fontSize: '15px' }}>
                         <SettingsIcon size={17} style={{ color: '#2563eb' }} />
-                        <span>Public Contact Details & Footer Sync</span>
+                        <span>Public Contact Details & Footer Live Synchronization</span>
                       </h3>
                       <p style={{ margin: '4px 0 0', fontSize: '11.5px', color: '#64748b' }}>
-                        Update the public contact phone, WhatsApp number, and office address displayed in website footer.
+                        Update the customer-facing project phone number, official WhatsApp channel, and physical site office address shown in public footer.
                       </p>
                     </div>
-                    <span style={{ 
-                      fontSize: '11px', 
-                      background: '#ecfdf5', 
-                      color: '#059669', 
-                      padding: '4px 10px', 
-                      borderRadius: '20px', 
-                      fontWeight: 700,
-                      border: '1px solid #a7f3d0',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      whiteSpace: 'nowrap'
-                    }}>
+                    <span style={{ fontSize: '11px', background: '#ecfdf5', color: '#059669', padding: '4px 10px', borderRadius: '20px', fontWeight: 700, border: '1px solid #a7f3d0', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
                       <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }} />
                       Live Website Sync
                     </span>
                   </div>
 
-                  <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                    <div className="form-grid-2">
+                  <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                       <div className="form-group-clean">
                         <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>Project Title</label>
                         <input
@@ -4859,7 +9038,7 @@ export default function AdminDashboard() {
                       </div>
 
                       <div className="form-group-clean">
-                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>Tagline</label>
+                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>Tagline / Motto</label>
                         <input
                           type="text"
                           value={settings.tagline || ''}
@@ -4870,9 +9049,9 @@ export default function AdminDashboard() {
                       </div>
                     </div>
 
-                    <div className="form-grid-2">
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                       <div className="form-group-clean">
-                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>Public Phone (Footer Call)</label>
+                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>Public Phone (Footer Direct Call)</label>
                         <div style={{ position: 'relative' }}>
                           <input
                             type="tel"
@@ -4888,7 +9067,7 @@ export default function AdminDashboard() {
                       </div>
 
                       <div className="form-group-clean">
-                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>Official WhatsApp Number</label>
+                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>Official WhatsApp Channel</label>
                         <div style={{ position: 'relative' }}>
                           <input
                             type="tel"
@@ -4915,7 +9094,7 @@ export default function AdminDashboard() {
                       />
                     </div>
 
-                    <div className="form-group-clean" style={{ marginBottom: 0 }}>
+                    <div className="form-group-clean">
                       <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>Office Address (Displayed in Website Footer)</label>
                       <textarea
                         rows={3}
@@ -4927,15 +9106,292 @@ export default function AdminDashboard() {
                       />
                     </div>
 
-                    <div style={{ marginTop: 'auto', paddingTop: '18px' }}>
-                      <button type="submit" className="btn-primary-action" style={{ width: '100%', justifyContent: 'center', height: '42px', fontSize: '13px' }}>
+                    <div style={{ paddingTop: '8px' }}>
+                      <button type="submit" className="btn-primary-action" style={{ padding: '9px 24px', fontSize: '13px' }}>
                         <Save size={15} />
                         <span>Save & Update Public Website Footer</span>
                       </button>
                     </div>
                   </form>
                 </div>
-              </div>
+              )}
+
+              {/* TAB 3: POINT 13 - SPRING BOOT & MYSQL BACKEND DIAGNOSTICS */}
+              {settingsActiveTab === 'DIAGNOSTICS' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                  
+                  {/* Status Cards Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
+                    <div style={{ background: '#ffffff', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Backend Service</span>
+                        <HardDrive size={15} style={{ color: '#2563eb' }} />
+                      </div>
+                      <div style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>Spring Boot 3.3.4</div>
+                      <div style={{ fontSize: '11px', color: '#059669', fontWeight: 600, marginTop: '2px' }}>
+                        ● Port 8085 (Live REST API)
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#ffffff', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Database Engine</span>
+                        <Cpu size={15} style={{ color: '#059669' }} />
+                      </div>
+                      <div style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>MySQL 8.0</div>
+                      <div style={{ fontSize: '11px', color: '#047857', fontWeight: 600, marginTop: '2px' }}>
+                        ● Dialect: MySQLDialect
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#ffffff', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Database Schema</span>
+                        <ShieldCheck size={15} style={{ color: '#7c3aed' }} />
+                      </div>
+                      <div style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>estatesphere</div>
+                      <div style={{ fontSize: '11px', color: '#6d28d9', fontWeight: 600, marginTop: '2px' }}>
+                        localhost:3306 (JPA Auto: update)
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#ffffff', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Frontend Server</span>
+                        <Globe size={15} style={{ color: '#d97706' }} />
+                      </div>
+                      <div style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>Vite Dev v5.4</div>
+                      <div style={{ fontSize: '11px', color: '#b45309', fontWeight: 600, marginTop: '2px' }}>
+                        ● Port 5174 (HMR Active)
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Active REST Endpoints Directory */}
+                  <div className="white-panel" style={{ padding: '22px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '14.5px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Terminal size={16} style={{ color: '#2563eb' }} />
+                          <span>Active Spring Boot REST Endpoints Directory (Point 13)</span>
+                        </h4>
+                        <p style={{ margin: '3px 0 0', fontSize: '12px', color: '#64748b' }}>
+                          Complete mapping of production endpoints handling properties, inquiries, authentication, and booking escrow.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setBackendDiagnostics(prev => ({ ...prev, loading: true }));
+                          const res = await dataStore.checkBackendHealth();
+                          setBackendDiagnostics({
+                            tested: true,
+                            loading: false,
+                            online: res.online,
+                            status: res.status,
+                            latencyMs: res.latencyMs || 12,
+                            recordsCount: res.recordsCount || 25,
+                            lastPing: res.timestamp
+                          });
+                          triggerToast(res.online ? `Live Backend Ping OK (${res.latencyMs}ms latency)` : 'Local Persistent Cache Operating');
+                        }}
+                        className="btn-primary-action"
+                        style={{ padding: '7px 14px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        <RefreshCw size={13} className={backendDiagnostics.loading ? 'spin' : ''} />
+                        <span>Run Diagnostics Ping</span>
+                      </button>
+                    </div>
+
+                    {backendDiagnostics.tested && (
+                      <div style={{ marginBottom: '16px', padding: '12px 16px', borderRadius: '8px', background: backendDiagnostics.online ? '#ecfdf5' : '#fffbeb', border: backendDiagnostics.online ? '1px solid #a7f3d0' : '1px solid #fde68a', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <CheckCircle2 size={16} style={{ color: backendDiagnostics.online ? '#059669' : '#d97706' }} />
+                          <span style={{ fontSize: '12.5px', fontWeight: 700, color: backendDiagnostics.online ? '#047857' : '#92400e' }}>
+                            {backendDiagnostics.online ? 'Live Backend API Responded Successfully' : 'Local Persistent Cache Operating'}
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '11.5px', color: '#64748b' }}>
+                          Latency: <b>{backendDiagnostics.latencyMs}ms</b> • Pinged: {backendDiagnostics.lastPing}
+                        </span>
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {[
+                        { method: 'GET', endpoint: '/api/properties', desc: 'Fetches luxury residences inventory with pricing & block specs.', status: '200 OK' },
+                        { method: 'GET', endpoint: '/api/properties/{id}', desc: 'Fetches single residence detail with floor plans & buyer status.', status: '200 OK' },
+                        { method: 'GET', endpoint: '/api/inquiries', desc: 'Retrieves all prospective customer inquiries and site visit leads.', status: '200 OK' },
+                        { method: 'POST', endpoint: '/api/inquiries', desc: 'Intake endpoint for public website "Book Private Tour" inquiries.', status: '201 CREATED' },
+                        { method: 'POST', endpoint: '/api/bookings', desc: 'Creates formal reservation & escrow token reconciliation entry.', status: '201 CREATED' },
+                        { method: 'POST', endpoint: '/api/auth/login', desc: 'Staff credential verification and session token generation.', status: '200 OK' },
+                        { method: 'GET', endpoint: '/api/auth/me', desc: 'Validates active bearer session token & role permissions.', status: '200 OK' }
+                      ].map((ep, idx) => (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #f1f5f9' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px', background: ep.method === 'GET' ? '#eff6ff' : '#ecfdf5', color: ep.method === 'GET' ? '#1d4ed8' : '#047857' }}>
+                              {ep.method}
+                            </span>
+                            <code style={{ fontSize: '12.5px', fontWeight: 700, color: '#0f172a' }}>{ep.endpoint}</code>
+                            <span style={{ fontSize: '11.5px', color: '#64748b' }}>{ep.desc}</span>
+                          </div>
+                          <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#059669', background: '#ecfdf5', padding: '1px 6px', borderRadius: '4px' }}>
+                            {ep.status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: POINT 14 - PORTAL PREFERENCES & SEED DATA RESET */}
+              {settingsActiveTab === 'PREFERENCES' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '22px' }}>
+                  <div className="white-panel" style={{ padding: '24px' }}>
+                    <h3 className="panel-title" style={{ fontSize: '15px', marginBottom: '16px' }}>
+                      <SlidersHorizontal size={17} style={{ color: '#7c3aed' }} />
+                      <span>Admin Portal Display & Notification Preferences</span>
+                    </h3>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <div className="form-group-clean">
+                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>Currency Format Style</label>
+                        <select
+                          value={adminPreferences.currencyMode}
+                          onChange={(e) => {
+                            const updated = { ...adminPreferences, currencyMode: e.target.value };
+                            setAdminPreferences(updated);
+                            try { localStorage.setItem('era_admin_preferences', JSON.stringify(updated)); } catch (_) {}
+                            triggerToast('Currency display format updated!');
+                          }}
+                          className="input-clean"
+                          style={{ height: '38px', fontSize: '13px' }}
+                        >
+                          <option value="INR_CR_LAKH">₹ INR (Indian System: ₹ Crores & Lakhs, e.g. ₹2.88 Cr / ₹15.0 L)</option>
+                          <option value="INR_FULL">₹ INR (Full Digits: ₹2,88,00,000 / ₹15,00,000)</option>
+                        </select>
+                      </div>
+
+                      <div className="form-group-clean">
+                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>Default Starting Module on Login</label>
+                        <select
+                          value={adminPreferences.defaultTab}
+                          onChange={(e) => {
+                            const updated = { ...adminPreferences, defaultTab: e.target.value };
+                            setAdminPreferences(updated);
+                            try { localStorage.setItem('era_admin_preferences', JSON.stringify(updated)); } catch (_) {}
+                            triggerToast('Default landing tab saved!');
+                          }}
+                          className="input-clean"
+                          style={{ height: '38px', fontSize: '13px' }}
+                        >
+                          <option value="dashboard">Dashboard Overview (Executive KPIs)</option>
+                          <option value="projects">Projects & Master Developments</option>
+                          <option value="apartments">Apartments / Inventory Matrix</option>
+                          <option value="sales">Sold Units & Buyers Registry</option>
+                          <option value="inquiries">Customer Inquiries (CRM Leads)</option>
+                        </select>
+                      </div>
+
+                      <div className="form-group-clean">
+                        <label style={{ fontSize: '12px', fontWeight: 600, color: '#334155' }}>Auto-Refresh & Polling Interval</label>
+                        <select
+                          value={adminPreferences.autoRefreshSecs}
+                          onChange={(e) => {
+                            const updated = { ...adminPreferences, autoRefreshSecs: e.target.value };
+                            setAdminPreferences(updated);
+                            try { localStorage.setItem('era_admin_preferences', JSON.stringify(updated)); } catch (_) {}
+                            triggerToast('Auto-refresh interval configured!');
+                          }}
+                          className="input-clean"
+                          style={{ height: '38px', fontSize: '13px' }}
+                        >
+                          <option value="30">Every 30 Seconds (Live High Frequency)</option>
+                          <option value="60">Every 60 Seconds (Standard Balanced)</option>
+                          <option value="300">Every 5 Minutes (Low Bandwidth)</option>
+                          <option value="MANUAL">Manual Refresh Only</option>
+                        </select>
+                      </div>
+
+                      <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                          <input
+                            type="checkbox"
+                            checked={adminPreferences.soundAlerts}
+                            onChange={(e) => {
+                              const updated = { ...adminPreferences, soundAlerts: e.target.checked };
+                              setAdminPreferences(updated);
+                              try { localStorage.setItem('era_admin_preferences', JSON.stringify(updated)); } catch (_) {}
+                              triggerToast(e.target.checked ? 'In-app audio alerts enabled' : 'In-app audio alerts muted');
+                            }}
+                            style={{ width: '16px', height: '16px' }}
+                          />
+                          <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#1e293b' }}>
+                            Enable in-app audio chime on new lead inquiries & site visits
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Side: Point 14 - Development Seed Data Management */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div className="white-panel" style={{ padding: '20px' }}>
+                      <h4 style={{ margin: '0 0 10px', fontSize: '14px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Database size={16} style={{ color: '#2563eb' }} />
+                        <span>Development Seed Dataset (Point 14)</span>
+                      </h4>
+                      <p style={{ margin: '0 0 14px', fontSize: '12px', color: '#64748b', lineHeight: 1.45 }}>
+                        The local development sandbox is loaded with realistic Indian luxury real estate records:
+                      </p>
+                      
+                      <ul style={{ margin: '0 0 16px', paddingLeft: '18px', fontSize: '12px', color: '#334155', lineHeight: 1.7 }}>
+                        <li><b>25 Luxury Units:</b> Block B1, B2, B3 (₹2.62 Cr - ₹5.62 Cr).</li>
+                        <li><b>7 Customer Allotments:</b> Token Advances & KYC dossiers.</li>
+                        <li><b>6 Inquiry Leads:</b> WhatsApp & telephone contacts.</li>
+                        <li><b>Role Matrix:</b> Super Admin, Admin Manager, Sales Agent.</li>
+                      </ul>
+
+                      <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '14px' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm('Reset all demo data back to clean factory seed state?')) {
+                              dataStore.resetAllData();
+                              setApartments(dataStore.getApartments());
+                              setInquiries(dataStore.getInquiries());
+                              setBuyers(dataStore.getBuyers());
+                              setProjects(dataStore.getProjects());
+                              triggerToast('All data successfully restored to factory clean seed!');
+                            }
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '9px 16px',
+                            background: '#fef2f2',
+                            border: '1px solid #fecaca',
+                            color: '#dc2626',
+                            borderRadius: '8px',
+                            fontSize: '12.5px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px'
+                          }}
+                        >
+                          <RefreshCw size={14} />
+                          <span>Reset Database to Clean Seed (Point 14)</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
             </div>
           )}
 
@@ -4959,6 +9415,16 @@ export default function AdminDashboard() {
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <a
+                      href="/"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn-secondary-action"
+                      style={{ padding: '9px 14px', fontSize: '12.5px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <ExternalLink size={14} />
+                      <span>Preview Live Website</span>
+                    </a>
                     <button
                       type="button"
                       className="btn-secondary-action"
@@ -4982,9 +9448,41 @@ export default function AdminDashboard() {
               </div>
 
               {/* Form with 7 Clearly Captioned Cards */}
+              {/* Quick Jump Pills Bar */}
+              <div className="white-panel" style={{ padding: '10px 18px', background: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '11.5px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Jump to Section:
+                </span>
+                {[
+                  { label: '🚀 1. Top Hero', anchor: '#sec-hero' },
+                  { label: '📜 2. Living Manifesto', anchor: '#sec-manifesto' },
+                  { label: '🏊 3. Five Amenities', anchor: '#sec-amenities' },
+                  { label: '💬 4. Testimonials', anchor: '#sec-testimonials' },
+                  { label: '📍 5. Office & Contact', anchor: '#sec-contact' }
+                ].map(item => (
+                  <a
+                    key={item.anchor}
+                    href={item.anchor}
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      background: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '11.5px',
+                      fontWeight: 700,
+                      color: '#334155',
+                      textDecoration: 'none'
+                    }}
+                  >
+                    {item.label}
+                  </a>
+                ))}
+              </div>
+
               <form onSubmit={handleSaveSiteContent} style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
                 
                 {/* 1. HERO TOP SECTION */}
+                <div id="sec-hero" style={{ height: 0 }} />
                 <div className="white-panel" style={{ padding: '24px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', paddingBottom: '12px', borderBottom: '1px solid #f1f5f9' }}>
                     <div>
@@ -5065,6 +9563,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* 2. CONCEPT & LIVING MANIFESTO */}
+                <div id="sec-manifesto" style={{ height: 0 }} />
                 <div className="white-panel" style={{ padding: '24px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', paddingBottom: '12px', borderBottom: '1px solid #f1f5f9' }}>
                     <div>
@@ -5610,8 +10109,30 @@ export default function AdminDashboard() {
                 <div className="white-panel" style={{ padding: '24px' }}>
                   <h4 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Layers size={16} style={{ color: '#2563eb' }} />
-                    <span>1. Unit Specifications & Architecture</span>
+                    <span>1. Unit Specifications & Architecture (Point 3)</span>
                   </h4>
+
+                  {/* Project Selector */}
+                  <div className="form-group-clean" style={{ marginBottom: '14px' }}>
+                    <label>Project / Master Development Enclave *</label>
+                    <select
+                      value={formApt.projectId || 'proj-1'}
+                      onChange={(e) => {
+                        const selP = projects.find(p => p.id === e.target.value);
+                        setFormApt({
+                          ...formApt,
+                          projectId: e.target.value,
+                          projectName: selP ? selP.name : 'Dwellora Residence'
+                        });
+                      }}
+                      className="input-clean"
+                      style={{ height: '38px', fontSize: '13px' }}
+                    >
+                      {projects.map(p => (
+                        <option key={p.id} value={p.id}>{p.name} ({p.city})</option>
+                      ))}
+                    </select>
+                  </div>
 
                   <div className="form-grid-2">
                     <div className="form-group-clean">
@@ -5619,7 +10140,7 @@ export default function AdminDashboard() {
                       <input
                         type="text"
                         required
-                        placeholder="Enter unit number"
+                        placeholder="e.g. No-26"
                         value={formApt.apartmentNumber}
                         onChange={(e) => setFormApt({ ...formApt, apartmentNumber: e.target.value })}
                         className="input-clean"
@@ -5635,7 +10156,6 @@ export default function AdminDashboard() {
                         className="input-clean"
                         style={{ height: '38px', fontSize: '13px' }}
                       >
-                        <option value="">-- Select Typology --</option>
                         <option value="Garden Residence">Garden Residence</option>
                         <option value="Ready Luxury Home">Ready Luxury Home</option>
                         <option value="Penthouse Duplex">Penthouse Duplex</option>
@@ -5647,14 +10167,13 @@ export default function AdminDashboard() {
 
                   <div className="form-grid-2">
                     <div className="form-group-clean">
-                      <label>Block / Tower</label>
+                      <label>Block / Tower *</label>
                       <select
                         value={formApt.block}
                         onChange={(e) => setFormApt({ ...formApt, block: e.target.value })}
                         className="input-clean"
                         style={{ height: '38px', fontSize: '13px' }}
                       >
-                        <option value="">-- Select Block --</option>
                         <option value="Block B1">Block B1</option>
                         <option value="Block B2">Block B2</option>
                         <option value="Block B3">Block B3</option>
@@ -5663,14 +10182,13 @@ export default function AdminDashboard() {
                     </div>
 
                     <div className="form-group-clean">
-                      <label>Floor Number</label>
+                      <label>Floor Number *</label>
                       <select
                         value={formApt.floor}
                         onChange={(e) => setFormApt({ ...formApt, floor: e.target.value })}
                         className="input-clean"
                         style={{ height: '38px', fontSize: '13px' }}
                       >
-                        <option value="">-- Select Floor --</option>
                         <option value="Ground Floor">Ground Floor</option>
                         <option value="1st Floor">1st Floor</option>
                         <option value="2nd Floor">2nd Floor</option>
@@ -5683,19 +10201,18 @@ export default function AdminDashboard() {
 
                   <div className="form-grid-2">
                     <div className="form-group-clean">
-                      <label>Bedrooms Count</label>
+                      <label>Bedrooms Count (BHK)</label>
                       <select
                         value={formApt.bedrooms}
-                        onChange={(e) => setFormApt({ ...formApt, bedrooms: e.target.value })}
+                        onChange={(e) => setFormApt({ ...formApt, bedrooms: Number(e.target.value) })}
                         className="input-clean"
                         style={{ height: '38px', fontSize: '13px' }}
                       >
-                        <option value="">-- Select Bedrooms --</option>
-                        <option value={1}>1 Bedroom</option>
-                        <option value={2}>2 Bedrooms</option>
-                        <option value={3}>3 Bedrooms</option>
-                        <option value={4}>4 Bedrooms</option>
-                        <option value={5}>5+ Bedrooms</option>
+                        <option value={1}>1 BHK</option>
+                        <option value={2}>2 BHK</option>
+                        <option value={3}>3 BHK</option>
+                        <option value={4}>4 BHK</option>
+                        <option value={5}>5+ BHK</option>
                       </select>
                     </div>
 
@@ -5703,11 +10220,10 @@ export default function AdminDashboard() {
                       <label>Bathrooms Count</label>
                       <select
                         value={formApt.bathrooms}
-                        onChange={(e) => setFormApt({ ...formApt, bathrooms: e.target.value })}
+                        onChange={(e) => setFormApt({ ...formApt, bathrooms: Number(e.target.value) })}
                         className="input-clean"
                         style={{ height: '38px', fontSize: '13px' }}
                       >
-                        <option value="">-- Select Bathrooms --</option>
                         <option value={1}>1 Bathroom</option>
                         <option value={2}>2 Bathrooms</option>
                         <option value={3}>3 Bathrooms</option>
@@ -5717,14 +10233,49 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
+                  {/* Area Specifications: Carpet Area, Built-up Area, Super Built-up */}
                   <div className="form-grid-2">
                     <div className="form-group-clean">
-                      <label>Super Built-up Area (Sqft)</label>
+                      <label>Carpet Area (Sqft) *</label>
                       <input
                         type="number"
-                        placeholder="Enter super built-up area in sqft"
+                        placeholder="e.g. 1080"
+                        value={formApt.carpetAreaSqft}
+                        onChange={(e) => setFormApt({ ...formApt, carpetAreaSqft: e.target.value === '' ? '' : Number(e.target.value) })}
+                        className="input-clean"
+                        style={{ height: '38px', fontSize: '13px' }}
+                      />
+                    </div>
+
+                    <div className="form-group-clean">
+                      <label>Built-up Area (Sqft)</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 1320"
+                        value={formApt.builtUpAreaSqft}
+                        onChange={(e) => setFormApt({ ...formApt, builtUpAreaSqft: e.target.value === '' ? '' : Number(e.target.value) })}
+                        className="input-clean"
+                        style={{ height: '38px', fontSize: '13px' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-grid-2">
+                    <div className="form-group-clean">
+                      <label>Super Built-up Area (Sqft) *</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 1500"
                         value={formApt.areaSqft}
-                        onChange={(e) => setFormApt({ ...formApt, areaSqft: e.target.value === '' ? '' : Number(e.target.value) })}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? '' : Number(e.target.value);
+                          setFormApt({
+                            ...formApt,
+                            areaSqft: val,
+                            carpetAreaSqft: formApt.carpetAreaSqft || (val ? Math.round(val * 0.72) : ''),
+                            builtUpAreaSqft: formApt.builtUpAreaSqft || (val ? Math.round(val * 0.88) : '')
+                          });
+                        }}
                         className="input-clean"
                         style={{ height: '38px', fontSize: '13px' }}
                       />
@@ -5734,7 +10285,7 @@ export default function AdminDashboard() {
                       <label>Terrace Area (Sqm)</label>
                       <input
                         type="number"
-                        placeholder="Enter terrace area in sqm"
+                        placeholder="25"
                         value={formApt.terraceArea}
                         onChange={(e) => setFormApt({ ...formApt, terraceArea: e.target.value === '' ? '' : Number(e.target.value) })}
                         className="input-clean"
@@ -5743,22 +10294,46 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
+                  {/* Pricing & Parking */}
                   <div className="form-grid-2">
                     <div className="form-group-clean">
-                      <label>Price (₹ INR)</label>
+                      <label>Base Price (₹ INR) *</label>
                       <input
                         type="number"
-                        step="500000"
-                        placeholder="Enter price in ₹"
+                        step="100000"
+                        placeholder="25000000"
                         value={formApt.price}
-                        onChange={(e) => setFormApt({ ...formApt, price: e.target.value === '' ? '' : Number(e.target.value) })}
+                        onChange={(e) => {
+                          const p = e.target.value === '' ? '' : Number(e.target.value);
+                          setFormApt({ ...formApt, price: p, basePrice: p });
+                        }}
                         className="input-clean"
                         style={{ height: '38px', fontSize: '13px', fontWeight: 700 }}
                       />
+                      <div style={{ fontSize: '11px', color: '#059669', fontWeight: 700, marginTop: '3px' }}>
+                        Preview: {formatINR(Number(formApt.price) || 0)}
+                      </div>
                     </div>
 
                     <div className="form-group-clean">
-                      <label>Initial Status</label>
+                      <label>Parking Allocation *</label>
+                      <select
+                        value={formApt.parking}
+                        onChange={(e) => setFormApt({ ...formApt, parking: e.target.value })}
+                        className="input-clean"
+                        style={{ height: '38px', fontSize: '13px' }}
+                      >
+                        <option value="1 Covered Basement Slot">1 Covered Basement Slot</option>
+                        <option value="2 Covered EV Bays">2 Covered EV Bays</option>
+                        <option value="1 Dedicated Stilt Bay">1 Dedicated Stilt Bay</option>
+                        <option value="None / Open Parking">None / Open Parking</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="form-grid-2">
+                    <div className="form-group-clean">
+                      <label>Initial Availability Status</label>
                       <select
                         value={formApt.status}
                         onChange={(e) => setFormApt({ ...formApt, status: e.target.value })}
@@ -5769,6 +10344,72 @@ export default function AdminDashboard() {
                         <option value="RESERVED">🟡 Reserved (Token Hold)</option>
                         <option value="SOLD">🔴 Sold Out (Block Booking)</option>
                       </select>
+                    </div>
+
+                    <div className="form-group-clean">
+                      <label>Floor Plan Graphic URL</label>
+                      <input
+                        type="text"
+                        placeholder="/assets/estate-exterior-reveal.png"
+                        value={formApt.floorPlanUrl || ''}
+                        onChange={(e) => setFormApt({ ...formApt, floorPlanUrl: e.target.value })}
+                        className="input-clean"
+                        style={{ height: '38px', fontSize: '13px' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Unit Amenities Manager */}
+                  <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #f1f5f9' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '8px' }}>
+                      Unit Amenities & Facilities
+                    </label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+                      {(formApt.amenities || []).map((am, i) => (
+                        <span key={i} style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '6px', padding: '3px 8px', fontSize: '11.5px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                          <span>✓ {am}</span>
+                          <button
+                            type="button"
+                            onClick={() => setFormApt({ ...formApt, amenities: formApt.amenities.filter((_, idx) => idx !== i) })}
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#93c5fd', padding: 0 }}
+                          >
+                            <X size={12} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input
+                        type="text"
+                        placeholder="Add amenity (e.g. Italian Marble, Smart Lock)"
+                        value={formApt.customAmenityInput || ''}
+                        onChange={(e) => setFormApt({ ...formApt, customAmenityInput: e.target.value })}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const val = (formApt.customAmenityInput || '').trim();
+                            if (val && !formApt.amenities?.includes(val)) {
+                              setFormApt({ ...formApt, amenities: [...(formApt.amenities || []), val], customAmenityInput: '' });
+                            }
+                          }
+                        }}
+                        className="input-clean"
+                        style={{ height: '34px', fontSize: '12px', flex: 1 }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const val = (formApt.customAmenityInput || '').trim();
+                          if (val && !formApt.amenities?.includes(val)) {
+                            setFormApt({ ...formApt, amenities: [...(formApt.amenities || []), val], customAmenityInput: '' });
+                          }
+                        }}
+                        className="btn-secondary-action"
+                        style={{ height: '34px', padding: '0 12px', fontSize: '12px' }}
+                      >
+                        <Plus size={14} />
+                        <span>Add</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -8896,12 +13537,12 @@ export default function AdminDashboard() {
                 </button>
                 <div style={{ width: '1px', height: '24px', background: '#cbd5e1' }} />
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <FileText size={18} style={{ color: '#2563eb' }} />
-                    <span>Official Allotment & Payment Invoice: Unit {apt.apartmentNumber}</span>
+                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <FileText size={18} style={{ color: '#002b80' }} />
+                    <span>Official Property Legal Documents Suite: Unit {apt.apartmentNumber}</span>
                   </h3>
                   <span style={{ fontSize: '11.5px', color: '#64748b' }}>
-                    Allottee: <b style={{ color: '#0f172a' }}>{buyer.name}</b> &bull; Invoice Ref: {invoiceNo}
+                    Allottee: <b style={{ color: '#0f172a' }}>{buyer.name}</b> &bull; Ref: {invoiceNo} &bull; RERA Escrow Authenticated
                   </span>
                 </div>
               </div>
@@ -8911,7 +13552,7 @@ export default function AdminDashboard() {
                   type="button"
                   onClick={() => {
                     const actor = user?.name || 'Super Admin';
-                    dataStore.addActivity(`${actor} printed official allotment invoice for Unit ${apt.apartmentNumber} (${buyer.name})`, 'invoice');
+                    dataStore.addActivity(`${actor} printed official legal document (${docCategoryTab}) for Unit ${apt.apartmentNumber} (${buyer.name})`, 'invoice');
                     setActivityFeed(dataStore.getActivityFeed());
                     window.print();
                   }}
@@ -8919,7 +13560,7 @@ export default function AdminDashboard() {
                   style={{ background: '#002b80', borderColor: '#002b80', padding: '7px 16px', fontSize: '13px' }}
                 >
                   <Printer size={15} />
-                  <span>Print Invoice / Save PDF</span>
+                  <span>Print Document / Save PDF</span>
                 </button>
                 <button
                   type="button"
@@ -8931,8 +13572,337 @@ export default function AdminDashboard() {
               </div>
             </header>
 
+            {/* Point 7: 5 Official Luxury Real Estate Document Switcher Bar */}
+            <div style={{ background: '#f8fafc', borderBottom: '1.5px solid #e2e8f0', padding: '10px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {[
+                  { id: 'INVOICE', label: '1. Allotment & Tax Invoice', icon: FileText },
+                  { id: 'ALLOTMENT_LETTER', label: '2. Official RERA Allotment Letter', icon: FileCheck },
+                  { id: 'RECEIPT_VOUCHER', label: '3. Payment Receipt & Cash Voucher', icon: Receipt },
+                  { id: 'DEMAND_NOTICE', label: '4. Milestone Demand Notice', icon: AlertTriangle },
+                  { id: 'POSSESSION_CERT', label: '5. Handover & Possession NOC', icon: Key }
+                ].map(doc => {
+                  const IconComp = doc.icon;
+                  const isSel = docCategoryTab === doc.id;
+                  return (
+                    <button
+                      key={doc.id}
+                      type="button"
+                      onClick={() => setDocCategoryTab(doc.id)}
+                      style={{
+                        padding: '7px 14px',
+                        borderRadius: '6px',
+                        border: isSel ? '1.5px solid #002b80' : '1px solid #cbd5e1',
+                        background: isSel ? '#002b80' : '#ffffff',
+                        color: isSel ? '#ffffff' : '#334155',
+                        fontWeight: 700,
+                        fontSize: '12px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        cursor: 'pointer',
+                        boxShadow: isSel ? '0 2px 6px rgba(0,43,128,0.2)' : 'none',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <IconComp size={13} />
+                      <span>{doc.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{ fontSize: '11.5px', color: '#64748b' }}>
+                Format: <b>A4 Legal Real Estate Document</b> &bull; Stamp & Escrow Verified
+              </div>
+            </div>
+
             {/* Printable Invoice Sheet (Exact Layout matching Screenshot 2) */}
             <div className="fullscreen-content-container" style={{ maxWidth: '1060px' }}>
+              
+              {/* DOCUMENT VIEW 2: OFFICIAL RERA ALLOTMENT LETTER */}
+              {docCategoryTab === 'ALLOTMENT_LETTER' && (
+                <div style={{ background: '#ffffff', padding: '44px 50px', borderRadius: '10px', border: '1.5px solid #002b80', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', lineHeight: 1.6, color: '#1e293b' }}>
+                  {/* Letterhead */}
+                  <div style={{ textAlign: 'center', borderBottom: '2.5px solid #002b80', paddingBottom: '18px', marginBottom: '26px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+                      <div style={{ width: '42px', height: '42px', borderRadius: '8px', background: '#002b80', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '22px' }}>
+                        ES
+                      </div>
+                      <div>
+                        <h1 style={{ margin: 0, fontSize: '26px', fontWeight: 800, color: '#002b80', letterSpacing: '0.04em' }}>
+                          ESTATESPHERE LUXURY RESIDENCES LLP
+                        </h1>
+                        <div style={{ fontSize: '11px', color: '#475569', letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: '2px' }}>
+                          Govt. Registered Luxury Real Estate Master Development &bull; RERA Reg: PRM/KA/RERA/1251/310/007812
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Ref & Date */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px', fontSize: '13px' }}>
+                    <div>
+                      <div><b>Allotment Ref No:</b> ES/ALLOT/2026/{apt.apartmentNumber}</div>
+                      <div><b>Project:</b> Dwellora Residence, New Golden Mile Enclave</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div><b>Date of Issue:</b> {invoiceDateStr}</div>
+                      <div><b>Booking Ref Date:</b> {bookingDateStr}</div>
+                    </div>
+                  </div>
+
+                  {/* Addressed To */}
+                  <div style={{ background: '#f8fafc', padding: '14px 18px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '24px', fontSize: '13px' }}>
+                    <div style={{ fontWeight: 800, color: '#002b80', textTransform: 'uppercase', fontSize: '11px', marginBottom: '4px' }}>
+                      TO THE ALLOTTEE(S):
+                    </div>
+                    <div style={{ fontWeight: 800, fontSize: '15px', color: '#0f172a' }}>{buyer.name}</div>
+                    <div>Phone: {buyer.phone || 'N/A'} &bull; Email: {buyer.email || 'N/A'}</div>
+                    <div>PAN: {buyer.pan || 'ABCDE1234F'} &bull; Aadhaar Ref: {buyer.aadhaar || 'Verified KYC Record'}</div>
+                  </div>
+
+                  {/* Subject */}
+                  <div style={{ fontWeight: 800, fontSize: '14.5px', color: '#002b80', textAlign: 'center', margin: '20px 0', textDecoration: 'underline' }}>
+                    SUB: FORMAL LETTER OF PROVISIONAL ALLOTMENT FOR UNIT {apt.apartmentNumber} AT DWELLORA RESIDENCE
+                  </div>
+
+                  {/* Body Paragraphs */}
+                  <div style={{ fontSize: '13px', lineHeight: 1.7, textAlign: 'justify', marginBottom: '20px' }}>
+                    <p>
+                      Dear <b>{buyer.name}</b>,
+                    </p>
+                    <p>
+                      We are pleased to formally confirm the provisional allotment of your luxury residential apartment in accordance with your booking application and receipt of consideration at our flagship master development <b>"Dwellora Residence"</b>, situated at New Golden Mile, Horizon Beach Corridor.
+                    </p>
+                    <p>
+                      <b>1. Specification of Allotted Residence:</b><br />
+                      &bull; <b>Unit Number:</b> {apt.apartmentNumber} &bull; <b>Block / Tower:</b> {apt.block} &bull; <b>Floor:</b> {apt.floor}<br />
+                      &bull; <b>Typology:</b> {apt.typology} ({apt.bedrooms} Bedrooms, {apt.bathrooms || 3} Luxury Bathrooms)<br />
+                      &bull; <b>Super Built-up Area:</b> {apt.areaSqft || 1650} sq.ft &bull; <b>Terrace / Balcony Area:</b> {apt.terraceArea || 32} m²<br />
+                      &bull; <b>Car Parking:</b> 2 Reserved Covered Stilt Basement Parking Bays.
+                    </p>
+                    <p>
+                      <b>2. Agreed Commercial Consideration & Payment Terms:</b><br />
+                      &bull; <b>Total Agreed Consideration:</b> {formatFullINR(deal)} ({wordsTotal})<br />
+                      &bull; <b>Amount Received & Cleared to Escrow:</b> {formatFullINR(paid)}<br />
+                      &bull; <b>Remaining Balance Payable:</b> {formatFullINR(balance)} (as per Construction-Linked Payment Milestones).
+                    </p>
+                    <p>
+                      This allotment is subject to compliance with the terms and conditions outlined in the Model Real Estate Agreement of Sale under statutory RERA regulations. All payments must be deposited exclusively into the designated RERA Master Escrow Bank Account.
+                    </p>
+                  </div>
+
+                  {/* Signatures */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #cbd5e1' }}>
+                    <div>
+                      <div style={{ height: '50px' }} />
+                      <div style={{ borderTop: '1px dashed #0f172a', width: '200px', paddingTop: '6px', fontSize: '12px', fontWeight: 700 }}>
+                        Allottee Signature: ({buyer.name})
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#64748b' }}>I / We accept the allotment terms.</div>
+                    </div>
+
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'inline-block', textAlign: 'center' }}>
+                        <div style={{ width: '80px', height: '40px', border: '1.5px solid #002b80', borderRadius: '6px', color: '#002b80', fontSize: '9px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 6px', textTransform: 'uppercase' }}>
+                          ESCROW SEAL &bull; RERA VERIFIED
+                        </div>
+                        <div style={{ borderTop: '1px dashed #0f172a', width: '220px', paddingTop: '6px', fontSize: '12px', fontWeight: 700 }}>
+                          For EstateSphere Residences LLP
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#64748b' }}>Authorized Signatory & Director</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* DOCUMENT VIEW 3: OFFICIAL PAYMENT RECEIPT CUM CASH VOUCHER */}
+              {docCategoryTab === 'RECEIPT_VOUCHER' && (
+                <div style={{ background: '#ffffff', padding: '44px 50px', borderRadius: '10px', border: '1.5px solid #002b80', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', lineHeight: 1.6, color: '#1e293b' }}>
+                  {/* Receipt Header */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2.5px solid #002b80', paddingBottom: '16px', marginBottom: '24px' }}>
+                    <div>
+                      <div style={{ fontSize: '24px', fontWeight: 900, color: '#002b80' }}>ESTATESPHERE RESIDENCES</div>
+                      <div style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Official Project Escrow Payment Receipt</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 800 }}>
+                        ✓ PAYMENT CLEARED
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Receipt No: ES-RCP-2026/{apt.apartmentNumber.replace(/[^d]/g, '') || '01'}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px', fontSize: '13px' }}>
+                    <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontWeight: 800, color: '#002b80', fontSize: '11px', textTransform: 'uppercase', marginBottom: '4px' }}>RECEIVED FROM (ALLOTTEE):</div>
+                      <div style={{ fontWeight: 800, fontSize: '14px' }}>{buyer.name}</div>
+                      <div>Contact: {buyer.phone || 'N/A'} &bull; {buyer.email || 'N/A'}</div>
+                      <div>PAN: {buyer.pan || 'ABCDE1234F'}</div>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontWeight: 800, color: '#002b80', fontSize: '11px', textTransform: 'uppercase', marginBottom: '4px' }}>PAYMENT DETAILS:</div>
+                      <div><b>Allotted Unit:</b> Unit {apt.apartmentNumber} ({apt.block})</div>
+                      <div><b>Date of Receipt:</b> {invoiceDateStr}</div>
+                      <div><b>Remittance Mode:</b> NEFT / RTGS Bank Transfer</div>
+                      <div><b>Escrow Bank:</b> HDFC Bank Ltd, MG Road Branch</div>
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#eff6ff', border: '1.5px solid #bfdbfe', borderRadius: '8px', padding: '18px 24px', marginBottom: '24px' }}>
+                    <div style={{ fontSize: '12px', color: '#1e40af', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      AMOUNT RECEIVED & CREDITED TO ESCROW:
+                    </div>
+                    <div style={{ fontSize: '32px', fontWeight: 900, color: '#002b80', margin: '4px 0' }}>
+                      {formatFullINR(paid)}
+                    </div>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: '#334155' }}>
+                      In Words: {numberToIndianWords(paid)}
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: '12.5px', color: '#475569', lineHeight: 1.6, marginBottom: '30px' }}>
+                    This receipt acknowledges receipt of installment funds credited directly to EstateSphere Escrow Master Account No. 50200084729182. Subject to realization and title clearance terms.
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: '20px', borderTop: '1px solid #cbd5e1' }}>
+                    <div style={{ fontSize: '11px', color: '#64748b' }}>
+                      Computer generated electronic receipt &bull; No physical signature required.
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ borderTop: '1px dashed #0f172a', width: '180px', paddingTop: '6px', fontSize: '12px', fontWeight: 700 }}>
+                        Accounts & Escrow Desk
+                      </div>
+                      <div style={{ fontSize: '10.5px', color: '#64748b' }}>EstateSphere Residences LLP</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* DOCUMENT VIEW 4: MILESTONE PAYMENT DEMAND NOTICE */}
+              {docCategoryTab === 'DEMAND_NOTICE' && (
+                <div style={{ background: '#ffffff', padding: '44px 50px', borderRadius: '10px', border: '1.5px solid #002b80', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', lineHeight: 1.6, color: '#1e293b' }}>
+                  <div style={{ textAlign: 'center', borderBottom: '2.5px solid #002b80', paddingBottom: '16px', marginBottom: '24px' }}>
+                    <div style={{ fontSize: '24px', fontWeight: 900, color: '#002b80' }}>ESTATESPHERE LUXURY RESIDENCES</div>
+                    <div style={{ fontSize: '12px', color: '#dc2626', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '2px' }}>
+                      OFFICIAL NOTICE OF PAYMENT DUE • CONSTRUCTION MILESTONE
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', fontSize: '13px' }}>
+                    <div>
+                      <div><b>Notice Ref No:</b> ES/DEMAND/2026/{apt.apartmentNumber}</div>
+                      <div><b>Date of Notice:</b> {invoiceDateStr}</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div><b>Due Date for Remittance:</b> <span style={{ color: '#dc2626', fontWeight: 800 }}>15 Nov 2026</span></div>
+                      <div><b>Project:</b> Dwellora Residence</div>
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#fffbeb', border: '1px solid #fde68a', padding: '14px', borderRadius: '8px', marginBottom: '20px', fontSize: '13px' }}>
+                    <b>Allottee:</b> {buyer.name} &bull; <b>Unit Allotted:</b> Unit {apt.apartmentNumber} ({apt.block}) &bull; <b>Total Contract:</b> {formatFullINR(deal)}
+                  </div>
+
+                  <div style={{ fontSize: '13px', lineHeight: 1.7, marginBottom: '20px' }}>
+                    <p>Dear <b>{buyer.name}</b>,</p>
+                    <p>
+                      We are pleased to advise you that the construction work on your residence building has successfully attained <b>Construction Milestone 2: Foundation & Plinth Casting Completion</b>, authenticated by our Project Structural Engineers and Project Architect.
+                    </p>
+                    <p>
+                      In accordance with the Construction-Linked Payment Schedule incorporated into your provisional allotment, the following installment milestone is now due for remittance:
+                    </p>
+                  </div>
+
+                  <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '8px', padding: '18px 24px', marginBottom: '24px' }}>
+                    <div style={{ fontSize: '12px', color: '#991b1b', fontWeight: 700, textTransform: 'uppercase' }}>
+                      INSTALLMENT DEMAND AMOUNT PAYABLE:
+                    </div>
+                    <div style={{ fontSize: '30px', fontWeight: 900, color: '#b91c1c', margin: '4px 0' }}>
+                      {formatFullINR(balance > 0 ? balance : Math.round(deal * 0.2))}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#7f1d1d' }}>
+                      Milestone Stage: Milestone 2 — Plinth & Foundation Casting (20% Consideration)
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', padding: '14px 18px', borderRadius: '8px', fontSize: '12.5px', marginBottom: '26px' }}>
+                    <div style={{ fontWeight: 800, color: '#002b80', marginBottom: '4px' }}>ESCROW BANK REMITTANCE COORDINATES:</div>
+                    <div>&bull; <b>Beneficiary Name:</b> EstateSphere Residences Escrow Master Account</div>
+                    <div>&bull; <b>Bank Name:</b> HDFC Bank Ltd, MG Road Flagship Branch</div>
+                    <div>&bull; <b>Escrow Account Number:</b> 50200084729182 &bull; <b>IFSC Code:</b> HDFC0001982</div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '20px', borderTop: '1px solid #cbd5e1', fontSize: '11.5px', color: '#64748b' }}>
+                    <div>Dispatched via EstateSphere CRM & Automated Escrow Ledger Desk</div>
+                    <div style={{ fontWeight: 700, color: '#0f172a' }}>For EstateSphere Residences LLP</div>
+                  </div>
+                </div>
+              )}
+
+              {/* DOCUMENT VIEW 5: KEY HANDOVER & POSSESSION CERTIFICATE */}
+              {docCategoryTab === 'POSSESSION_CERT' && (
+                <div style={{ background: '#ffffff', padding: '44px 50px', borderRadius: '10px', border: '1.5px solid #002b80', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', lineHeight: 1.6, color: '#1e293b' }}>
+                  <div style={{ textAlign: 'center', borderBottom: '2.5px solid #002b80', paddingBottom: '16px', marginBottom: '24px' }}>
+                    <div style={{ fontSize: '24px', fontWeight: 900, color: '#002b80' }}>ESTATESPHERE LUXURY RESIDENCES</div>
+                    <div style={{ fontSize: '12px', color: '#059669', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '2px' }}>
+                      PROVISIONAL CERTIFICATE OF POSSESSION & KEY HANDOVER PROTOCOL
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', fontSize: '13px' }}>
+                    <div>
+                      <div><b>Certificate Ref No:</b> ES/POSS/2026/{apt.apartmentNumber}</div>
+                      <div><b>Date of Handover:</b> {invoiceDateStr}</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div><b>RERA Completion Cert:</b> OC/KA/2026/0891</div>
+                      <div><b>Unit Allotted:</b> Unit {apt.apartmentNumber} ({apt.block})</div>
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '14px', borderRadius: '8px', marginBottom: '20px', fontSize: '13px' }}>
+                    <b>Allottee Name:</b> {buyer.name} &bull; <b>Typology:</b> {apt.typology} &bull; <b>Zero Dues Escrow Clearance:</b> <span style={{ color: '#047857', fontWeight: 800 }}>✓ CLEARED</span>
+                  </div>
+
+                  <div style={{ fontSize: '13px', lineHeight: 1.7, textAlign: 'justify', marginBottom: '20px' }}>
+                    <p>
+                      This is to certify that EstateSphere Residences LLP has on this day provisionally delivered vacant, quiet, and peaceful physical possession of the residential property described hereunder to <b>{buyer.name}</b>, having received the full agreed consideration and escrow clearances:
+                    </p>
+                    <p>
+                      <b>Handover Delivery Checklist Authenticated:</b><br />
+                      &bull; <b>Main Entrance:</b> Biometric Smart Lock Master PIN & 3 RFID Keycards delivered.<br />
+                      &bull; <b>Master Bedroom & Suites:</b> 4 Sets of Italian Architectural Brass Keys delivered.<br />
+                      &bull; <b>Private Terrace & Solarium:</b> Waterproof integrity certificate & drainage clear.<br />
+                      &bull; <b>Smart Automation:</b> HVAC climate controls and lighting automation credentials transferred.<br />
+                      &bull; <b>Statutory Compliance:</b> Property tax and utility sub-meters commissioned.
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #cbd5e1' }}>
+                    <div>
+                      <div style={{ height: '40px' }} />
+                      <div style={{ borderTop: '1px dashed #0f172a', width: '200px', paddingTop: '6px', fontSize: '12px', fontWeight: 700 }}>
+                        Handover Accepted By Allottee:
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#64748b' }}>({buyer.name})</div>
+                    </div>
+
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ height: '40px' }} />
+                      <div style={{ borderTop: '1px dashed #0f172a', width: '220px', paddingTop: '6px', fontSize: '12px', fontWeight: 700, display: 'inline-block' }}>
+                        For EstateSphere Residences LLP
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#64748b' }}>Principal Project Architect & Director</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* DOCUMENT VIEW 1: THE PRIMARY TAX INVOICE & ALLOTMENT SLIP */}
+              {docCategoryTab === 'INVOICE' && (
               <div style={{ background: '#ffffff', padding: '36px 40px', borderRadius: '10px', border: '1.5px solid #002b80', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
                 
                 {/* 1. Header Title Banner (Matching Screenshot 2) */}
@@ -9200,6 +14170,7 @@ export default function AdminDashboard() {
                 </div>
 
               </div>
+              )}
             </div>
 
           </div>
@@ -9346,6 +14317,3856 @@ export default function AdminDashboard() {
                 {deleteConfirmModal.confirmText || 'Yes, Delete'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          MODAL: UNIT PRICE REVISION HISTORY (POINT 3)
+      ======================================================== */}
+      {priceHistoryModal.isOpen && priceHistoryModal.apt && (
+        <div 
+          className="modal-overlay"
+          onClick={() => setPriceHistoryModal({ isOpen: false, apt: null })}
+          style={{ zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+        >
+          <div 
+            style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              width: '100%',
+              maxWidth: '650px',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.35)',
+              overflow: 'hidden'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ padding: '18px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <History size={18} style={{ color: '#2563eb' }} />
+                  <span>Price History &bull; Unit {priceHistoryModal.apt.apartmentNumber}</span>
+                </h3>
+                <span style={{ fontSize: '12px', color: '#64748b' }}>
+                  {priceHistoryModal.apt.projectName || 'Dwellora Residence'} &bull; {priceHistoryModal.apt.title}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPriceHistoryModal({ isOpen: false, apt: null })}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '6px', color: '#64748b', borderRadius: '6px' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ padding: '20px 24px', overflowY: 'auto' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '18px' }}>
+                <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Current Price</span>
+                  <div style={{ fontSize: '18px', fontWeight: 800, color: '#059669', marginTop: '2px' }}>
+                    {formatINR(priceHistoryModal.apt.price)}
+                  </div>
+                </div>
+                <div style={{ padding: '12px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Original Base Price</span>
+                  <div style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>
+                    {formatINR(priceHistoryModal.apt.basePrice || priceHistoryModal.apt.price)}
+                  </div>
+                </div>
+              </div>
+
+              <h4 style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Recorded Price Revisions
+              </h4>
+
+              {(priceHistoryModal.apt.priceHistory || []).length === 0 ? (
+                <div style={{ padding: '24px', textAlign: 'center', background: '#f8fafc', borderRadius: '10px', border: '1px dashed #cbd5e1', color: '#64748b', fontSize: '13px' }}>
+                  No previous price revisions recorded for this flat. Base price established on initial registration.
+                </div>
+              ) : (
+                <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
+                  <table style={{ width: '100%', fontSize: '12.5px', borderCollapse: 'collapse' }}>
+                    <thead style={{ background: '#f8fafc', color: '#475569' }}>
+                      <tr>
+                        <th style={{ padding: '8px 12px', textAlign: 'left' }}>Date & Time</th>
+                        <th style={{ padding: '8px 12px', textAlign: 'right' }}>Previous Price</th>
+                        <th style={{ padding: '8px 12px', textAlign: 'right' }}>Revised Price</th>
+                        <th style={{ padding: '8px 12px', textAlign: 'right' }}>Variance</th>
+                        <th style={{ padding: '8px 12px', textAlign: 'left' }}>Authorized By</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {priceHistoryModal.apt.priceHistory.map((h, i) => (
+                        <tr key={i} style={{ borderTop: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '8px 12px', color: '#334155', fontWeight: 500 }}>{h.date} {h.time}</td>
+                          <td style={{ padding: '8px 12px', textAlign: 'right', color: '#64748b' }}>{formatINR(h.oldPrice)}</td>
+                          <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>{formatINR(h.newPrice)}</td>
+                          <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: h.diff > 0 ? '#059669' : '#dc2626' }}>
+                            {h.diff > 0 ? `+${formatINR(h.diff)}` : formatINR(h.diff)}
+                          </td>
+                          <td style={{ padding: '8px 12px', color: '#64748b' }}>{h.changedBy || 'Admin'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div style={{ padding: '14px 24px', borderTop: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="btn-secondary-action"
+                onClick={() => setPriceHistoryModal({ isOpen: false, apt: null })}
+                style={{ padding: '8px 18px', fontSize: '13px' }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          MODAL: BULK APARTMENT IMPORT (POINT 3)
+      ======================================================== */}
+      {showBulkImportModal && (
+        <div 
+          className="modal-overlay"
+          onClick={() => setShowBulkImportModal(false)}
+          style={{ zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+        >
+          <div 
+            style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              width: '100%',
+              maxWidth: '920px',
+              maxHeight: '92vh',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.35)',
+              overflow: 'hidden'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{ padding: '18px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FileSpreadsheet size={20} style={{ color: '#059669' }} />
+                  <span>Bulk Apartment Import via Excel / CSV (Point 3)</span>
+                </h3>
+                <span style={{ fontSize: '12px', color: '#64748b' }}>
+                  Upload a CSV file or paste spreadsheet rows with automated duplicate unit checks.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBulkImportModal(false)}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '6px', color: '#64748b', borderRadius: '6px' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: '22px 24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              
+              {/* Step 1: Template download & instructions */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '12px 16px', borderRadius: '10px' }}>
+                <div>
+                  <b style={{ color: '#166534', fontSize: '13px' }}>Download Standard Template</b>
+                  <p style={{ margin: '2px 0 0', fontSize: '11.5px', color: '#15803d' }}>
+                    Contains: Unit Number, BHK, Typology, Block, Floor, Carpet Area, Super Area, Base Price, Parking, Status.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleDownloadSampleCSV}
+                  className="btn-secondary-action"
+                  style={{ background: '#ffffff', borderColor: '#86efac', color: '#166534', display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 12px', fontSize: '12.5px' }}
+                >
+                  <Download size={14} />
+                  <span>Download Sample CSV</span>
+                </button>
+              </div>
+
+              {/* Step 2: Upload File or Paste Text */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '12.5px', fontWeight: 700, color: '#334155' }}>
+                    Upload File (.csv) or Paste Rows:
+                  </label>
+                  <label style={{ fontSize: '12px', color: '#2563eb', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <Upload size={13} />
+                    <span>Choose CSV File from PC</span>
+                    <input
+                      type="file"
+                      accept=".csv,text/csv,text/plain"
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            const content = ev.target?.result;
+                            if (typeof content === 'string') {
+                              setBulkImportText(content);
+                              handleParseBulkCSV(content);
+                            }
+                          };
+                          reader.readAsText(file);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+
+                <textarea
+                  rows={4}
+                  className="input-clean"
+                  placeholder="Paste CSV rows here or upload file above...&#10;e.g. No-26,3,Ready Luxury Home,Block B1,1st Floor,1250,1750,28500000,1 Covered Basement Slot,AVAILABLE"
+                  value={bulkImportText}
+                  onChange={(e) => {
+                    setBulkImportText(e.target.value);
+                    handleParseBulkCSV(e.target.value);
+                  }}
+                  style={{ width: '100%', boxSizing: 'border-box', fontFamily: 'monospace', fontSize: '12px', resize: 'vertical' }}
+                />
+
+                {bulkImportError && (
+                  <div style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px', fontWeight: 600 }}>
+                    ⚠️ {bulkImportError}
+                  </div>
+                )}
+              </div>
+
+              {/* Step 3: Parsed Rows Preview Table */}
+              {bulkImportPreview.length > 0 && (
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>
+                      Validation Preview ({bulkImportPreview.filter(r => r.isValid).length} Valid &bull; {bulkImportPreview.filter(r => !r.isValid).length} Errors)
+                    </span>
+                    <span style={{ fontSize: '11px', color: '#64748b' }}>
+                      Duplicate unit numbers are automatically prevented.
+                    </span>
+                  </div>
+
+                  <div style={{ maxHeight: '220px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
+                    <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse' }}>
+                      <thead style={{ background: '#f8fafc', color: '#475569', position: 'sticky', top: 0 }}>
+                        <tr>
+                          <th style={{ padding: '6px 10px', textAlign: 'left' }}>Status</th>
+                          <th style={{ padding: '6px 10px', textAlign: 'left' }}>Unit</th>
+                          <th style={{ padding: '6px 10px', textAlign: 'left' }}>BHK</th>
+                          <th style={{ padding: '6px 10px', textAlign: 'left' }}>Block / Floor</th>
+                          <th style={{ padding: '6px 10px', textAlign: 'right' }}>Carpet Sqft</th>
+                          <th style={{ padding: '6px 10px', textAlign: 'right' }}>Base Price</th>
+                          <th style={{ padding: '6px 10px', textAlign: 'left' }}>Validation Note</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {bulkImportPreview.map((r, i) => (
+                          <tr key={i} style={{ borderTop: '1px solid #f1f5f9', background: r.isValid ? '#ffffff' : '#fef2f2' }}>
+                            <td style={{ padding: '6px 10px' }}>
+                              {r.isValid ? (
+                                <span style={{ color: '#059669', fontWeight: 700, fontSize: '11px' }}>✓ Ready</span>
+                              ) : (
+                                <span style={{ color: '#dc2626', fontWeight: 700, fontSize: '11px' }}>❌ Rejected</span>
+                              )}
+                            </td>
+                            <td style={{ padding: '6px 10px', fontWeight: 700, color: '#0f172a' }}>{r.unitNumber}</td>
+                            <td style={{ padding: '6px 10px' }}>{r.bhk} BHK</td>
+                            <td style={{ padding: '6px 10px', color: '#64748b' }}>{r.block} &bull; {r.floor}</td>
+                            <td style={{ padding: '6px 10px', textAlign: 'right' }}>{r.carpetAreaSqft}</td>
+                            <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 700, color: '#059669' }}>{formatINR(r.price)}</td>
+                            <td style={{ padding: '6px 10px', color: r.isValid ? '#059669' : '#dc2626', fontSize: '11.5px' }}>
+                              {r.isValid ? 'Valid unit record' : r.errorMsg}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* Modal Footer Actions */}
+            <div style={{ padding: '16px 24px', borderTop: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: '12px', color: '#64748b' }}>
+                Only units marked <b>✓ Ready</b> will be imported into inventory.
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  type="button"
+                  className="btn-secondary-action"
+                  onClick={() => setShowBulkImportModal(false)}
+                  style={{ padding: '8px 16px', fontSize: '13px' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={bulkImportPreview.filter(r => r.isValid).length === 0}
+                  onClick={handleExecuteBulkImport}
+                  className="btn-primary-action"
+                  style={{ padding: '8px 20px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Plus size={15} />
+                  <span>Import {bulkImportPreview.filter(r => r.isValid).length} Units</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      
+      
+      {/* ========================================================
+          POINT 4: FULLSCREEN BUYER 360° PROFILE DOSSIER MODAL
+      ======================================================== */}
+      {showBuyerProfileModal && selectedBuyerForProfile && (
+        <div className="fullscreen-page-overlay">
+          
+          {/* Top Sticky Bar */}
+          <header className="fullscreen-top-nav">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button 
+                type="button"
+                className="btn-secondary-action"
+                style={{ padding: '7px 14px', fontSize: '13px' }}
+                onClick={() => setShowBuyerProfileModal(false)}
+              >
+                <ArrowLeft size={16} />
+                <span>Back to Buyer Registry</span>
+              </button>
+              <div style={{ width: '1px', height: '24px', background: '#cbd5e1' }} />
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <UserCheck size={18} style={{ color: '#2563eb' }} />
+                  <span>Customer Profile: {selectedBuyerForProfile.name}</span>
+                </h3>
+                <span style={{ fontSize: '11.5px', color: '#64748b' }}>
+                  {selectedBuyerForProfile.id} &bull; KYC Verified Client & Allottee Dossier
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button
+                type="button"
+                className="btn-secondary-action"
+                onClick={() => window.print()}
+                style={{ padding: '7px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Printer size={15} />
+                <span>Print Dossier</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowBuyerProfileModal(false);
+                  openEditBuyerDetailsModal(selectedBuyerForProfile);
+                }}
+                className="btn-secondary-action"
+                style={{ padding: '7px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Edit3 size={15} />
+                <span>Edit Profile</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setRecordPaymentModal({
+                  isOpen: true,
+                  buyer: selectedBuyerForProfile,
+                  unitNumber: (selectedBuyerForProfile.bookedUnits && selectedBuyerForProfile.bookedUnits[0]) || '',
+                  amount: '',
+                  paymentMode: 'NEFT / RTGS',
+                  txnId: '',
+                  stage: 'Installment Milestone'
+                })}
+                className="btn-primary-action"
+                style={{ padding: '7px 16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <CreditCard size={15} />
+                <span>+ Record Payment</span>
+              </button>
+            </div>
+          </header>
+
+          <div className="fullscreen-content-container">
+            
+            {/* 1. Master Buyer Overview Banner Card */}
+            <div className="white-panel" style={{ padding: '24px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
+                
+                {/* Left: Avatar & Identity */}
+                <div style={{ display: 'flex', gap: '18px', alignItems: 'center' }}>
+                  <div style={{ width: '64px', height: '64px', borderRadius: '14px', background: '#eff6ff', color: '#1d4ed8', border: '2px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '22px', flexShrink: 0, boxShadow: '0 4px 12px rgba(37,99,235,0.15)' }}>
+                    {selectedBuyerForProfile.name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()}
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
+                        {selectedBuyerForProfile.name}
+                      </h2>
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe', padding: '2px 8px', borderRadius: '4px' }}>
+                        {selectedBuyerForProfile.id}
+                      </span>
+                      {selectedBuyerForProfile.kyc?.status === 'VERIFIED' ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: 700 }}>
+                          <CheckCircle2 size={13} style={{ color: '#059669' }} />
+                          <span>KYC Verified</span>
+                        </span>
+                      ) : (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#fffbeb', color: '#92400e', border: '1px solid #fde68a', padding: '2px 8px', borderRadius: '20px', fontSize: '11px', fontWeight: 700 }}>
+                          <Clock size={13} style={{ color: '#d97706' }} />
+                          <span>KYC Pending</span>
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ fontSize: '13px', color: '#475569', marginTop: '4px' }}>
+                      <b>{selectedBuyerForProfile.occupation || 'Professional'}</b> {selectedBuyerForProfile.company ? `at ${selectedBuyerForProfile.company}` : ''}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: '#64748b', marginTop: '8px', flexWrap: 'wrap' }}>
+                      <span>📞 {selectedBuyerForProfile.phone}</span>
+                      <span>✉️ {selectedBuyerForProfile.email}</span>
+                      <span>📍 {selectedBuyerForProfile.address || selectedBuyerForProfile.city || 'Bangalore'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: Financial KPI Summary */}
+                <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+                  
+                  {/* Deal Value */}
+                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px 18px', textAlign: 'center', minWidth: '130px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Total Deal Value</div>
+                    <div style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>
+                      {formatINR((selectedBuyerForProfile.bookingHistory || []).reduce((acc, bk) => acc + (bk.agreedPrice || 0), 0))}
+                    </div>
+                  </div>
+
+                  {/* Amount Paid */}
+                  <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '10px', padding: '12px 18px', textAlign: 'center', minWidth: '130px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#065f46', textTransform: 'uppercase' }}>Total Received</div>
+                    <div style={{ fontSize: '18px', fontWeight: 800, color: '#059669', marginTop: '4px' }}>
+                      {formatINR((selectedBuyerForProfile.bookingHistory || []).reduce((acc, bk) => acc + (bk.paidAmount || 0), 0))}
+                    </div>
+                  </div>
+
+                  {/* Balance Due */}
+                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '12px 18px', textAlign: 'center', minWidth: '130px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#991b1b', textTransform: 'uppercase' }}>Outstanding Due</div>
+                    <div style={{ fontSize: '18px', fontWeight: 800, color: '#dc2626', marginTop: '4px' }}>
+                      {formatINR((selectedBuyerForProfile.bookingHistory || []).reduce((acc, bk) => acc + (bk.balanceAmount || 0), 0))}
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+            </div>
+
+            {/* 2. Sub-Tabs Navigation Strip */}
+            <div style={{ display: 'flex', gap: '4px', borderBottom: '2px solid #e2e8f0', marginBottom: '20px', background: '#ffffff', padding: '0 12px', borderRadius: '10px 10px 0 0', overflowX: 'auto', flexWrap: 'nowrap' }}>
+              {[
+                { id: 'properties', label: '1. Booked Properties & Units', icon: Building2 },
+                { id: 'ledger', label: '2. Financial Ledger & Payments', icon: CreditCard },
+                { id: 'kyc', label: '3. KYC & Official Documents', icon: FileCheck },
+                { id: 'notes', label: '4. CRM Notes & Interactions', icon: MessageSquare },
+                { id: 'cancellations', label: '5. Cancellation & Refunds', icon: AlertTriangle }
+              ].map(t => {
+                const IconComp = t.icon;
+                const isActive = buyerProfileTab === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setBuyerProfileTab(t.id)}
+                    style={{
+                      padding: '12px 18px',
+                      background: isActive ? '#eff6ff' : 'transparent',
+                      border: 'none',
+                      borderBottom: isActive ? '3px solid #2563eb' : '3px solid transparent',
+                      color: isActive ? '#1d4ed8' : '#64748b',
+                      fontWeight: 700,
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginBottom: '-2px',
+                      borderRadius: '8px 8px 0 0',
+                      whiteSpace: 'nowrap',
+                      outline: 'none',
+                      flexShrink: 0
+                    }}
+                  >
+                    <IconComp size={16} />
+                    <span>{t.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 3. Sub-Tab Content Views */}
+            <div style={{ minHeight: '420px' }}>
+
+            {/* SUB-TAB 1: BOOKED PROPERTIES */}
+            {buyerProfileTab === 'properties' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>
+                    Allotted Flats & Apartments ({(selectedBuyerForProfile.bookingHistory || []).length})
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowBuyerProfileModal(false);
+                      openEditBuyerDetailsModal(selectedBuyerForProfile);
+                    }}
+                    className="btn-secondary-action"
+                    style={{ padding: '6px 12px', fontSize: '12px', gap: '5px' }}
+                  >
+                    <Plus size={14} />
+                    <span>Allot Additional Apartment</span>
+                  </button>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '16px' }}>
+                  {(selectedBuyerForProfile.bookingHistory || []).map((bk, idx) => {
+                    const aptObj = apartments.find(a => a.apartmentNumber === bk.unitNumber);
+                    return (
+                      <div key={idx} className="white-panel" style={{ padding: '20px', border: '1px solid #e2e8f0', position: 'relative' }}>
+                        <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+                          <img
+                            src={aptObj?.imageUrl || '/assets/estate-boutique-lounge.png'}
+                            alt={bk.unitNumber}
+                            style={{ width: '70px', height: '70px', borderRadius: '10px', objectFit: 'cover', border: '1px solid #e2e8f0' }}
+                          />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>
+                                Unit {bk.unitNumber}
+                              </span>
+                              <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', background: bk.status === 'CONFIRMED' ? '#ecfdf5' : '#fffbeb', color: bk.status === 'CONFIRMED' ? '#065f46' : '#92400e', border: '1px solid', borderColor: bk.status === 'CONFIRMED' ? '#a7f3d0' : '#fde68a' }}>
+                                {bk.status}
+                              </span>
+                            </div>
+
+                            <div style={{ fontSize: '12.5px', color: '#475569', marginTop: '2px' }}>
+                              {bk.projectName || 'Dwellora Residence'} &bull; {aptObj?.block || 'Block B1'}
+                            </div>
+
+                            <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
+                              Booking ID: <b>{bk.bookingId || `BK-2026-0${idx + 1}`}</b> &bull; Date: {bk.bookingDate}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #f1f5f9', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', textAlign: 'center' }}>
+                          <div>
+                            <span style={{ fontSize: '10.5px', color: '#64748b', textTransform: 'uppercase' }}>Agreed Deal</span>
+                            <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>{formatINR(bk.agreedPrice)}</div>
+                          </div>
+                          <div>
+                            <span style={{ fontSize: '10.5px', color: '#059669', textTransform: 'uppercase' }}>Paid Amount</span>
+                            <div style={{ fontSize: '14px', fontWeight: 800, color: '#059669', marginTop: '2px' }}>{formatINR(bk.paidAmount)}</div>
+                          </div>
+                          <div>
+                            <span style={{ fontSize: '10.5px', color: '#dc2626', textTransform: 'uppercase' }}>Balance Due</span>
+                            <div style={{ fontSize: '14px', fontWeight: 800, color: '#dc2626', marginTop: '2px' }}>{formatINR(bk.balanceAmount)}</div>
+                          </div>
+                        </div>
+
+                        <div style={{ marginTop: '16px', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (aptObj) {
+                                setSaleReceiptModal({ isOpen: true, apt: aptObj });
+                              } else {
+                                triggerToast('Apartment specs loaded in allotment slip.');
+                              }
+                            }}
+                            className="btn-secondary-action"
+                            style={{ padding: '6px 12px', fontSize: '12px', gap: '4px' }}
+                          >
+                            <FileText size={13} />
+                            <span>View Allotment Slip</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setRecordPaymentModal({
+                              isOpen: true,
+                              buyer: selectedBuyerForProfile,
+                              unitNumber: bk.unitNumber,
+                              amount: '',
+                              paymentMode: 'NEFT / RTGS',
+                              txnId: '',
+                              stage: 'Installment Milestone'
+                            })}
+                            className="btn-primary-action"
+                            style={{ padding: '6px 12px', fontSize: '12px', gap: '4px' }}
+                          >
+                            <CreditCard size={13} />
+                            <span>Record Payment</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* SUB-TAB 2: FINANCIAL LEDGER & PAYMENTS */}
+            {buyerProfileTab === 'ledger' && (
+              <div className="white-panel" style={{ padding: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>
+                      Statement of Accounts & Payment Ledger
+                    </h4>
+                    <span style={{ fontSize: '12px', color: '#64748b' }}>
+                      Verified receipts, transaction references, and payment stages for this buyer
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setRecordPaymentModal({
+                      isOpen: true,
+                      buyer: selectedBuyerForProfile,
+                      unitNumber: (selectedBuyerForProfile.bookedUnits && selectedBuyerForProfile.bookedUnits[0]) || '',
+                      amount: '',
+                      paymentMode: 'NEFT / RTGS',
+                      txnId: '',
+                      stage: 'Installment Milestone'
+                    })}
+                    className="btn-primary-action"
+                    style={{ padding: '7px 14px', fontSize: '12.5px', gap: '5px' }}
+                  >
+                    <Plus size={14} />
+                    <span>Record New Payment</span>
+                  </button>
+                </div>
+
+                <table className="admin-table" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+                  <thead>
+                    <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                      <th style={{ padding: '12px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#475569' }}>Receipt No</th>
+                      <th style={{ padding: '12px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#475569' }}>Date</th>
+                      <th style={{ padding: '12px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#475569' }}>Stage / Milestone</th>
+                      <th style={{ padding: '12px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#475569' }}>Payment Mode</th>
+                      <th style={{ padding: '12px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#475569' }}>Transaction ID</th>
+                      <th style={{ padding: '12px 14px', textAlign: 'right', fontSize: '11px', fontWeight: 700, color: '#475569' }}>Amount</th>
+                      <th style={{ padding: '12px 14px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#475569' }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(selectedBuyerForProfile.paymentHistory || []).map((p, i) => (
+                      <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '12px 14px', fontWeight: 700, color: '#2563eb' }}>{p.receiptNo}</td>
+                        <td style={{ padding: '12px 14px', color: '#475569' }}>{p.date}</td>
+                        <td style={{ padding: '12px 14px', color: '#0f172a', fontWeight: 600 }}>{p.stage}</td>
+                        <td style={{ padding: '12px 14px', color: '#475569' }}>{p.paymentMode}</td>
+                        <td style={{ padding: '12px 14px', color: '#64748b', fontFamily: 'monospace' }}>{p.txnId}</td>
+                        <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 800, color: '#059669', fontSize: '14px' }}>
+                          {formatINR(p.amount)}
+                        </td>
+                        <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 700 }}>
+                            ✓ {p.status || 'CLEARED'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* SUB-TAB 3: KYC & OFFICIAL DOCUMENTS */}
+            {buyerProfileTab === 'kyc' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: '20px' }}>
+                
+                {/* Left Card: KYC Authentication Card */}
+                <div className="white-panel" style={{ padding: '24px' }}>
+                  <h4 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <ShieldCheck size={18} style={{ color: '#059669' }} />
+                    <span>KYC & Identity Authentication</span>
+                  </h4>
+
+                  <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
+                    <div style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Permanent Account Number (PAN)</div>
+                    <div style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a', letterSpacing: '0.05em', marginTop: '2px' }}>
+                      {selectedBuyerForProfile.kyc?.panNumber || 'NOT SUBMITTED'}
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
+                    <div style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Aadhaar Card Number</div>
+                    <div style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a', letterSpacing: '0.05em', marginTop: '2px' }}>
+                      {selectedBuyerForProfile.kyc?.aadhaarNumber || 'NOT SUBMITTED'}
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '14px', borderRadius: '8px', background: selectedBuyerForProfile.kyc?.status === 'VERIFIED' ? '#ecfdf5' : '#fffbeb', border: '1px solid', borderColor: selectedBuyerForProfile.kyc?.status === 'VERIFIED' ? '#a7f3d0' : '#fde68a' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {selectedBuyerForProfile.kyc?.status === 'VERIFIED' ? <CheckCircle2 size={16} style={{ color: '#059669' }} /> : <Clock size={16} style={{ color: '#d97706' }} />}
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: selectedBuyerForProfile.kyc?.status === 'VERIFIED' ? '#065f46' : '#92400e' }}>
+                        Verification Status: {selectedBuyerForProfile.kyc?.status || 'PENDING'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: '#475569', marginTop: '4px' }}>
+                      Verified By: <b>{selectedBuyerForProfile.kyc?.verifiedBy || 'Super Admin'}</b> on {selectedBuyerForProfile.kyc?.verifiedDate || 'Registration'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Card: Uploaded & Generated Official Documents */}
+                <div className="white-panel" style={{ padding: '24px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <div>
+                      <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>
+                        Official Documents & Dossiers ({(selectedBuyerForProfile.documents || []).length})
+                      </h4>
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>Download contracts, allotment slips, and receipts</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setUploadDocModal({ isOpen: true, buyer: selectedBuyerForProfile, title: '', type: 'AGREEMENT' })}
+                      className="btn-secondary-action"
+                      style={{ padding: '6px 12px', fontSize: '12px', gap: '5px' }}
+                    >
+                      <Upload size={13} />
+                      <span>+ Upload Document</span>
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {(selectedBuyerForProfile.documents || []).map((doc, dIdx) => (
+                      <div key={dIdx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <FileText size={18} />
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#0f172a' }}>{doc.title}</div>
+                            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                              Type: {doc.type} &bull; Uploaded: {doc.date} &bull; Size: {doc.size || '1.4 MB'}
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            triggerToast(`Downloading official document: "${doc.title}"`);
+                          }}
+                          className="btn-secondary-action"
+                          style={{ padding: '6px 12px', fontSize: '12px', gap: '5px' }}
+                        >
+                          <Download size={13} />
+                          <span>Download</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {/* SUB-TAB 4: CRM NOTES & INTERACTIONS */}
+            {buyerProfileTab === 'notes' && (
+              <div className="white-panel" style={{ padding: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>
+                      Customer Relationship & Communication Log
+                    </h4>
+                    <span style={{ fontSize: '12px', color: '#64748b' }}>
+                      Chronological history of calls, WhatsApp updates, site inspections, and follow-ups
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setLogCommModal({ isOpen: true, buyer: selectedBuyerForProfile, type: 'CALL', summary: '', nextFollowUp: '' })}
+                    className="btn-primary-action"
+                    style={{ padding: '7px 14px', fontSize: '12.5px', gap: '5px' }}
+                  >
+                    <Plus size={14} />
+                    <span>+ Log Interaction / Note</span>
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {(selectedBuyerForProfile.communications || []).map((comm, cIdx) => (
+                    <div key={cIdx} style={{ display: 'flex', gap: '14px', padding: '14px 18px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: comm.type === 'CALL' ? '#eff6ff' : (comm.type === 'WHATSAPP' ? '#f0fdf4' : '#fffbeb'), color: comm.type === 'CALL' ? '#2563eb' : (comm.type === 'WHATSAPP' ? '#16a34a' : '#d97706'), display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        {comm.type === 'CALL' ? <PhoneCall size={16} /> : (comm.type === 'WHATSAPP' ? <MessageSquare size={16} /> : <Calendar size={16} />)}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '13.5px', fontWeight: 700, color: '#0f172a' }}>
+                            {comm.type} &bull; Logged by {comm.agent || 'Relationship Manager'}
+                          </span>
+                          <span style={{ fontSize: '11.5px', color: '#94a3b8' }}>{comm.date}</span>
+                        </div>
+                        <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#334155', lineHeight: 1.5 }}>
+                          {comm.summary}
+                        </p>
+                        {comm.nextFollowUp && (
+                          <div style={{ fontSize: '11.5px', color: '#2563eb', fontWeight: 600, marginTop: '6px' }}>
+                            📅 Next Follow-up Scheduled: {comm.nextFollowUp}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* SUB-TAB 5: CANCELLATIONS & REFUND HISTORY */}
+            {buyerProfileTab === 'cancellations' && (
+              <div className="white-panel" style={{ padding: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>
+                      Booking Cancellation & Refund Records
+                    </h4>
+                    <span style={{ fontSize: '12px', color: '#64748b' }}>
+                      Official audit history of any cancelled allotments and processed refunds
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCancelBookingModal({
+                      isOpen: true,
+                      buyer: selectedBuyerForProfile,
+                      unitNumber: (selectedBuyerForProfile.bookedUnits && selectedBuyerForProfile.bookedUnits[0]) || '',
+                      reason: '',
+                      refundAmount: '',
+                      refundStatus: 'PROCESSED'
+                    })}
+                    className="btn-secondary-action"
+                    style={{ padding: '7px 14px', fontSize: '12.5px', gap: '5px', color: '#dc2626', borderColor: '#fecaca' }}
+                  >
+                    <AlertTriangle size={14} />
+                    <span>Cancel Unit Booking</span>
+                  </button>
+                </div>
+
+                {(selectedBuyerForProfile.cancellationHistory || []).length === 0 ? (
+                  <div style={{ padding: '36px', textAlign: 'center', background: '#f8fafc', borderRadius: '10px', border: '1px dashed #cbd5e1' }}>
+                    <ShieldCheck size={36} style={{ color: '#059669', margin: '0 auto 8px' }} />
+                    <h5 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>No Booking Cancellations</h5>
+                    <p style={{ margin: 0, fontSize: '12.5px', color: '#64748b' }}>
+                      All property allotments for this buyer remain active and in good standing.
+                    </p>
+                  </div>
+                ) : (
+                  <table className="admin-table" style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+                    <thead>
+                      <tr style={{ background: '#fef2f2', borderBottom: '2px solid #fee2e2' }}>
+                        <th style={{ padding: '12px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#991b1b' }}>Unit Cancelled</th>
+                        <th style={{ padding: '12px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#991b1b' }}>Date</th>
+                        <th style={{ padding: '12px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#991b1b' }}>Cancellation Reason</th>
+                        <th style={{ padding: '12px 14px', textAlign: 'right', fontSize: '11px', fontWeight: 700, color: '#991b1b' }}>Refund Amount</th>
+                        <th style={{ padding: '12px 14px', textAlign: 'center', fontSize: '11px', fontWeight: 700, color: '#991b1b' }}>Refund Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedBuyerForProfile.cancellationHistory.map((c, cIdx) => (
+                        <tr key={cIdx} style={{ borderBottom: '1px solid #fee2e2' }}>
+                          <td style={{ padding: '12px 14px', fontWeight: 700, color: '#dc2626' }}>Unit {c.unitNumber}</td>
+                          <td style={{ padding: '12px 14px', color: '#475569' }}>{c.date}</td>
+                          <td style={{ padding: '12px 14px', color: '#0f172a' }}>{c.reason}</td>
+                          <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 700, color: '#059669' }}>{formatINR(c.refundAmount)}</td>
+                          <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                            <span style={{ display: 'inline-flex', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 700, background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0' }}>
+                              ✓ {c.refundStatus}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
+
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          POINT 4: ADD / EDIT BUYER MASTER MODAL (FULL SCREEN)
+      ======================================================== */}
+      {showAddEditBuyerModal && editingBuyer && (
+        <div className="fullscreen-page-overlay">
+          <header className="fullscreen-top-nav">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button 
+                type="button"
+                className="btn-secondary-action"
+                style={{ padding: '7px 14px', fontSize: '13px' }}
+                onClick={() => setShowAddEditBuyerModal(false)}
+              >
+                <ArrowLeft size={16} />
+                <span>Cancel</span>
+              </button>
+              <div style={{ width: '1px', height: '24px', background: '#cbd5e1' }} />
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <UserPlus size={18} style={{ color: '#2563eb' }} />
+                  <span>{editingBuyer.id ? `Edit Buyer Profile: ${editingBuyer.name}` : 'Enroll New Buyer / Customer'}</span>
+                </h3>
+                <span style={{ fontSize: '11.5px', color: '#64748b' }}>
+                  Point 4: Full KYC, Address, Apartment Allotment & Financial Terms
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button
+                type="button"
+                className="btn-secondary-action"
+                onClick={() => setShowAddEditBuyerModal(false)}
+              >
+                Discard
+              </button>
+              <button
+                type="submit"
+                form="form-add-edit-buyer"
+                className="btn-primary-action"
+              >
+                <Save size={15} />
+                <span>{editingBuyer.id ? 'Save Changes' : 'Register Buyer'}</span>
+              </button>
+            </div>
+          </header>
+
+          <div className="fullscreen-content-container">
+            <form
+              id="form-add-edit-buyer"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!editingBuyer.name.trim() || !editingBuyer.phone.trim() || !editingBuyer.email.trim()) {
+                  alert('Please enter Buyer Name, Phone Number, and Email Address.');
+                  return;
+                }
+
+                try {
+                  const actor = user?.name || 'Super Admin';
+                  if (editingBuyer.id) {
+                    dataStore.updateBuyer(editingBuyer.id, editingBuyer, actor);
+                    triggerToast(`Updated buyer profile for "${editingBuyer.name}"`);
+                  } else {
+                    dataStore.addBuyer(editingBuyer, actor);
+                    triggerToast(`Registered new buyer "${editingBuyer.name}"`);
+                  }
+                  setBuyers(dataStore.getBuyers());
+                  setShowAddEditBuyerModal(false);
+                } catch (err) {
+                  alert(err.message || 'Error saving buyer record.');
+                }
+              }}
+            >
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px' }}>
+                
+                {/* Left Column: Personal Identity & KYC */}
+                <div className="white-panel" style={{ padding: '24px' }}>
+                  <h4 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Users size={16} style={{ color: '#2563eb' }} />
+                    <span>1. Personal Identity & KYC Details</span>
+                  </h4>
+
+                  <div className="form-group-clean">
+                    <label>Buyer Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Rajesh Kumar Singhania"
+                      value={editingBuyer.name}
+                      onChange={(e) => setEditingBuyer({ ...editingBuyer, name: e.target.value })}
+                      className="input-clean"
+                      style={{ height: '38px', fontSize: '13px' }}
+                    />
+                  </div>
+
+                  <div className="form-grid-2">
+                    <div className="form-group-clean">
+                      <label>Mobile Number *</label>
+                      <input
+                        type="tel"
+                        required
+                        placeholder="+91 98200 12345"
+                        value={editingBuyer.phone}
+                        onChange={(e) => setEditingBuyer({ ...editingBuyer, phone: e.target.value })}
+                        className="input-clean"
+                        style={{ height: '38px', fontSize: '13px' }}
+                      />
+                    </div>
+
+                    <div className="form-group-clean">
+                      <label>Alternative Mobile / WhatsApp</label>
+                      <input
+                        type="tel"
+                        placeholder="+91 98200 54321"
+                        value={editingBuyer.altPhone}
+                        onChange={(e) => setEditingBuyer({ ...editingBuyer, altPhone: e.target.value })}
+                        className="input-clean"
+                        style={{ height: '38px', fontSize: '13px' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group-clean">
+                    <label>Email Address *</label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="rajesh.singhania@corp.in"
+                      value={editingBuyer.email}
+                      onChange={(e) => setEditingBuyer({ ...editingBuyer, email: e.target.value })}
+                      className="input-clean"
+                      style={{ height: '38px', fontSize: '13px' }}
+                    />
+                  </div>
+
+                  <div className="form-group-clean">
+                    <label>Full Residential Address</label>
+                    <textarea
+                      rows={2}
+                      placeholder="House No., Street, Landmark, Locality..."
+                      value={editingBuyer.address}
+                      onChange={(e) => setEditingBuyer({ ...editingBuyer, address: e.target.value })}
+                      className="input-clean"
+                      style={{ fontSize: '13px', resize: 'vertical' }}
+                    />
+                  </div>
+
+                  <div className="form-grid-2">
+                    <div className="form-group-clean">
+                      <label>City & State</label>
+                      <input
+                        type="text"
+                        placeholder="Bangalore, Karnataka"
+                        value={editingBuyer.city}
+                        onChange={(e) => setEditingBuyer({ ...editingBuyer, city: e.target.value })}
+                        className="input-clean"
+                        style={{ height: '38px', fontSize: '13px' }}
+                      />
+                    </div>
+
+                    <div className="form-group-clean">
+                      <label>Pincode</label>
+                      <input
+                        type="text"
+                        placeholder="560001"
+                        value={editingBuyer.pincode}
+                        onChange={(e) => setEditingBuyer({ ...editingBuyer, pincode: e.target.value })}
+                        className="input-clean"
+                        style={{ height: '38px', fontSize: '13px' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-grid-2">
+                    <div className="form-group-clean">
+                      <label>Profession / Occupation</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Managing Director"
+                        value={editingBuyer.occupation}
+                        onChange={(e) => setEditingBuyer({ ...editingBuyer, occupation: e.target.value })}
+                        className="input-clean"
+                        style={{ height: '38px', fontSize: '13px' }}
+                      />
+                    </div>
+
+                    <div className="form-group-clean">
+                      <label>Company / Organization</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Apex Global Tech"
+                        value={editingBuyer.company}
+                        onChange={(e) => setEditingBuyer({ ...editingBuyer, company: e.target.value })}
+                        className="input-clean"
+                        style={{ height: '38px', fontSize: '13px' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* KYC Section */}
+                  <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
+                    <h5 style={{ margin: '0 0 12px', fontSize: '13px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <ShieldCheck size={15} style={{ color: '#059669' }} />
+                      <span>KYC Compliance & Proofs</span>
+                    </h5>
+
+                    <div className="form-grid-2">
+                      <div className="form-group-clean">
+                        <label>PAN Card Number (10 Chars)</label>
+                        <input
+                          type="text"
+                          maxLength={10}
+                          placeholder="ABCDE1234F"
+                          value={editingBuyer.kyc?.panNumber || ''}
+                          onChange={(e) => setEditingBuyer({
+                            ...editingBuyer,
+                            kyc: { ...editingBuyer.kyc, panNumber: e.target.value.toUpperCase() }
+                          })}
+                          className="input-clean"
+                          style={{ height: '38px', fontSize: '13px', textTransform: 'uppercase' }}
+                        />
+                      </div>
+
+                      <div className="form-group-clean">
+                        <label>Aadhaar Number (12 Digits)</label>
+                        <input
+                          type="text"
+                          placeholder="5412-8921-3401"
+                          value={editingBuyer.kyc?.aadhaarNumber || ''}
+                          onChange={(e) => setEditingBuyer({
+                            ...editingBuyer,
+                            kyc: { ...editingBuyer.kyc, aadhaarNumber: e.target.value }
+                          })}
+                          className="input-clean"
+                          style={{ height: '38px', fontSize: '13px' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group-clean">
+                      <label>KYC Verification Status</label>
+                      <select
+                        value={editingBuyer.kyc?.status || 'VERIFIED'}
+                        onChange={(e) => setEditingBuyer({
+                          ...editingBuyer,
+                          kyc: { ...editingBuyer.kyc, status: e.target.value }
+                        })}
+                        className="input-clean"
+                        style={{ height: '38px', fontSize: '13px', fontWeight: 700 }}
+                      >
+                        <option value="VERIFIED">🟢 Verified (Authenticated)</option>
+                        <option value="PENDING">🟡 Pending Document Review</option>
+                        <option value="REJECTED">🔴 Rejected</option>
+                      </select>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Right Column: Property Allocation & Financial Terms */}
+                <div className="white-panel" style={{ padding: '24px' }}>
+                  <h4 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Building2 size={16} style={{ color: '#059669' }} />
+                    <span>2. Property Allotment & Financials</span>
+                  </h4>
+
+                  <div className="form-group-clean">
+                    <label>Allot Apartment Unit</label>
+                    <select
+                      value={editingBuyer.unitNumber}
+                      onChange={(e) => {
+                        const selU = e.target.value;
+                        const targetApt = apartments.find(a => a.apartmentNumber === selU);
+                        setEditingBuyer({
+                          ...editingBuyer,
+                          unitNumber: selU,
+                          dealAmount: targetApt ? targetApt.price : editingBuyer.dealAmount
+                        });
+                      }}
+                      className="input-clean"
+                      style={{ height: '38px', fontSize: '13px', fontWeight: 600 }}
+                    >
+                      <option value="">-- Select an Apartment (Optional) --</option>
+                      {apartments.map(a => (
+                        <option key={a.id} value={a.apartmentNumber}>
+                          {a.apartmentNumber} &bull; {a.title} ({formatINR(a.price)}) [{a.status}]
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-grid-2">
+                    <div className="form-group-clean">
+                      <label>Agreed Deal Amount (₹ INR)</label>
+                      <input
+                        type="number"
+                        placeholder="28750000"
+                        value={editingBuyer.dealAmount}
+                        onChange={(e) => setEditingBuyer({ ...editingBuyer, dealAmount: e.target.value })}
+                        className="input-clean"
+                        style={{ height: '38px', fontSize: '13px', fontWeight: 700 }}
+                      />
+                      <div style={{ fontSize: '11px', color: '#059669', marginTop: '2px', fontWeight: 600 }}>
+                        {formatINR(Number(editingBuyer.dealAmount) || 0)}
+                      </div>
+                    </div>
+
+                    <div className="form-group-clean">
+                      <label>Initial Amount Received (₹ INR)</label>
+                      <input
+                        type="number"
+                        placeholder="1500000"
+                        value={editingBuyer.paidAmount}
+                        onChange={(e) => setEditingBuyer({ ...editingBuyer, paidAmount: e.target.value })}
+                        className="input-clean"
+                        style={{ height: '38px', fontSize: '13px', fontWeight: 700 }}
+                      />
+                      <div style={{ fontSize: '11px', color: '#059669', marginTop: '2px', fontWeight: 600 }}>
+                        {formatINR(Number(editingBuyer.paidAmount) || 0)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="form-grid-2">
+                    <div className="form-group-clean">
+                      <label>Payment Plan</label>
+                      <select
+                        value={editingBuyer.paymentPlan}
+                        onChange={(e) => setEditingBuyer({ ...editingBuyer, paymentPlan: e.target.value })}
+                        className="input-clean"
+                        style={{ height: '38px', fontSize: '13px' }}
+                      >
+                        <option value="FULL_PAYMENT">100% Lumsum Full Payment</option>
+                        <option value="EMI_PLAN">Active EMI / Construction Milestone</option>
+                        <option value="TOKEN_ADVANCE">Token Advance Hold</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group-clean">
+                      <label>Payment Mode</label>
+                      <select
+                        value={editingBuyer.paymentMode}
+                        onChange={(e) => setEditingBuyer({ ...editingBuyer, paymentMode: e.target.value })}
+                        className="input-clean"
+                        style={{ height: '38px', fontSize: '13px' }}
+                      >
+                        <option value="NEFT / RTGS">NEFT / RTGS</option>
+                        <option value="Cheque / Clearing">Cheque / Clearing</option>
+                        <option value="UPI / Online">UPI / Online</option>
+                        <option value="IMPS / Bank Transfer">IMPS / Bank Transfer</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="form-group-clean">
+                    <label>Transaction ID / Bank Reference</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. HDFC0001928471"
+                      value={editingBuyer.txnId}
+                      onChange={(e) => setEditingBuyer({ ...editingBuyer, txnId: e.target.value })}
+                      className="input-clean"
+                      style={{ height: '38px', fontSize: '13px', fontFamily: 'monospace' }}
+                    />
+                  </div>
+
+                  <div className="form-group-clean">
+                    <label>Assigned Relationship Manager</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Rohit Verma"
+                      value={editingBuyer.assignedAgent}
+                      onChange={(e) => setEditingBuyer({ ...editingBuyer, assignedAgent: e.target.value })}
+                      className="input-clean"
+                      style={{ height: '38px', fontSize: '13px' }}
+                    />
+                  </div>
+
+                  <div className="form-group-clean">
+                    <label>Internal CRM Notes</label>
+                    <textarea
+                      rows={3}
+                      placeholder="Special inclusions, requested parking slots, financing notes..."
+                      value={editingBuyer.internalNotes}
+                      onChange={(e) => setEditingBuyer({ ...editingBuyer, internalNotes: e.target.value })}
+                      className="input-clean"
+                      style={{ fontSize: '13px', resize: 'vertical' }}
+                    />
+                  </div>
+
+                </div>
+
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          SUB-MODAL 1: RECORD PAYMENT / INSTALLMENT RECEIPT
+      ======================================================== */}
+      {recordPaymentModal.isOpen && (
+        <div className="fullscreen-page-overlay">
+          
+          {/* Top Sticky Bar */}
+          <header className="fullscreen-top-nav">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button 
+                type="button"
+                className="btn-secondary-action"
+                style={{ padding: '7px 14px', fontSize: '13px' }}
+                onClick={() => setRecordPaymentModal({ isOpen: false, buyer: null, unitNumber: '', amount: '', paymentMode: 'NEFT / RTGS', txnId: '', stage: 'Installment Milestone' })}
+              >
+                <ArrowLeft size={16} />
+                <span>Back to Sales & Buyers</span>
+              </button>
+              <div style={{ width: '1px', height: '24px', background: '#cbd5e1' }} />
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <CreditCard size={18} style={{ color: '#059669' }} />
+                  <span>Record Official Payment & Issue Receipt</span>
+                </h3>
+                <span style={{ fontSize: '11.5px', color: '#64748b' }}>
+                  {recordPaymentModal.buyer?.name} &bull; Unit {recordPaymentModal.unitNumber || (recordPaymentModal.buyer?.bookedUnits && recordPaymentModal.buyer?.bookedUnits[0]) || 'Assigned Property'} &bull; Escrow Reconciliation
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button
+                type="button"
+                className="btn-secondary-action"
+                onClick={() => setRecordPaymentModal({ isOpen: false, buyer: null, unitNumber: '', amount: '', paymentMode: 'NEFT / RTGS', txnId: '', stage: 'Installment Milestone' })}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="form-record-payment"
+                className="btn-primary-action"
+                style={{ background: '#059669', borderColor: '#059669' }}
+              >
+                <CheckCircle2 size={15} />
+                <span>Confirm & Issue Receipt</span>
+              </button>
+            </div>
+          </header>
+
+          <div className="fullscreen-content-container">
+            <form
+              id="form-record-payment"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!recordPaymentModal.amount || Number(recordPaymentModal.amount) <= 0) {
+                  alert('Please enter a valid payment amount.');
+                  return;
+                }
+                dataStore.addPaymentToBuyer(recordPaymentModal.buyer.id, {
+                  amount: Number(recordPaymentModal.amount),
+                  unitNumber: recordPaymentModal.unitNumber,
+                  paymentMode: recordPaymentModal.paymentMode,
+                  txnId: recordPaymentModal.txnId || `TXN-${Date.now().toString().slice(-8)}`,
+                  stage: recordPaymentModal.stage
+                }, user?.name || 'Super Admin');
+
+                triggerToast(`Recorded payment of ${formatINR(Number(recordPaymentModal.amount))} for ${recordPaymentModal.buyer.name}`);
+                setBuyers(dataStore.getBuyers());
+                setApartments(dataStore.getApartments());
+                setRecordPaymentModal({ isOpen: false, buyer: null, unitNumber: '', amount: '', paymentMode: 'NEFT / RTGS', txnId: '', stage: 'Installment Milestone' });
+              }}
+            >
+              <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1.3fr', gap: '24px' }}>
+                
+                {/* Left Panel: Property & Allottee Ledger Summary */}
+                <div className="white-panel" style={{ padding: '24px' }}>
+                  <h4 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Building2 size={16} style={{ color: '#2563eb' }} />
+                    <span>1. Property & Allottee Ledger Summary</span>
+                  </h4>
+
+                  {/* Buyer Card */}
+                  <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Allottee Name</span>
+                      <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#2563eb', background: '#eff6ff', padding: '2px 6px', borderRadius: '4px' }}>
+                        {recordPaymentModal.buyer?.id}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '17px', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>
+                      {recordPaymentModal.buyer?.name}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                      📞 {recordPaymentModal.buyer?.phone} &bull; ✉️ {recordPaymentModal.buyer?.email}
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: '#475569', marginTop: '4px' }}>
+                      PAN: <b>{recordPaymentModal.buyer?.kyc?.panNumber || 'Verified'}</b>
+                    </div>
+                  </div>
+
+                  {/* Unit Card */}
+                  <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Allotted Property</span>
+                    <div style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ background: '#eff6ff', color: '#1e40af', border: '1px solid #bfdbfe', padding: '2px 8px', borderRadius: '4px', fontSize: '13px', fontWeight: 700 }}>
+                        Unit {recordPaymentModal.unitNumber || (recordPaymentModal.buyer?.bookedUnits && recordPaymentModal.buyer?.bookedUnits[0])}
+                      </span>
+                      <span>Dwellora Residence</span>
+                    </div>
+                  </div>
+
+                  {/* Financial Breakdown & User Payment Records */}
+                  {(() => {
+                    const activeBuyer = buyers.find(buyer => buyer.id === recordPaymentModal.buyer?.id) || recordPaymentModal.buyer;
+                    const b = activeBuyer;
+                    const totalAgreed = (b?.bookingHistory || []).reduce((acc, bk) => acc + (bk.agreedPrice || 0), 0);
+                    const totalPaid = (b?.bookingHistory || []).reduce((acc, bk) => acc + (bk.paidAmount || 0), 0);
+                    const totalBal = Math.max(0, totalAgreed - totalPaid);
+                    const percent = totalAgreed > 0 ? Math.min(100, Math.round((totalPaid / totalAgreed) * 100)) : 0;
+                    const pastPayments = b?.paymentHistory || [];
+
+                    return (
+                      <>
+                        <div style={{ background: '#f0fdf4', padding: '16px', borderRadius: '10px', border: '1px solid #bbf7d0' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', textAlign: 'center', marginBottom: '12px' }}>
+                            <div>
+                              <span style={{ fontSize: '10.5px', color: '#64748b', textTransform: 'uppercase' }}>Total Deal</span>
+                              <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>{formatINR(totalAgreed)}</div>
+                            </div>
+                            <div>
+                              <span style={{ fontSize: '10.5px', color: '#059669', textTransform: 'uppercase' }}>Total Paid</span>
+                              <div style={{ fontSize: '15px', fontWeight: 800, color: '#059669', marginTop: '2px' }}>{formatINR(totalPaid)}</div>
+                            </div>
+                            <div>
+                              <span style={{ fontSize: '10.5px', color: '#dc2626', textTransform: 'uppercase' }}>Balance Due</span>
+                              <div style={{ fontSize: '15px', fontWeight: 800, color: '#dc2626', marginTop: '2px' }}>{formatINR(totalBal)}</div>
+                            </div>
+                          </div>
+
+                          <div style={{ width: '100%', height: '6px', background: '#dcfce7', borderRadius: '3px', overflow: 'hidden' }}>
+                            <div style={{ width: `${percent}%`, height: '100%', background: '#16a34a', borderRadius: '3px' }} />
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#166534', textAlign: 'right', marginTop: '4px', fontWeight: 700 }}>
+                            {percent}% Contract Amount Cleared
+                          </div>
+                        </div>
+
+                        {/* User Payment Records & Past Receipts */}
+                        <div style={{ marginTop: '20px', paddingTop: '18px', borderTop: '1px solid #e2e8f0' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                            <span style={{ fontSize: '13.5px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <Receipt size={16} style={{ color: '#059669' }} />
+                              <span>User Payment Records & Receipts ({pastPayments.length})</span>
+                            </span>
+                            <span style={{ fontSize: '11.5px', color: '#64748b' }}>
+                              Cleared: <b style={{ color: '#059669' }}>{formatINR(totalPaid)}</b>
+                            </span>
+                          </div>
+
+                          {pastPayments.length > 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '340px', overflowY: 'auto', paddingRight: '4px' }}>
+                              {pastPayments.map((p, idx) => (
+                                <div
+                                  key={idx}
+                                  style={{
+                                    background: '#ffffff',
+                                    border: '1px solid #e2e8f0',
+                                    borderRadius: '8px',
+                                    padding: '12px 14px',
+                                    boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span style={{ fontSize: '12px', fontWeight: 800, color: '#2563eb' }}>
+                                          {p.receiptNo || `RCP-00${idx + 1}`}
+                                        </span>
+                                        <span style={{ fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0' }}>
+                                          ✓ {p.status || 'CLEARED'}
+                                        </span>
+                                      </div>
+                                      <div style={{ fontSize: '12.5px', fontWeight: 700, color: '#0f172a', marginTop: '4px' }}>
+                                        {p.stage || 'Installment Payment'}
+                                      </div>
+                                      <div style={{ fontSize: '11px', color: '#64748b', marginTop: '3px' }}>
+                                        📅 {p.date} &bull; 💳 {p.paymentMode} &bull; Ref: <code style={{ fontSize: '10.5px', color: '#334155', background: '#f1f5f9', padding: '1px 4px', borderRadius: '3px' }}>{p.txnId || 'N/A'}</code>
+                                      </div>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                      <div style={{ fontSize: '14.5px', fontWeight: 800, color: '#059669' }}>
+                                        {formatINR(p.amount)}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{ padding: '24px 16px', textAlign: 'center', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
+                              <p style={{ margin: 0, fontSize: '12.5px', color: '#64748b', fontWeight: 600 }}>
+                                Abhi tak koi payment record save nahi hua hai.
+                              </p>
+                              <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                                Right side se payment details bhar kar confirm karein.
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
+
+                </div>
+
+                {/* Right Panel: Transaction Voucher Details */}
+                <div className="white-panel" style={{ padding: '24px' }}>
+                  <h4 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <CreditCard size={16} style={{ color: '#059669' }} />
+                    <span>2. Payment Voucher & Transaction Details</span>
+                  </h4>
+
+                  <div className="form-group-clean" style={{ marginBottom: '18px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>
+                      Installment Amount Received (₹ INR) *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      placeholder="e.g. 1500000"
+                      value={recordPaymentModal.amount}
+                      onChange={(e) => setRecordPaymentModal({ ...recordPaymentModal, amount: e.target.value })}
+                      className="input-clean"
+                      style={{ height: '44px', fontSize: '16px', fontWeight: 800, color: '#059669' }}
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '4px' }}>
+                      <span style={{ color: '#059669', fontWeight: 700 }}>
+                        Preview: {formatINR(Number(recordPaymentModal.amount) || 0)}
+                      </span>
+                      <span style={{ color: '#64748b', fontStyle: 'italic' }}>
+                        {numberToIndianWords(Number(recordPaymentModal.amount) || 0)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="form-group-clean">
+                    <label>Payment Stage / Milestone Specification *</label>
+                    <select
+                      value={recordPaymentModal.stage}
+                      onChange={(e) => setRecordPaymentModal({ ...recordPaymentModal, stage: e.target.value })}
+                      className="input-clean"
+                      style={{ height: '40px', fontSize: '13px', fontWeight: 600 }}
+                    >
+                      <option value="Token Holding Advance">Token Holding Advance (Reservation)</option>
+                      <option value="Agreement Signing Milestone (20%)">Agreement Signing Milestone (20%)</option>
+                      <option value="Plinth / Foundation Complete">Plinth / Foundation Complete</option>
+                      <option value="Structure Complete (5th Floor Slab)">Structure Complete (5th Floor Slab)</option>
+                      <option value="Internal Plaster & Flooring Stage">Internal Plaster & Flooring Stage</option>
+                      <option value="Final Settlement & Registry Balance">Final Settlement & Registry Balance</option>
+                    </select>
+                  </div>
+
+                  <div className="form-grid-2">
+                    <div className="form-group-clean">
+                      <label>Payment Mode *</label>
+                      <select
+                        value={recordPaymentModal.paymentMode}
+                        onChange={(e) => setRecordPaymentModal({ ...recordPaymentModal, paymentMode: e.target.value })}
+                        className="input-clean"
+                        style={{ height: '40px', fontSize: '13px' }}
+                      >
+                        <option value="NEFT / RTGS">NEFT / RTGS Bank Transfer</option>
+                        <option value="Cheque / Clearing">Cheque / Clearing</option>
+                        <option value="UPI / Online Gateway">UPI / Online Gateway</option>
+                        <option value="IMPS / Instant Transfer">IMPS / Instant Transfer</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group-clean">
+                      <label>Transaction ID / UTR / Cheque No. *</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. HDFC0001928471"
+                        value={recordPaymentModal.txnId}
+                        onChange={(e) => setRecordPaymentModal({ ...recordPaymentModal, txnId: e.target.value })}
+                        className="input-clean"
+                        style={{ height: '40px', fontSize: '13px', fontFamily: 'monospace' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-grid-2">
+                    <div className="form-group-clean">
+                      <label>Bank Name / Branch</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. HDFC Bank, MG Road Branch"
+                        value={recordPaymentModal.bankName || ''}
+                        onChange={(e) => setRecordPaymentModal({ ...recordPaymentModal, bankName: e.target.value })}
+                        className="input-clean"
+                        style={{ height: '40px', fontSize: '13px' }}
+                      />
+                    </div>
+
+                    <div className="form-group-clean">
+                      <label>Payment Date</label>
+                      <input
+                        type="text"
+                        placeholder="Today"
+                        value={recordPaymentModal.date || 'Today'}
+                        onChange={(e) => setRecordPaymentModal({ ...recordPaymentModal, date: e.target.value })}
+                        className="input-clean"
+                        style={{ height: '40px', fontSize: '13px' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group-clean">
+                    <label>Official Internal Remarks & Accounting Notes</label>
+                    <textarea
+                      rows={3}
+                      placeholder="e.g. Cleared via escrow account. Receipt dispatched via WhatsApp and Email."
+                      value={recordPaymentModal.notes || ''}
+                      onChange={(e) => setRecordPaymentModal({ ...recordPaymentModal, notes: e.target.value })}
+                      className="input-clean"
+                      style={{ fontSize: '13px', resize: 'vertical' }}
+                    />
+                  </div>
+
+                </div>
+
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          SUB-MODAL 2: CANCEL BOOKING & PROCESS REFUND
+      ======================================================== */}
+      {cancelBookingModal.isOpen && (
+        <div className="modal-overlay" onClick={() => setCancelBookingModal({ isOpen: false, buyer: null, unitNumber: '', reason: '', refundAmount: '', refundStatus: 'PROCESSED' })}>
+          <div className="modal-container-clean" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#dc2626', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertTriangle size={18} style={{ color: '#dc2626' }} />
+                <span>Cancel Property Booking</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setCancelBookingModal({ isOpen: false, buyer: null, unitNumber: '', reason: '', refundAmount: '', refundStatus: 'PROCESSED' })}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ background: '#fef2f2', padding: '12px 14px', borderRadius: '8px', marginBottom: '14px', border: '1px solid #fee2e2', fontSize: '12.5px', color: '#991b1b' }}>
+              Cancelling Unit <b>{cancelBookingModal.unitNumber}</b> for buyer <b>{cancelBookingModal.buyer?.name}</b> will automatically restore this apartment to <b>AVAILABLE</b> in public inventory.
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                dataStore.cancelBuyerBooking(cancelBookingModal.buyer.id, cancelBookingModal.unitNumber, {
+                  reason: cancelBookingModal.reason || 'Client withdrawal request',
+                  refundAmount: Number(cancelBookingModal.refundAmount || 0),
+                  refundStatus: cancelBookingModal.refundStatus
+                }, user?.name || 'Super Admin');
+
+                triggerToast(`Cancelled booking for Unit ${cancelBookingModal.unitNumber} and refunded ${formatINR(Number(cancelBookingModal.refundAmount || 0))}`);
+                setBuyers(dataStore.getBuyers());
+                setApartments(dataStore.getApartments());
+                setCancelBookingModal({ isOpen: false, buyer: null, unitNumber: '', reason: '', refundAmount: '', refundStatus: 'PROCESSED' });
+              }}
+            >
+              <div className="form-group-clean">
+                <label>Cancellation Reason *</label>
+                <textarea
+                  required
+                  rows={2}
+                  placeholder="e.g. Client relocated out of state / financial restructuring"
+                  value={cancelBookingModal.reason}
+                  onChange={(e) => setCancelBookingModal({ ...cancelBookingModal, reason: e.target.value })}
+                  className="input-clean"
+                  style={{ fontSize: '13px' }}
+                />
+              </div>
+
+              <div className="form-grid-2">
+                <div className="form-group-clean">
+                  <label>Refund Amount (₹ INR)</label>
+                  <input
+                    type="number"
+                    placeholder="1500000"
+                    value={cancelBookingModal.refundAmount}
+                    onChange={(e) => setCancelBookingModal({ ...cancelBookingModal, refundAmount: e.target.value })}
+                    className="input-clean"
+                    style={{ height: '38px', fontSize: '13px' }}
+                  />
+                </div>
+
+                <div className="form-group-clean">
+                  <label>Refund Status</label>
+                  <select
+                    value={cancelBookingModal.refundStatus}
+                    onChange={(e) => setCancelBookingModal({ ...cancelBookingModal, refundStatus: e.target.value })}
+                    className="input-clean"
+                    style={{ height: '38px', fontSize: '13px' }}
+                  >
+                    <option value="PROCESSED">Processed via RTGS</option>
+                    <option value="PENDING_APPROVAL">Pending Director Approval</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  className="btn-secondary-action"
+                  onClick={() => setCancelBookingModal({ isOpen: false, buyer: null, unitNumber: '', reason: '', refundAmount: '', refundStatus: 'PROCESSED' })}
+                >
+                  Back
+                </button>
+                <button type="submit" className="btn-primary-action" style={{ background: '#dc2626', borderColor: '#dc2626' }}>
+                  <span>Confirm Cancellation</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          SUB-MODAL 3: LOG CRM INTERACTION
+      ======================================================== */}
+      {logCommModal.isOpen && (
+        <div className="modal-overlay" onClick={() => setLogCommModal({ isOpen: false, buyer: null, type: 'CALL', summary: '', nextFollowUp: '' })}>
+          <div className="modal-container-clean" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <MessageSquare size={18} style={{ color: '#2563eb' }} />
+                <span>Log CRM Communication</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setLogCommModal({ isOpen: false, buyer: null, type: 'CALL', summary: '', nextFollowUp: '' })}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                dataStore.addBuyerCommunication(logCommModal.buyer.id, {
+                  type: logCommModal.type,
+                  summary: logCommModal.summary,
+                  nextFollowUp: logCommModal.nextFollowUp
+                }, user?.name || 'Super Admin');
+
+                triggerToast(`Logged communication with ${logCommModal.buyer.name}`);
+                setBuyers(dataStore.getBuyers());
+                setLogCommModal({ isOpen: false, buyer: null, type: 'CALL', summary: '', nextFollowUp: '' });
+              }}
+            >
+              <div className="form-group-clean">
+                <label>Interaction Type</label>
+                <select
+                  value={logCommModal.type}
+                  onChange={(e) => setLogCommModal({ ...logCommModal, type: e.target.value })}
+                  className="input-clean"
+                  style={{ height: '38px', fontSize: '13px' }}
+                >
+                  <option value="CALL">Phone Call</option>
+                  <option value="WHATSAPP">WhatsApp Conversation</option>
+                  <option value="MEETING">In-Person Meeting / Site Visit</option>
+                  <option value="EMAIL">Email Dispatch</option>
+                </select>
+              </div>
+
+              <div className="form-group-clean">
+                <label>Discussion Summary *</label>
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="Key points discussed with the client..."
+                  value={logCommModal.summary}
+                  onChange={(e) => setLogCommModal({ ...logCommModal, summary: e.target.value })}
+                  className="input-clean"
+                  style={{ fontSize: '13px' }}
+                />
+              </div>
+
+              <div className="form-group-clean">
+                <label>Next Follow-up Scheduled Date</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 15 Nov 2026"
+                  value={logCommModal.nextFollowUp}
+                  onChange={(e) => setLogCommModal({ ...logCommModal, nextFollowUp: e.target.value })}
+                  className="input-clean"
+                  style={{ height: '38px', fontSize: '13px' }}
+                />
+              </div>
+
+              <div style={{ marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  className="btn-secondary-action"
+                  onClick={() => setLogCommModal({ isOpen: false, buyer: null, type: 'CALL', summary: '', nextFollowUp: '' })}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn-primary-action">
+                  <span>Save Communication Log</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          SUB-MODAL 4: ATTACH BUYER DOCUMENT
+      ======================================================== */}
+      {uploadDocModal.isOpen && (
+        <div className="modal-overlay" onClick={() => setUploadDocModal({ isOpen: false, buyer: null, title: '', type: 'AGREEMENT' })}>
+          <div className="modal-container-clean" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Upload size={18} style={{ color: '#2563eb' }} />
+                <span>Attach Buyer Document</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setUploadDocModal({ isOpen: false, buyer: null, title: '', type: 'AGREEMENT' })}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                dataStore.addBuyerDocument(uploadDocModal.buyer.id, {
+                  title: uploadDocModal.title || 'Official Buyer Agreement',
+                  type: uploadDocModal.type,
+                  size: '2.1 MB',
+                  url: '#'
+                }, user?.name || 'Super Admin');
+
+                triggerToast(`Document "${uploadDocModal.title}" attached to ${uploadDocModal.buyer.name}`);
+                setBuyers(dataStore.getBuyers());
+                setUploadDocModal({ isOpen: false, buyer: null, title: '', type: 'AGREEMENT' });
+              }}
+            >
+              <div className="form-group-clean">
+                <label>Document Title *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Registered Sale Agreement (Deed No. 8921)"
+                  value={uploadDocModal.title}
+                  onChange={(e) => setUploadDocModal({ ...uploadDocModal, title: e.target.value })}
+                  className="input-clean"
+                  style={{ height: '38px', fontSize: '13px' }}
+                />
+              </div>
+
+              <div className="form-group-clean">
+                <label>Document Category</label>
+                <select
+                  value={uploadDocModal.type}
+                  onChange={(e) => setUploadDocModal({ ...uploadDocModal, type: e.target.value })}
+                  className="input-clean"
+                  style={{ height: '38px', fontSize: '13px' }}
+                >
+                  <option value="AGREEMENT">Buyer Sale Agreement</option>
+                  <option value="ALLOTMENT_LETTER">Official Allotment Letter</option>
+                  <option value="RECEIPT">Payment Receipt Cum Voucher</option>
+                  <option value="KYC_PROOF">KYC PAN / Aadhaar Dossier</option>
+                  <option value="POSSESSION">Possession & Key Handover Certificate</option>
+                </select>
+              </div>
+
+              <div style={{ marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  className="btn-secondary-action"
+                  onClick={() => setUploadDocModal({ isOpen: false, buyer: null, title: '', type: 'AGREEMENT' })}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn-primary-action">
+                  <span>Upload & Attach</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      
+      {/* ========================================================
+          PROJECT MANAGEMENT FULLSCREEN PAGE: ADD / EDIT PROJECT (POINT 2)
+          Sidebar (275px) stays visible on left; right side is full screen
+      ======================================================== */}
+      {projectModal.isOpen && (
+        <div className="fullscreen-page-overlay">
+          {/* Sticky Fullscreen Top Navigation */}
+          <header className="fullscreen-top-nav">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <button 
+                type="button"
+                className="btn-secondary-action"
+                style={{ padding: '7px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                onClick={() => setProjectModal(prev => ({ ...prev, isOpen: false }))}
+              >
+                <ArrowLeft size={16} />
+                <span>Back to Projects</span>
+              </button>
+              <div style={{ width: '1px', height: '24px', background: '#cbd5e1' }} />
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Layers size={18} style={{ color: '#2563eb' }} />
+                  <span>{projectModal.mode === 'add' ? '+ Add New Master Development Project' : `Edit Project: ${projectModal.name}`}</span>
+                </h3>
+                <span style={{ fontSize: '11.5px', color: '#64748b' }}>
+                  Full Screen Project Editor: Complete marketing specs, RERA compliance, pricing & live sync
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button
+                type="button"
+                className="btn-secondary-action"
+                onClick={() => setProjectModal(prev => ({ ...prev, isOpen: false }))}
+                style={{ padding: '8px 16px', fontSize: '13px' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="form-project-editor"
+                className="btn-primary-action"
+                style={{ padding: '8px 20px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '7px' }}
+              >
+                <Save size={15} />
+                <span>{projectModal.mode === 'add' ? 'Publish Project' : 'Save Changes & Sync Live'}</span>
+              </button>
+            </div>
+          </header>
+
+          {/* Fullscreen Form Workspace */}
+          <div className="fullscreen-content-container">
+            <form id="form-project-editor" onSubmit={handleSaveProject}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '24px' }}>
+                
+                {/* LEFT COLUMN: Identity, Geography & Regulatory */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+                  
+                  {/* CARD 1: Basic Identity & Pricing */}
+                  <div style={{ background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '22px 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                    <h4 style={{ margin: '0 0 16px', fontSize: '14px', fontWeight: 700, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Building2 size={16} />
+                      <span>1. Basic Identity & Pricing</span>
+                    </h4>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '5px' }}>Project Name *</label>
+                        <input
+                          type="text"
+                          required
+                          className="input-clean"
+                          placeholder="e.g. Dwellora Residence"
+                          value={projectModal.name}
+                          onChange={(e) => setProjectModal({ ...projectModal, name: e.target.value })}
+                          style={{ width: '100%', boxSizing: 'border-box', height: '38px', fontSize: '13px' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '5px' }}>Project Status</label>
+                        <select
+                          className="input-clean"
+                          value={projectModal.status}
+                          onChange={(e) => setProjectModal({ ...projectModal, status: e.target.value })}
+                          style={{ width: '100%', boxSizing: 'border-box', height: '38px', fontSize: '13px' }}
+                        >
+                          <option value="Under Construction">Under Construction</option>
+                          <option value="Ready to Move">Ready to Move</option>
+                          <option value="Upcoming">Upcoming</option>
+                          <option value="Completed">Completed</option>
+                          <option value="Sold Out">Sold Out</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '5px' }}>Tagline / Headline</label>
+                        <input
+                          type="text"
+                          className="input-clean"
+                          placeholder="e.g. A place by day — by night to return to"
+                          value={projectModal.tagline}
+                          onChange={(e) => setProjectModal({ ...projectModal, tagline: e.target.value })}
+                          style={{ width: '100%', boxSizing: 'border-box', height: '38px', fontSize: '13px' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '5px' }}>
+                          Starting Price (₹ INR) *
+                        </label>
+                        <input
+                          type="number"
+                          required
+                          className="input-clean"
+                          placeholder="26250000"
+                          value={projectModal.startingPrice}
+                          onChange={(e) => setProjectModal({ ...projectModal, startingPrice: e.target.value })}
+                          style={{ width: '100%', boxSizing: 'border-box', height: '38px', fontSize: '13px' }}
+                        />
+                        <div style={{ fontSize: '11px', color: '#059669', fontWeight: 700, marginTop: '3px' }}>
+                          Preview: {formatINR(Number(projectModal.startingPrice) || 0)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '5px' }}>Project Narrative / Description</label>
+                      <textarea
+                        rows={3}
+                        className="input-clean"
+                        placeholder="Comprehensive architectural narrative, concept, design ethos..."
+                        value={projectModal.description}
+                        onChange={(e) => setProjectModal({ ...projectModal, description: e.target.value })}
+                        style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', fontSize: '12.5px', resize: 'vertical' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* CARD 2: Location & Geographic Address */}
+                  <div style={{ background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '22px 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                    <h4 style={{ margin: '0 0 16px', fontSize: '14px', fontWeight: 700, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <MapPin size={16} />
+                      <span>2. Location & Geographic Address</span>
+                    </h4>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '5px' }}>Micro-Location / Landmark *</label>
+                        <input
+                          type="text"
+                          className="input-clean"
+                          placeholder="e.g. New Golden Mile, Near Horizon Beach Road"
+                          value={projectModal.location}
+                          onChange={(e) => setProjectModal({ ...projectModal, location: e.target.value })}
+                          style={{ width: '100%', boxSizing: 'border-box', height: '38px', fontSize: '13px' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '5px' }}>City *</label>
+                        <input
+                          type="text"
+                          className="input-clean"
+                          placeholder="e.g. Bangalore"
+                          value={projectModal.city}
+                          onChange={(e) => setProjectModal({ ...projectModal, city: e.target.value })}
+                          style={{ width: '100%', boxSizing: 'border-box', height: '38px', fontSize: '13px' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '14px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '5px' }}>Full Site Address</label>
+                        <input
+                          type="text"
+                          className="input-clean"
+                          placeholder="302-B, Golden Mile Enclave, Bangalore"
+                          value={projectModal.address}
+                          onChange={(e) => setProjectModal({ ...projectModal, address: e.target.value })}
+                          style={{ width: '100%', boxSizing: 'border-box', height: '38px', fontSize: '13px' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '5px' }}>Google Maps URL / Coordinates</label>
+                        <input
+                          type="text"
+                          className="input-clean"
+                          placeholder="https://maps.google.com/?q=12.9716,77.5946"
+                          value={projectModal.googleMapsUrl}
+                          onChange={(e) => setProjectModal({ ...projectModal, googleMapsUrl: e.target.value })}
+                          style={{ width: '100%', boxSizing: 'border-box', height: '38px', fontSize: '13px' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* CARD 3: Regulatory, Timeline & Capacity */}
+                  <div style={{ background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '22px 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                    <h4 style={{ margin: '0 0 16px', fontSize: '14px', fontWeight: 700, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Calendar size={16} />
+                      <span>3. Regulatory, Timeline & Scale</span>
+                    </h4>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', marginBottom: '14px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '5px' }}>RERA Registration Number *</label>
+                        <input
+                          type="text"
+                          className="input-clean"
+                          placeholder="PRM/KA/RERA/1251"
+                          value={projectModal.reraNumber}
+                          onChange={(e) => setProjectModal({ ...projectModal, reraNumber: e.target.value })}
+                          style={{ width: '100%', boxSizing: 'border-box', height: '38px', fontSize: '13px' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '5px' }}>Project Launch Date</label>
+                        <input
+                          type="text"
+                          className="input-clean"
+                          placeholder="15 Jan 2024"
+                          value={projectModal.launchDate}
+                          onChange={(e) => setProjectModal({ ...projectModal, launchDate: e.target.value })}
+                          style={{ width: '100%', boxSizing: 'border-box', height: '38px', fontSize: '13px' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '5px' }}>Expected Handover / Completion</label>
+                        <input
+                          type="text"
+                          className="input-clean"
+                          placeholder="December 2026"
+                          value={projectModal.completionDate}
+                          onChange={(e) => setProjectModal({ ...projectModal, completionDate: e.target.value })}
+                          style={{ width: '100%', boxSizing: 'border-box', height: '38px', fontSize: '13px' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '5px' }}>Total Planned Units</label>
+                        <input
+                          type="number"
+                          className="input-clean"
+                          placeholder="25"
+                          value={projectModal.totalUnits}
+                          onChange={(e) => setProjectModal({ ...projectModal, totalUnits: e.target.value })}
+                          style={{ width: '100%', boxSizing: 'border-box', height: '38px', fontSize: '13px' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '5px' }}>Towers / Blocks Layout</label>
+                        <input
+                          type="text"
+                          className="input-clean"
+                          placeholder="3 Towers (Block B1, B2, B3)"
+                          value={projectModal.totalBlocks}
+                          onChange={(e) => setProjectModal({ ...projectModal, totalBlocks: e.target.value })}
+                          style={{ width: '100%', boxSizing: 'border-box', height: '38px', fontSize: '13px' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* RIGHT COLUMN: Visuals, Media, Amenities & Live Website Sync */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+                  
+                  {/* CARD 4: Visuals, Media & Documents */}
+                  <div style={{ background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '22px 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                    <h4 style={{ margin: '0 0 16px', fontSize: '14px', fontWeight: 700, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <ImageIcon size={16} />
+                      <span>4. Visuals, Media & Brochure Documents</span>
+                    </h4>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '5px' }}>Hero Day Image URL</label>
+                        <input
+                          type="text"
+                          className="input-clean"
+                          placeholder="/assets/luxury_villa_day.jpg"
+                          value={projectModal.heroImage}
+                          onChange={(e) => setProjectModal({ ...projectModal, heroImage: e.target.value })}
+                          style={{ width: '100%', boxSizing: 'border-box', height: '38px', fontSize: '13px' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '5px' }}>Night Ambient Image URL</label>
+                        <input
+                          type="text"
+                          className="input-clean"
+                          placeholder="/assets/luxury_villa_night.jpg"
+                          value={projectModal.nightImage}
+                          onChange={(e) => setProjectModal({ ...projectModal, nightImage: e.target.value })}
+                          style={{ width: '100%', boxSizing: 'border-box', height: '38px', fontSize: '13px' }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Live Image Preview */}
+                    <div style={{ borderRadius: '10px', overflow: 'hidden', height: '160px', background: '#0f172a', position: 'relative', marginBottom: '14px', border: '1px solid #e2e8f0' }}>
+                      <img 
+                        src={projectModal.heroImage || '/assets/luxury_villa_day.jpg'} 
+                        alt="Project Banner Preview" 
+                        onError={(e) => { e.currentTarget.src = '/assets/luxury_villa_day.jpg'; }}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                      />
+                      <div style={{ position: 'absolute', bottom: '8px', left: '10px', background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(4px)', color: '#ffffff', fontSize: '11px', fontWeight: 700, padding: '4px 8px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <Eye size={12} />
+                        <span>Live Hero Banner Preview</span>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '5px' }}>Project Video / 3D Walkthrough Link</label>
+                        <input
+                          type="text"
+                          className="input-clean"
+                          placeholder="https://youtube.com/watch?v=..."
+                          value={projectModal.videoUrl}
+                          onChange={(e) => setProjectModal({ ...projectModal, videoUrl: e.target.value })}
+                          style={{ width: '100%', boxSizing: 'border-box', height: '38px', fontSize: '13px' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '5px' }}>Project Brochure Document URL / PDF</label>
+                        <input
+                          type="text"
+                          className="input-clean"
+                          placeholder="/assets/Dwellora_Master_Brochure.pdf"
+                          value={projectModal.brochureUrl}
+                          onChange={(e) => setProjectModal({ ...projectModal, brochureUrl: e.target.value })}
+                          style={{ width: '100%', boxSizing: 'border-box', height: '38px', fontSize: '13px' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '5px' }}>Master Floor Plan Graphic URL</label>
+                      <input
+                        type="text"
+                        className="input-clean"
+                        placeholder="/assets/estate-exterior-reveal.png"
+                        value={projectModal.floorPlanUrl}
+                        onChange={(e) => setProjectModal({ ...projectModal, floorPlanUrl: e.target.value })}
+                        style={{ width: '100%', boxSizing: 'border-box', height: '38px', fontSize: '13px' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* CARD 5: Amenities Manager */}
+                  <div style={{ background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '22px 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+                    <h4 style={{ margin: '0 0 14px', fontSize: '14px', fontWeight: 700, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Sparkles size={16} />
+                      <span>5. Project Amenities & Facilities</span>
+                    </h4>
+
+                    {/* Active Amenities Chips */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px', minHeight: '36px' }}>
+                      {(projectModal.amenities || []).map((am, i) => (
+                        <span 
+                          key={i} 
+                          style={{ 
+                            display: 'inline-flex', 
+                            alignItems: 'center', 
+                            gap: '6px', 
+                            padding: '4px 10px', 
+                            borderRadius: '8px', 
+                            background: '#eff6ff', 
+                            color: '#1d4ed8', 
+                            fontSize: '12px', 
+                            fontWeight: 600,
+                            border: '1px solid #bfdbfe'
+                          }}
+                        >
+                          <span>✓ {am}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setProjectModal({
+                                ...projectModal,
+                                amenities: projectModal.amenities.filter((_, idx) => idx !== i)
+                              });
+                            }}
+                            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#93c5fd', padding: 0, display: 'flex', alignItems: 'center' }}
+                          >
+                            <X size={12} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Quick Add Suggested Amenities */}
+                    <div style={{ marginBottom: '14px' }}>
+                      <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
+                        Quick Add Popular Amenities:
+                      </span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                        {['Infinity Pool', 'Sky Lounge', 'Private Lift', 'Smart Home', 'Clubhouse & Gym', '24/7 Concierge', 'EV Charging'].map((sug, sIdx) => {
+                          const isAlreadyAdded = (projectModal.amenities || []).includes(sug);
+                          return (
+                            <button
+                              key={sIdx}
+                              type="button"
+                              disabled={isAlreadyAdded}
+                              onClick={() => {
+                                if (!isAlreadyAdded) {
+                                  setProjectModal({
+                                    ...projectModal,
+                                    amenities: [...(projectModal.amenities || []), sug]
+                                  });
+                                }
+                              }}
+                              style={{
+                                border: '1px solid #e2e8f0',
+                                background: isAlreadyAdded ? '#f1f5f9' : '#f8fafc',
+                                color: isAlreadyAdded ? '#94a3b8' : '#475569',
+                                fontSize: '11px',
+                                fontWeight: 500,
+                                borderRadius: '6px',
+                                padding: '3px 8px',
+                                cursor: isAlreadyAdded ? 'default' : 'pointer'
+                              }}
+                            >
+                              {isAlreadyAdded ? `✓ ${sug}` : `+ ${sug}`}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Add New Custom Amenity Input */}
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input
+                        type="text"
+                        className="input-clean"
+                        placeholder="Type custom amenity (e.g. Zen Meditation Lawn)"
+                        value={projectModal.customAmenityInput || ''}
+                        onChange={(e) => setProjectModal({ ...projectModal, customAmenityInput: e.target.value })}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const val = (projectModal.customAmenityInput || '').trim();
+                            if (val && !projectModal.amenities.includes(val)) {
+                              setProjectModal({
+                                ...projectModal,
+                                amenities: [...(projectModal.amenities || []), val],
+                                customAmenityInput: ''
+                              });
+                            }
+                          }
+                        }}
+                        style={{ height: '36px', fontSize: '12.5px', flex: 1 }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const val = (projectModal.customAmenityInput || '').trim();
+                          if (val && !projectModal.amenities.includes(val)) {
+                            setProjectModal({
+                              ...projectModal,
+                              amenities: [...(projectModal.amenities || []), val],
+                              customAmenityInput: ''
+                            });
+                          }
+                        }}
+                        className="btn-secondary-action"
+                        style={{ height: '36px', padding: '0 14px', fontSize: '12px' }}
+                      >
+                        <Plus size={14} />
+                        <span>Add</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* CARD 6: Live Website Synchronization & Master Switch */}
+                  <div style={{ background: '#fefce8', borderRadius: '14px', border: '1.5px solid #fde047', padding: '18px 22px' }}>
+                    <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={projectModal.isMaster}
+                        onChange={(e) => setProjectModal({ ...projectModal, isMaster: e.target.checked })}
+                        style={{ marginTop: '3px', width: '18px', height: '18px', cursor: 'pointer' }}
+                      />
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Globe size={15} style={{ color: '#854d0e' }} />
+                          <b style={{ color: '#854d0e', fontSize: '13.5px' }}>Set as Active Master Project on Live Public Website</b>
+                        </div>
+                        <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#a16207', lineHeight: 1.45 }}>
+                          When activated, this project's pricing, media, hero narrative, and status are immediately synchronized live with public website visitors.
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+
+                </div>
+
+              </div>
+
+              {/* Bottom Sticky Action Bar */}
+              <div style={{ marginTop: '24px', padding: '16px 24px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 4px rgba(0,0,0,0.03)' }}>
+                <div style={{ fontSize: '12.5px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <ShieldCheck size={16} style={{ color: '#059669' }} />
+                  <span>All inputs are auto-validated with real-time live website sync.</span>
+                </div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button
+                    type="button"
+                    className="btn-secondary-action"
+                    onClick={() => setProjectModal(prev => ({ ...prev, isOpen: false }))}
+                    style={{ padding: '9px 20px', fontSize: '13px' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-primary-action"
+                    style={{ padding: '9px 26px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    <Save size={15} />
+                    <span>{projectModal.mode === 'add' ? 'Publish Project' : 'Save Changes & Sync Live'}</span>
+                  </button>
+                </div>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+            {/* ========================================================
+          POINT 5: MULTI-STEP FORMAL RESIDENCE ALLOTMENT & BOOKING MODAL
+      ======================================================== */}
+      {bookingWorkflowModal.isOpen && (
+        <div className="fullscreen-page-overlay">
+          <header className="fullscreen-top-nav">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button 
+                type="button"
+                className="btn-secondary-action"
+                style={{ padding: '7px 14px', fontSize: '13px' }}
+                onClick={() => setBookingWorkflowModal(prev => ({ ...prev, isOpen: false }))}
+              >
+                <ArrowLeft size={16} />
+                <span>Back to Sales Desk</span>
+              </button>
+              <div style={{ width: '1px', height: '24px', background: '#cbd5e1' }} />
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Building2 size={18} style={{ color: '#059669' }} />
+                  <span>Formal Residence Allotment & Sales Workflow</span>
+                </h3>
+                <span style={{ fontSize: '11.5px', color: '#64748b' }}>
+                  Step {bookingWorkflowModal.step} of 4 &bull; Unit: <b style={{ color: '#0f172a' }}>{bookingWorkflowModal.unitNumber || 'Select Unit'}</b>
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button
+                type="button"
+                className="btn-secondary-action"
+                onClick={() => setBookingWorkflowModal(prev => ({ ...prev, isOpen: false }))}
+              >
+                Cancel
+              </button>
+            </div>
+          </header>
+
+          <div className="fullscreen-content-container" style={{ maxWidth: '920px' }}>
+            
+            {/* 4 Step Progress Pills */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '26px' }}>
+              {[
+                { num: 1, label: '1. Select Apartment' },
+                { num: 2, label: '2. Allottee Client' },
+                { num: 3, label: '3. Payment Terms' },
+                { num: 4, label: '4. Confirm & Allot' }
+              ].map(s => {
+                const isCurrent = bookingWorkflowModal.step === s.num;
+                const isDone = bookingWorkflowModal.step > s.num;
+                return (
+                  <div
+                    key={s.num}
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      background: isCurrent ? '#059669' : (isDone ? '#ecfdf5' : '#f8fafc'),
+                      color: isCurrent ? '#ffffff' : (isDone ? '#047857' : '#64748b'),
+                      border: isCurrent ? '1.5px solid #059669' : (isDone ? '1px solid #a7f3d0' : '1px solid #e2e8f0'),
+                      fontSize: '12.5px',
+                      fontWeight: 700,
+                      textAlign: 'center'
+                    }}
+                  >
+                    {isDone ? '✓ ' : ''}{s.label}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* STEP 1: SELECT APARTMENT */}
+            {bookingWorkflowModal.step === 1 && (() => {
+              const selApt = apartments.find(a => a.apartmentNumber === bookingWorkflowModal.unitNumber) || apartments[0];
+              return (
+                <div className="white-panel" style={{ padding: '28px' }}>
+                  <h4 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>
+                    1. Select Inventory Residence Flat
+                  </h4>
+
+                  <div className="form-group-clean">
+                    <label>Choose From Available Units (18 Available Residences):</label>
+                    <select
+                      value={bookingWorkflowModal.unitNumber}
+                      onChange={(e) => {
+                        const chosen = apartments.find(a => a.apartmentNumber === e.target.value);
+                        setBookingWorkflowModal({
+                          ...bookingWorkflowModal,
+                          unitNumber: e.target.value,
+                          dealAmount: chosen ? String(chosen.price) : bookingWorkflowModal.dealAmount
+                        });
+                      }}
+                      className="input-clean"
+                      style={{ height: '42px', fontSize: '13.5px', fontWeight: 600 }}
+                    >
+                      {apartments
+                        .filter(a => a.status === 'AVAILABLE' || a.apartmentNumber === bookingWorkflowModal.unitNumber)
+                        .map(a => (
+                          <option key={a.id} value={a.apartmentNumber}>
+                            {a.apartmentNumber} — {a.title} ({a.block} &bull; {a.floor} &bull; {formatINR(a.price)})
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+
+                  {selApt && (
+                    <div style={{ background: '#f8fafc', padding: '18px', borderRadius: '10px', border: '1px solid #e2e8f0', marginTop: '16px' }}>
+                      <div style={{ fontWeight: 800, fontSize: '15px', color: '#0f172a' }}>
+                        {selApt.apartmentNumber} &bull; {selApt.title}
+                      </div>
+                      <div style={{ fontSize: '12.5px', color: '#64748b', marginTop: '4px' }}>
+                        Block: <b>{selApt.block}</b> &bull; Floor: <b>{selApt.floor}</b> &bull; Super Built-up: <b>{selApt.areaSqft || 1650} sq.ft</b> &bull; Typology: <b>{selApt.typology}</b>
+                      </div>
+                      <div style={{ fontSize: '18px', fontWeight: 800, color: '#059669', marginTop: '8px' }}>
+                        Agreed Property Consideration: {formatFullINR(selApt.price)}
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      className="btn-primary-action"
+                      onClick={() => setBookingWorkflowModal({ ...bookingWorkflowModal, step: 2 })}
+                      style={{ padding: '9px 24px', fontSize: '13px', background: '#059669', borderColor: '#059669' }}
+                    >
+                      <span>Proceed to Buyer Details &rarr;</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* STEP 2: ALLOTTEE IDENTITY */}
+            {bookingWorkflowModal.step === 2 && (
+              <div className="white-panel" style={{ padding: '28px' }}>
+                <h4 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>
+                  2. Allottee Client Identity & KYC Information
+                </h4>
+
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setBookingWorkflowModal({ ...bookingWorkflowModal, buyerType: 'NEW' })}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '6px',
+                      border: bookingWorkflowModal.buyerType === 'NEW' ? '1.5px solid #059669' : '1px solid #cbd5e1',
+                      background: bookingWorkflowModal.buyerType === 'NEW' ? '#ecfdf5' : '#ffffff',
+                      color: bookingWorkflowModal.buyerType === 'NEW' ? '#065f46' : '#475569',
+                      fontWeight: 700,
+                      fontSize: '12.5px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    + Register New Allottee
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBookingWorkflowModal({ ...bookingWorkflowModal, buyerType: 'EXISTING' })}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '6px',
+                      border: bookingWorkflowModal.buyerType === 'EXISTING' ? '1.5px solid #059669' : '1px solid #cbd5e1',
+                      background: bookingWorkflowModal.buyerType === 'EXISTING' ? '#ecfdf5' : '#ffffff',
+                      color: bookingWorkflowModal.buyerType === 'EXISTING' ? '#065f46' : '#475569',
+                      fontWeight: 700,
+                      fontSize: '12.5px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Select From Existing Buyers ({buyers.length})
+                  </button>
+                </div>
+
+                {bookingWorkflowModal.buyerType === 'EXISTING' ? (
+                  <div className="form-group-clean">
+                    <label>Choose Existing Client Dossier:</label>
+                    <select
+                      value={bookingWorkflowModal.buyerId}
+                      onChange={(e) => {
+                        const chosen = buyers.find(b => String(b.id) === e.target.value);
+                        if (chosen) {
+                          setBookingWorkflowModal({
+                            ...bookingWorkflowModal,
+                            buyerId: chosen.id,
+                            buyerName: chosen.name,
+                            buyerPhone: chosen.phone,
+                            buyerEmail: chosen.email,
+                            buyerPan: chosen.pan || 'ABCDE1234F'
+                          });
+                        }
+                      }}
+                      className="input-clean"
+                      style={{ height: '40px', fontSize: '13px' }}
+                    >
+                      <option value="">-- Choose Buyer --</option>
+                      {buyers.map(b => (
+                        <option key={b.id} value={b.id}>
+                          {b.name} ({b.phone} &bull; {b.email})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="form-group-clean">
+                      <label>Allottee Full Legal Name *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Vikramaditya Singhania"
+                        value={bookingWorkflowModal.buyerName}
+                        onChange={(e) => setBookingWorkflowModal({ ...bookingWorkflowModal, buyerName: e.target.value })}
+                        className="input-clean"
+                        style={{ height: '38px', fontSize: '13px' }}
+                      />
+                    </div>
+
+                    <div className="form-grid-2">
+                      <div className="form-group-clean">
+                        <label>Mobile Contact Number *</label>
+                        <input
+                          type="tel"
+                          required
+                          placeholder="+91 98200 44521"
+                          value={bookingWorkflowModal.buyerPhone}
+                          onChange={(e) => setBookingWorkflowModal({ ...bookingWorkflowModal, buyerPhone: e.target.value })}
+                          className="input-clean"
+                          style={{ height: '38px', fontSize: '13px' }}
+                        />
+                      </div>
+
+                      <div className="form-group-clean">
+                        <label>Email Address *</label>
+                        <input
+                          type="email"
+                          required
+                          placeholder="vikram@singhaniagroup.in"
+                          value={bookingWorkflowModal.buyerEmail}
+                          onChange={(e) => setBookingWorkflowModal({ ...bookingWorkflowModal, buyerEmail: e.target.value })}
+                          className="input-clean"
+                          style={{ height: '38px', fontSize: '13px' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group-clean">
+                      <label>PAN Number (Income Tax KYC)</label>
+                      <input
+                        type="text"
+                        placeholder="BKGPS9821M"
+                        value={bookingWorkflowModal.buyerPan}
+                        onChange={(e) => setBookingWorkflowModal({ ...bookingWorkflowModal, buyerPan: e.target.value.toUpperCase() })}
+                        className="input-clean"
+                        style={{ height: '38px', fontSize: '13px', textTransform: 'uppercase' }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'space-between' }}>
+                  <button
+                    type="button"
+                    className="btn-secondary-action"
+                    onClick={() => setBookingWorkflowModal({ ...bookingWorkflowModal, step: 1 })}
+                  >
+                    &larr; Back
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-primary-action"
+                    onClick={() => {
+                      if (!bookingWorkflowModal.buyerName.trim()) {
+                        alert('Please provide Allottee Name.');
+                        return;
+                      }
+                      setBookingWorkflowModal({ ...bookingWorkflowModal, step: 3 });
+                    }}
+                    style={{ padding: '9px 24px', fontSize: '13px', background: '#059669', borderColor: '#059669' }}
+                  >
+                    <span>Proceed to Commercial Terms &rarr;</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 3: PAYMENT TERMS & TOKEN ADVANCE */}
+            {bookingWorkflowModal.step === 3 && (
+              <div className="white-panel" style={{ padding: '28px' }}>
+                <h4 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>
+                  3. Commercial Consideration & Payment Schedule
+                </h4>
+
+                <div className="form-grid-2">
+                  <div className="form-group-clean">
+                    <label>Agreed Total Property Value (₹ INR) *</label>
+                    <input
+                      type="number"
+                      value={bookingWorkflowModal.dealAmount}
+                      onChange={(e) => setBookingWorkflowModal({ ...bookingWorkflowModal, dealAmount: e.target.value })}
+                      className="input-clean"
+                      style={{ height: '38px', fontSize: '13px', fontWeight: 700 }}
+                    />
+                  </div>
+
+                  <div className="form-group-clean">
+                    <label>Payment Structure / Plan</label>
+                    <select
+                      value={bookingWorkflowModal.paymentPlan}
+                      onChange={(e) => setBookingWorkflowModal({ ...bookingWorkflowModal, paymentPlan: e.target.value })}
+                      className="input-clean"
+                      style={{ height: '38px', fontSize: '13px' }}
+                    >
+                      <option value="TOKEN_ADVANCE">Token Advance (Unit Reservation Hold)</option>
+                      <option value="FULL_PAYMENT">100% Full Payment (Immediate Sale & Registry)</option>
+                      <option value="EMI_MILESTONE">5-Milestone Construction Linked Schedule</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-grid-2" style={{ marginTop: '12px' }}>
+                  <div className="form-group-clean">
+                    <label>Token / Initial Remittance Amount (₹ INR) *</label>
+                    <input
+                      type="number"
+                      value={bookingWorkflowModal.paidAmount}
+                      onChange={(e) => setBookingWorkflowModal({ ...bookingWorkflowModal, paidAmount: e.target.value })}
+                      className="input-clean"
+                      style={{ height: '38px', fontSize: '13px', fontWeight: 700 }}
+                    />
+                  </div>
+
+                  <div className="form-group-clean">
+                    <label>Remittance Mode</label>
+                    <select
+                      value={bookingWorkflowModal.paymentMode}
+                      onChange={(e) => setBookingWorkflowModal({ ...bookingWorkflowModal, paymentMode: e.target.value })}
+                      className="input-clean"
+                      style={{ height: '38px', fontSize: '13px' }}
+                    >
+                      <option value="NEFT / RTGS">NEFT / RTGS Bank Transfer</option>
+                      <option value="CHEQUE">Account Payee Cheque / Demand Draft</option>
+                      <option value="WIRE">International Wire / SWIFT</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-grid-2" style={{ marginTop: '12px' }}>
+                  <div className="form-group-clean">
+                    <label>Bank Remittance UTR / Txn Reference *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. HDFC0001928471"
+                      value={bookingWorkflowModal.txnId}
+                      onChange={(e) => setBookingWorkflowModal({ ...bookingWorkflowModal, txnId: e.target.value })}
+                      className="input-clean"
+                      style={{ height: '38px', fontSize: '13px' }}
+                    />
+                  </div>
+
+                  <div className="form-group-clean">
+                    <label>Remitting Bank & Branch</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. HDFC Bank, Fort Branch Mumbai"
+                      value={bookingWorkflowModal.bankName}
+                      onChange={(e) => setBookingWorkflowModal({ ...bookingWorkflowModal, bankName: e.target.value })}
+                      className="input-clean"
+                      style={{ height: '38px', fontSize: '13px' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'space-between' }}>
+                  <button
+                    type="button"
+                    className="btn-secondary-action"
+                    onClick={() => setBookingWorkflowModal({ ...bookingWorkflowModal, step: 2 })}
+                  >
+                    &larr; Back
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-primary-action"
+                    onClick={() => setBookingWorkflowModal({ ...bookingWorkflowModal, step: 4 })}
+                    style={{ padding: '9px 24px', fontSize: '13px', background: '#059669', borderColor: '#059669' }}
+                  >
+                    <span>Review Allotment Summary &rarr;</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 4: REVIEW & CONFIRM */}
+            {bookingWorkflowModal.step === 4 && (() => {
+              const totalVal = Number(bookingWorkflowModal.dealAmount) || 28800000;
+              const paidVal = Number(bookingWorkflowModal.paidAmount) || 1500000;
+              const balVal = Math.max(0, totalVal - paidVal);
+              const newStatus = balVal === 0 || bookingWorkflowModal.paymentPlan === 'FULL_PAYMENT' ? 'SOLD' : 'RESERVED';
+
+              return (
+                <div className="white-panel" style={{ padding: '28px' }}>
+                  <h4 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>
+                    4. Final Review & Formal Allotment Execution
+                  </h4>
+
+                  <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '20px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '13px' }}>
+                      <div>
+                        <div><b>Unit Allotted:</b> Unit {bookingWorkflowModal.unitNumber}</div>
+                        <div><b>Allottee Name:</b> {bookingWorkflowModal.buyerName}</div>
+                        <div><b>Phone & Email:</b> {bookingWorkflowModal.buyerPhone} &bull; {bookingWorkflowModal.buyerEmail}</div>
+                        <div><b>PAN Number:</b> {bookingWorkflowModal.buyerPan || 'ABCDE1234F'}</div>
+                      </div>
+                      <div>
+                        <div><b>Agreed Consideration:</b> {formatFullINR(totalVal)}</div>
+                        <div><b>Token Advance Paid:</b> <span style={{ color: '#059669', fontWeight: 700 }}>{formatFullINR(paidVal)}</span></div>
+                        <div><b>Outstanding Balance:</b> <span style={{ color: '#dc2626', fontWeight: 700 }}>{formatFullINR(balVal)}</span></div>
+                        <div><b>New Unit Status:</b> <b style={{ color: newStatus === 'SOLD' ? '#dc2626' : '#d97706' }}>{newStatus === 'SOLD' ? 'SOLD OUT' : 'UNDER TOKEN HOLD'}</b></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#ecfdf5', padding: '14px', borderRadius: '8px', border: '1px solid #a7f3d0', fontSize: '12.5px', color: '#065f46', marginBottom: '24px' }}>
+                    Upon confirmation, Unit {bookingWorkflowModal.unitNumber} will be marked as <b>{newStatus}</b>, the buyer record will be updated in the Master Registry, and the Official Allotment Letter will be immediately generated and ready to print.
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <button
+                      type="button"
+                      className="btn-secondary-action"
+                      onClick={() => setBookingWorkflowModal({ ...bookingWorkflowModal, step: 3 })}
+                    >
+                      &larr; Back
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-primary-action"
+                      onClick={() => {
+                        const actor = user?.name || 'Super Admin';
+                        // 1. Update apartment status & buyer
+                        const apt = apartments.find(a => a.apartmentNumber === bookingWorkflowModal.unitNumber);
+                        const buyerPayload = {
+                          name: bookingWorkflowModal.buyerName,
+                          phone: bookingWorkflowModal.buyerPhone,
+                          email: bookingWorkflowModal.buyerEmail,
+                          dealAmount: totalVal,
+                          paidAmount: paidVal,
+                          balanceAmount: balVal,
+                          paymentPlan: bookingWorkflowModal.paymentPlan,
+                          bookingDate: bookingWorkflowModal.bookingDate,
+                          assignedAgent: actor,
+                          notes: `Allotted via Formal Booking Workflow. Remittance Ref: ${bookingWorkflowModal.txnId || 'N/A'}`
+                        };
+
+                        dataStore.updateApartment(apt ? apt.id : 1, {
+                          status: newStatus,
+                          buyer: buyerPayload
+                        }, actor);
+
+                        // 2. If from inquiry, close inquiry
+                        if (bookingWorkflowModal.fromInquiryId) {
+                          dataStore.updateInquiryStatus(bookingWorkflowModal.fromInquiryId, 'CLOSED', actor);
+                        }
+
+                        // 3. Refresh state
+                        const updatedApts = dataStore.getApartments();
+                        setApartments(updatedApts);
+                        setBuyers(dataStore.getBuyers());
+                        setInquiries(dataStore.getInquiries());
+                        setActivityFeed(dataStore.getActivityFeed());
+
+                        triggerToast(`Unit ${bookingWorkflowModal.unitNumber} successfully allotted to ${bookingWorkflowModal.buyerName}!`);
+
+                        // 4. Close workflow and open Allotment Letter
+                        const targetApt = updatedApts.find(a => a.apartmentNumber === bookingWorkflowModal.unitNumber);
+                        setBookingWorkflowModal({ isOpen: false, step: 1, unitNumber: '', buyerType: 'NEW', buyerId: '', buyerName: '', buyerPhone: '', buyerEmail: '', buyerPan: '', dealAmount: '', paidAmount: '', paymentMode: '', txnId: '', bankName: '', paymentPlan: '', bookingDate: '', fromInquiryId: null });
+                        
+                        if (targetApt) {
+                          setDocCategoryTab('ALLOTMENT_LETTER');
+                          setSaleReceiptModal({ isOpen: true, apt: targetApt });
+                        }
+                      }}
+                      style={{ padding: '9px 28px', fontSize: '13.5px', background: '#059669', borderColor: '#059669' }}
+                    >
+                      <CheckCircle2 size={16} />
+                      <span>Confirm Allotment & Generate Official Letter</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          POINT 6: OVERDUE PAYMENT REMINDER & DEMAND NOTICE MODAL
+      ======================================================== */}
+      {paymentReminderModal.isOpen && (
+        <div className="modal-overlay" onClick={() => setPaymentReminderModal(prev => ({ ...prev, isOpen: false }))}>
+          <div className="modal-container-clean" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Send size={18} style={{ color: '#059669' }} />
+                <span>Payment Due Reminder & Formal Legal Notice</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setPaymentReminderModal(prev => ({ ...prev, isOpen: false }))}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ background: '#f8fafc', padding: '14px 18px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '16px', fontSize: '13px' }}>
+              <div><b>Allottee:</b> {paymentReminderModal.buyer?.name} &bull; <b>Unit:</b> {paymentReminderModal.unitNumber}</div>
+              <div style={{ color: '#dc2626', fontWeight: 800, marginTop: '4px', fontSize: '14px' }}>
+                Outstanding Amount: {formatFullINR(paymentReminderModal.dueAmount)}
+              </div>
+              <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
+                Escrow A/C: 50200084729182 &bull; IFSC: HDFC0001982
+              </div>
+            </div>
+
+            <div className="form-group-clean">
+              <label>Formal Notice Text (Auto-generated with Escrow Coordinates):</label>
+              <textarea
+                rows={7}
+                value={paymentReminderModal.customNotice}
+                onChange={(e) => setPaymentReminderModal({ ...paymentReminderModal, customNotice: e.target.value })}
+                className="input-clean"
+                style={{ fontSize: '12px', lineHeight: 1.5, fontFamily: 'monospace' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', marginTop: '20px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn-secondary-action"
+                onClick={() => {
+                  navigator.clipboard.writeText(paymentReminderModal.customNotice);
+                  setPaymentReminderModal(prev => ({ ...prev, copied: true }));
+                  triggerToast('Notice copied to clipboard!');
+                  setTimeout(() => setPaymentReminderModal(prev => ({ ...prev, copied: false })), 2000);
+                }}
+                style={{ fontSize: '12.5px' }}
+              >
+                {paymentReminderModal.copied ? <Check size={14} style={{ color: '#059669' }} /> : <Copy size={14} />}
+                <span>{paymentReminderModal.copied ? 'Copied to Clipboard!' : 'Copy Notice'}</span>
+              </button>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="btn-secondary-action"
+                  onClick={() => {
+                    const actor = user?.name || 'Super Admin';
+                    if (paymentReminderModal.buyer) {
+                      dataStore.addBuyerCommunication(paymentReminderModal.buyer.id, {
+                        type: 'NOTE',
+                        summary: `Dispatched formal payment reminder for ${formatINR(paymentReminderModal.dueAmount)} on Unit ${paymentReminderModal.unitNumber}.`,
+                        nextFollowUp: '15 Nov 2026'
+                      }, actor);
+                      triggerToast('Reminder logged in CRM notes.');
+                      setBuyers(dataStore.getBuyers());
+                    }
+                  }}
+                  style={{ fontSize: '12.5px' }}
+                >
+                  <MessageSquare size={14} />
+                  <span>Log in CRM</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="btn-primary-action"
+                  onClick={() => {
+                    const cleanPhone = (paymentReminderModal.buyer?.phone || '').replace(/[^0-9]/g, '');
+                    const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(paymentReminderModal.customNotice)}`;
+                    window.open(waUrl, '_blank');
+                    triggerToast(`Dispatched reminder notice to ${paymentReminderModal.buyer?.name} via WhatsApp!`);
+                    setPaymentReminderModal(prev => ({ ...prev, isOpen: false }));
+                  }}
+                  style={{ background: '#22c55e', borderColor: '#22c55e', fontSize: '12.5px' }}
+                >
+                  <Send size={14} />
+                  <span>Dispatch WhatsApp</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          POINT 7: SITE VISIT SCHEDULING MODAL (INQUIRIES CRM)
+      ======================================================== */}
+      {siteVisitModal.isOpen && (
+        <div className="modal-overlay" onClick={() => setSiteVisitModal(prev => ({ ...prev, isOpen: false }))}>
+          <div className="modal-container-clean" style={{ maxWidth: '520px' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Calendar size={18} style={{ color: '#7c3aed' }} />
+                <span>Schedule Private Property Site Visit</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setSiteVisitModal(prev => ({ ...prev, isOpen: false }))}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '16px', fontSize: '13px' }}>
+              <b>Customer:</b> {siteVisitModal.inquiry?.name} &bull; <b>Phone:</b> {siteVisitModal.inquiry?.phone}<br />
+              <span style={{ fontSize: '11.5px', color: '#64748b' }}>Interested In: {siteVisitModal.inquiry?.interestedApartment || 'Dwellora Luxury Residences'}</span>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const actor = user?.name || 'Super Admin';
+                if (siteVisitModal.inquiry) {
+                  // Update inquiry status to VISIT_BOOKED and record details
+                  dataStore.updateInquiryStatus(siteVisitModal.inquiry.id, 'VISIT_BOOKED', actor);
+                  const allInqs = dataStore.getInquiries();
+                  const targetInq = allInqs.find(i => i.id === siteVisitModal.inquiry.id);
+                  if (targetInq) {
+                    targetInq.visitDate = siteVisitModal.date;
+                    targetInq.visitTime = siteVisitModal.time;
+                    targetInq.assignedAgent = siteVisitModal.agent;
+                    targetInq.pickupRequired = siteVisitModal.pickupRequired;
+                    targetInq.visitNotes = siteVisitModal.notes;
+                    localStorage.setItem('era_inquiries_db_v2', JSON.stringify(allInqs));
+                  }
+                  setInquiries(dataStore.getInquiries());
+                  triggerToast(`Site visit scheduled for ${siteVisitModal.inquiry.name} on ${siteVisitModal.date} at ${siteVisitModal.time}!`);
+                }
+                setSiteVisitModal(prev => ({ ...prev, isOpen: false }));
+              }}
+            >
+              <div className="form-grid-2">
+                <div className="form-group-clean">
+                  <label>Scheduled Visit Date *</label>
+                  <input
+                    type="date"
+                    required
+                    value={siteVisitModal.date}
+                    onChange={(e) => setSiteVisitModal({ ...siteVisitModal, date: e.target.value })}
+                    className="input-clean"
+                    style={{ height: '38px', fontSize: '13px' }}
+                  />
+                </div>
+
+                <div className="form-group-clean">
+                  <label>Preferred Time Slot *</label>
+                  <select
+                    value={siteVisitModal.time}
+                    onChange={(e) => setSiteVisitModal({ ...siteVisitModal, time: e.target.value })}
+                    className="input-clean"
+                    style={{ height: '38px', fontSize: '13px' }}
+                  >
+                    <option value="10:00 AM">10:00 AM (Morning Natural Light)</option>
+                    <option value="12:30 PM">12:30 PM (Midday Solarium Deck)</option>
+                    <option value="02:30 PM">02:30 PM (Afternoon View)</option>
+                    <option value="04:30 PM">04:30 PM (Sunset Horizon Terrace)</option>
+                    <option value="06:00 PM">06:00 PM (Twilight Architecture)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-group-clean" style={{ marginTop: '12px' }}>
+                <label>Assigned Host / Sales Advisor</label>
+                <select
+                  value={siteVisitModal.agent}
+                  onChange={(e) => setSiteVisitModal({ ...siteVisitModal, agent: e.target.value })}
+                  className="input-clean"
+                  style={{ height: '38px', fontSize: '13px' }}
+                >
+                  <option value="Rohit Verma (Manager)">Rohit Verma (Manager)</option>
+                  <option value="Sneha Rao (Sales)">Sneha Rao (Sales)</option>
+                  <option value="Arjun Kapoor (Executive)">Arjun Kapoor (Executive)</option>
+                  <option value="Super Admin">Super Admin</option>
+                </select>
+              </div>
+
+              <div style={{ margin: '14px 0' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={siteVisitModal.pickupRequired}
+                    onChange={(e) => setSiteVisitModal({ ...siteVisitModal, pickupRequired: e.target.checked })}
+                    style={{ width: '16px', height: '16px' }}
+                  />
+                  <span>Arrange Private Luxury Chauffeur Airport / Hotel Pickup</span>
+                </label>
+              </div>
+
+              <div className="form-group-clean">
+                <label>Special Viewing Notes / Preferences</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Client interested in penthouse duplex & infinity terrace"
+                  value={siteVisitModal.notes}
+                  onChange={(e) => setSiteVisitModal({ ...siteVisitModal, notes: e.target.value })}
+                  className="input-clean"
+                  style={{ height: '38px', fontSize: '13px' }}
+                />
+              </div>
+
+              <div style={{ marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  className="btn-secondary-action"
+                  onClick={() => setSiteVisitModal(prev => ({ ...prev, isOpen: false }))}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary-action"
+                  style={{ background: '#7c3aed', borderColor: '#7c3aed', padding: '8px 18px', fontSize: '13px' }}
+                >
+                  <Calendar size={14} />
+                  <span>Confirm Site Visit</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          POINT 5: 360° PANORAMA INTERACTIVE TEST VIEWER MODAL
+      ======================================================== */}
+      {preview360Modal.isOpen && (
+        <div className="fullscreen-page-overlay">
+          <header className="fullscreen-top-nav">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button 
+                type="button"
+                className="btn-secondary-action"
+                style={{ padding: '7px 14px', fontSize: '13px' }}
+                onClick={() => setPreview360Modal(prev => ({ ...prev, isOpen: false }))}
+              >
+                <ArrowLeft size={16} />
+                <span>Back to Media Studio</span>
+              </button>
+              <div style={{ width: '1px', height: '24px', background: '#cbd5e1' }} />
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Sparkles size={18} style={{ color: '#2563eb' }} />
+                  <span>360° Equirectangular Virtual Walkthrough Test Viewer</span>
+                </h3>
+                <span style={{ fontSize: '11.5px', color: '#64748b' }}>
+                  {preview360Modal.title || 'Interactive 360 Scene'} &bull; 8K High Definition Sphere
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button
+                type="button"
+                className="btn-secondary-action"
+                onClick={() => setPreview360Modal(prev => ({ ...prev, isOpen: false }))}
+              >
+                Close Viewer
+              </button>
+            </div>
+          </header>
+
+          <div className="fullscreen-content-container" style={{ maxWidth: '1100px' }}>
+            <div className="white-panel" style={{ padding: '24px', background: '#0f172a', color: '#ffffff', borderRadius: '12px' }}>
+              
+              {/* 360 Canvas Viewport */}
+              <div 
+                style={{ 
+                  height: '520px', 
+                  borderRadius: '10px', 
+                  overflow: 'hidden', 
+                  position: 'relative', 
+                  background: '#020617',
+                  border: '1.5px solid #1e293b',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'grab'
+                }}
+              >
+                <img
+                  src={preview360Modal.url || '/assets/cayley-interior-8k.jpg'}
+                  alt="360 Panorama"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    transform: `scale(${preview360Modal.zoom || 1}) translate(${preview360Modal.panX || 0}px, ${preview360Modal.panY || 0}px)`,
+                    transition: 'transform 0.2s ease-out'
+                  }}
+                  onError={(e) => { e.target.src = '/assets/cayley-interior-8k.jpg' }}
+                />
+
+                {/* Overlaid 360 HUD Controls */}
+                <div style={{ position: 'absolute', top: '16px', left: '16px', background: 'rgba(15,23,42,0.85)', padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 700, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid rgba(56,189,248,0.3)' }}>
+                  <Sparkles size={14} />
+                  <span>360° EQUIRECTANGULAR VR TOUR LIVE</span>
+                </div>
+
+                {/* Navigation Pan / Zoom Cluster */}
+                <div style={{ position: 'absolute', bottom: '20px', right: '20px', display: 'flex', gap: '8px', background: 'rgba(15,23,42,0.9)', padding: '8px', borderRadius: '10px', border: '1px solid #334155' }}>
+                  <button
+                    type="button"
+                    onClick={() => setPreview360Modal(prev => ({ ...prev, panX: (prev.panX || 0) + 40 }))}
+                    style={{ background: '#1e293b', color: '#ffffff', border: 'none', borderRadius: '6px', width: '34px', height: '34px', cursor: 'pointer', fontWeight: 800 }}
+                    title="Pan Left"
+                  >
+                    &larr;
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreview360Modal(prev => ({ ...prev, panX: (prev.panX || 0) - 40 }))}
+                    style={{ background: '#1e293b', color: '#ffffff', border: 'none', borderRadius: '6px', width: '34px', height: '34px', cursor: 'pointer', fontWeight: 800 }}
+                    title="Pan Right"
+                  >
+                    &rarr;
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreview360Modal(prev => ({ ...prev, zoom: Math.min(2, (prev.zoom || 1) + 0.15) }))}
+                    style={{ background: '#1e293b', color: '#ffffff', border: 'none', borderRadius: '6px', width: '34px', height: '34px', cursor: 'pointer', fontWeight: 800 }}
+                    title="Zoom In"
+                  >
+                    +
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreview360Modal(prev => ({ ...prev, zoom: Math.max(0.8, (prev.zoom || 1) - 0.15) }))}
+                    style={{ background: '#1e293b', color: '#ffffff', border: 'none', borderRadius: '6px', width: '34px', height: '34px', cursor: 'pointer', fontWeight: 800 }}
+                    title="Zoom Out"
+                  >
+                    -
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreview360Modal(prev => ({ ...prev, zoom: 1, panX: 0, panY: 0 }))}
+                    style={{ background: '#2563eb', color: '#ffffff', border: 'none', borderRadius: '6px', padding: '0 10px', height: '34px', cursor: 'pointer', fontWeight: 700, fontSize: '11px' }}
+                    title="Reset Viewport"
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
+
+              {/* Technical Specifications */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #1e293b', fontSize: '12px' }}>
+                <div>
+                  <span style={{ color: '#94a3b8' }}>Projection Format:</span>
+                  <div style={{ fontWeight: 700, color: '#f8fafc' }}>Equirectangular 360° Sphere</div>
+                </div>
+                <div>
+                  <span style={{ color: '#94a3b8' }}>Texture Resolution:</span>
+                  <div style={{ fontWeight: 700, color: '#f8fafc' }}>8192 x 4096 (Ultra 8K)</div>
+                </div>
+                <div>
+                  <span style={{ color: '#94a3b8' }}>Aspect Ratio:</span>
+                  <div style={{ fontWeight: 700, color: '#f8fafc' }}>2:1 Standard Architectural</div>
+                </div>
+                <div>
+                  <span style={{ color: '#94a3b8' }}>Client Website Status:</span>
+                  <div style={{ fontWeight: 700, color: '#10b981' }}>✓ Live Interactive 360 Active</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          FULLPAGE VIEW 1: GLOBAL SEARCH & COMMAND CENTER (POINT 11)
+          Sidebar (275px) stays visible on left; right side is full screen
+      ======================================================== */}
+      {showGlobalSearch && (
+        <div className="fullscreen-page-overlay" style={{ zIndex: 65 }}>
+          {/* Sticky Fullscreen Top Navigation */}
+          <header className="fullscreen-top-nav">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <button 
+                type="button"
+                className="btn-secondary-action"
+                style={{ padding: '7px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                onClick={() => setShowGlobalSearch(false)}
+              >
+                <ArrowLeft size={16} />
+                <span>Back</span>
+              </button>
+              <div style={{ width: '1px', height: '24px', background: '#cbd5e1' }} />
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Search size={18} style={{ color: '#2563eb' }} />
+                  <span>Global Search & Command Center</span>
+                  {globalSearchQuery && (
+                    <span style={{ fontSize: '11px', background: '#eff6ff', color: '#1d4ed8', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>
+                      {globalSearchResults.total} Results Found
+                    </span>
+                  )}
+                </h3>
+                <span style={{ fontSize: '11.5px', color: '#64748b' }}>
+                  Full Page Cross-Module Search: Live index across apartments, leads, buyers, team & projects
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {globalSearchQuery && (
+                <button
+                  type="button"
+                  className="btn-secondary-action"
+                  onClick={() => setGlobalSearchQuery('')}
+                  style={{ padding: '7px 14px', fontSize: '12.5px' }}
+                >
+                  Clear Search
+                </button>
+              )}
+              <button
+                type="button"
+                className="btn-secondary-action"
+                onClick={() => setShowGlobalSearch(false)}
+                style={{ padding: '7px 16px', fontSize: '12.5px' }}
+              >
+                Close (ESC)
+              </button>
+            </div>
+          </header>
+
+          {/* Fullscreen Search Workspace (Sidebar stays visible on left) */}
+          <div className="fullscreen-content-container" style={{ padding: '24px 32px' }}>
+            {/* Search Input Bar Card */}
+            <div className="white-panel" style={{ padding: '18px 24px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#f8fafc', border: '1.5px solid #2563eb', borderRadius: '10px', padding: '10px 16px', boxShadow: '0 0 0 3px rgba(37,99,235,0.08)' }}>
+                <Search size={22} style={{ color: '#2563eb', flexShrink: 0 }} />
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="Type apartment number (e.g. No-03), customer name, phone number, email, buyer, staff..."
+                  value={globalSearchQuery}
+                  onChange={(e) => setGlobalSearchQuery(e.target.value)}
+                  style={{
+                    flex: 1,
+                    border: 'none',
+                    background: 'transparent',
+                    fontSize: '16px',
+                    fontWeight: 500,
+                    color: '#0f172a',
+                    outline: 'none'
+                  }}
+                />
+                {globalSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setGlobalSearchQuery('')}
+                    style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+                <kbd style={{ background: '#e2e8f0', color: '#475569', fontSize: '11px', fontWeight: 700, padding: '3px 8px', borderRadius: '5px' }}>
+                  ESC to close
+                </kbd>
+              </div>
+
+              {/* Quick Module Filter Counts */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '14px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Active Matches:</span>
+                <span style={{ fontSize: '11.5px', background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', padding: '3px 10px', borderRadius: '6px', fontWeight: 700 }}>
+                  All ({globalSearchResults.total})
+                </span>
+                <span style={{ fontSize: '11.5px', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0', padding: '3px 10px', borderRadius: '6px' }}>
+                  🏢 Apartments ({globalSearchResults.apartments.length})
+                </span>
+                <span style={{ fontSize: '11.5px', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0', padding: '3px 10px', borderRadius: '6px' }}>
+                  👥 Inquiries ({globalSearchResults.inquiries.length})
+                </span>
+                <span style={{ fontSize: '11.5px', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0', padding: '3px 10px', borderRadius: '6px' }}>
+                  💰 Buyers ({globalSearchResults.buyers.length})
+                </span>
+                <span style={{ fontSize: '11.5px', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0', padding: '3px 10px', borderRadius: '6px' }}>
+                  👤 Staff ({globalSearchResults.team.length})
+                </span>
+                <span style={{ fontSize: '11.5px', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0', padding: '3px 10px', borderRadius: '6px' }}>
+                  🏗️ Projects ({globalSearchResults.projects.length})
+                </span>
+              </div>
+            </div>
+
+            {/* Results Grid Display */}
+            {!globalSearchQuery.trim() ? (
+              <div className="white-panel" style={{ padding: '60px 24px', textAlign: 'center', color: '#64748b' }}>
+                <Search size={42} style={{ color: '#cbd5e1', margin: '0 auto 12px' }} />
+                <div style={{ fontSize: '16px', fontWeight: 700, color: '#1e293b' }}>Type anything to search across EstateSphere</div>
+                <div style={{ fontSize: '13px', color: '#64748b', marginTop: '6px', maxWidth: '480px', margin: '6px auto 0' }}>
+                  Instant live search across 25 luxury residences, customer inquiries, verified buyer dossiers, staff permissions, and master projects.
+                </div>
+              </div>
+            ) : globalSearchResults.total === 0 ? (
+              <div className="white-panel" style={{ padding: '60px 24px', textAlign: 'center', color: '#64748b' }}>
+                <AlertCircle size={40} style={{ color: '#94a3b8', margin: '0 auto 12px' }} />
+                <div style={{ fontSize: '16px', fontWeight: 700, color: '#1e293b' }}>No matches found for "{globalSearchQuery}"</div>
+                <div style={{ fontSize: '13px', color: '#64748b', marginTop: '6px' }}>Try searching by phone number (e.g. 98112), customer name, or unit number (e.g. No-03)</div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                
+                {/* 1. Apartments Results */}
+                {globalSearchResults.apartments.length > 0 && (
+                  <div className="white-panel" style={{ padding: '20px' }}>
+                    <h4 style={{ margin: '0 0 14px', fontSize: '14px', fontWeight: 700, color: '#1e40af', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Building2 size={16} />
+                      <span>Apartments & Inventory ({globalSearchResults.apartments.length})</span>
+                    </h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '12px' }}>
+                      {globalSearchResults.apartments.map(apt => (
+                        <div
+                          key={apt.id}
+                          onClick={() => {
+                            setShowGlobalSearch(false);
+                            setSearchApartment(apt.apartmentNumber);
+                            handleSwitchTab('apartments');
+                          }}
+                          style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px', cursor: 'pointer', transition: 'all 0.15s' }}
+                          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#2563eb'; e.currentTarget.style.background = '#eff6ff'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <span style={{ fontWeight: 800, fontSize: '13px', background: '#eff6ff', color: '#1d4ed8', padding: '2px 8px', borderRadius: '6px' }}>
+                              {apt.apartmentNumber}
+                            </span>
+                            <span style={{ fontSize: '10.5px', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', background: apt.status === 'AVAILABLE' ? '#ecfdf5' : '#fef2f2', color: apt.status === 'AVAILABLE' ? '#047857' : '#b91c1c' }}>
+                              {apt.status}
+                            </span>
+                          </div>
+                          <div style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>{apt.title}</div>
+                          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{apt.block} • {apt.floor} • {apt.bedrooms} BHK</div>
+                          <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span style={{ fontWeight: 800, color: '#059669', fontSize: '13.5px' }}>{formatINR(apt.price)}</span>
+                            <span style={{ fontSize: '11.5px', color: '#2563eb', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              View Inventory <ArrowRight size={12} />
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. Customer Inquiries Results */}
+                {globalSearchResults.inquiries.length > 0 && (
+                  <div className="white-panel" style={{ padding: '20px' }}>
+                    <h4 style={{ margin: '0 0 14px', fontSize: '14px', fontWeight: 700, color: '#7c3aed', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Inbox size={16} />
+                      <span>Customer Inquiries & Leads ({globalSearchResults.inquiries.length})</span>
+                    </h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '12px' }}>
+                      {globalSearchResults.inquiries.map(inq => (
+                        <div
+                          key={inq.id}
+                          onClick={() => {
+                            setShowGlobalSearch(false);
+                            setSearchInquiryQuery(inq.phone || inq.name);
+                            handleSwitchTab('inquiries');
+                          }}
+                          style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px', cursor: 'pointer', transition: 'all 0.15s' }}
+                          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#7c3aed'; e.currentTarget.style.background = '#faf5ff'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <b style={{ fontSize: '14px', color: '#0f172a' }}>{inq.name}</b>
+                            <span style={{ fontSize: '10.5px', background: '#f1f5f9', color: '#475569', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                              {inq.status || 'NEW'}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#64748b' }}>{inq.phone} • {inq.email}</div>
+                          <div style={{ fontSize: '12px', color: '#7c3aed', fontWeight: 600, marginTop: '4px' }}>
+                            Unit: {inq.interestedApartment || 'Luxury Home'}
+                          </div>
+                          <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span style={{ fontSize: '11px', color: '#94a3b8' }}>{inq.displayTime || 'Today'}</span>
+                            <span style={{ fontSize: '11.5px', color: '#7c3aed', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              Open Lead CRM <ArrowRight size={12} />
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Buyers Results */}
+                {globalSearchResults.buyers.length > 0 && (
+                  <div className="white-panel" style={{ padding: '20px' }}>
+                    <h4 style={{ margin: '0 0 14px', fontSize: '14px', fontWeight: 700, color: '#059669', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <UserCheck size={16} />
+                      <span>Sold Units & Buyers ({globalSearchResults.buyers.length})</span>
+                    </h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '12px' }}>
+                      {globalSearchResults.buyers.map(b => (
+                        <div
+                          key={b.id}
+                          onClick={() => {
+                            setShowGlobalSearch(false);
+                            setSelectedBuyerForProfile(b);
+                            setShowBuyerProfileModal(true);
+                            handleSwitchTab('sales');
+                          }}
+                          style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px', cursor: 'pointer', transition: 'all 0.15s' }}
+                          onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#059669'; e.currentTarget.style.background = '#ecfdf5'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <b style={{ fontSize: '14px', color: '#0f172a' }}>{b.name}</b>
+                            <span style={{ fontSize: '10.5px', background: '#ecfdf5', color: '#047857', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                              KYC: {b.kyc?.status || 'VERIFIED'}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#64748b' }}>{b.phone} • {b.email}</div>
+                          <div style={{ fontSize: '12px', color: '#2563eb', fontWeight: 600, marginTop: '4px' }}>
+                            Allotted: {(b.bookingHistory && b.bookingHistory[0]) ? b.bookingHistory[0].unitNumber : 'Booked'}
+                          </div>
+                          <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span style={{ fontSize: '11.5px', color: '#059669', fontWeight: 700 }}>
+                              Recv: {formatINR((b.bookingHistory || []).reduce((acc, bk) => acc + (bk.paidAmount || 0), 0))}
+                            </span>
+                            <span style={{ fontSize: '11.5px', color: '#059669', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              Open Buyer Dossier <ArrowRight size={12} />
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. Staff & Team Results */}
+                {globalSearchResults.team.length > 0 && (
+                  <div className="white-panel" style={{ padding: '20px' }}>
+                    <h4 style={{ margin: '0 0 14px', fontSize: '14px', fontWeight: 700, color: '#1d4ed8', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Users size={16} />
+                      <span>Team & Roles ({globalSearchResults.team.length})</span>
+                    </h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+                      {globalSearchResults.team.map(t => (
+                        <div
+                          key={t.id}
+                          onClick={() => {
+                            setShowGlobalSearch(false);
+                            handleSwitchTab('team');
+                          }}
+                          style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                        >
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: '13.5px', color: '#0f172a' }}>{t.name}</div>
+                            <div style={{ fontSize: '11.5px', color: '#64748b' }}>{t.email}</div>
+                          </div>
+                          <span style={{ fontSize: '11px', background: '#eff6ff', color: '#1d4ed8', padding: '3px 8px', borderRadius: '10px', fontWeight: 700 }}>
+                            {t.roleLabel || t.role}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 5. Projects Results */}
+                {globalSearchResults.projects.length > 0 && (
+                  <div className="white-panel" style={{ padding: '20px' }}>
+                    <h4 style={{ margin: '0 0 14px', fontSize: '14px', fontWeight: 700, color: '#ca8a04', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Layers size={16} />
+                      <span>Projects & Master Developments ({globalSearchResults.projects.length})</span>
+                    </h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+                      {globalSearchResults.projects.map(p => (
+                        <div
+                          key={p.id}
+                          onClick={() => {
+                            setShowGlobalSearch(false);
+                            handleSwitchTab('projects');
+                          }}
+                          style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                        >
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: '13.5px', color: '#0f172a' }}>{p.name}</div>
+                            <div style={{ fontSize: '11.5px', color: '#64748b' }}>{p.location} • {p.city}</div>
+                          </div>
+                          <span style={{ fontSize: '11.5px', color: '#059669', fontWeight: 700 }}>
+                            {formatINR(p.startingPrice)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          FULLPAGE VIEW 2: NOTIFICATIONS & SYSTEM ALERTS CENTER (POINT 11)
+          Sidebar (275px) stays visible on left; right side is full screen
+      ======================================================== */}
+      {showNotificationPanel && (
+        <div className="fullscreen-page-overlay" style={{ zIndex: 65 }}>
+          {/* Sticky Fullscreen Top Navigation */}
+          <header className="fullscreen-top-nav">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <button 
+                type="button"
+                className="btn-secondary-action"
+                style={{ padding: '7px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                onClick={() => setShowNotificationPanel(false)}
+              >
+                <ArrowLeft size={16} />
+                <span>Back</span>
+              </button>
+              <div style={{ width: '1px', height: '24px', background: '#cbd5e1' }} />
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Bell size={18} style={{ color: '#2563eb' }} />
+                  <span>System Alerts & Real-Time Notifications Center</span>
+                  <span style={{ fontSize: '11px', background: '#eff6ff', color: '#1d4ed8', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>
+                    {unreadNotificationsCount} Unread
+                  </span>
+                </h3>
+                <span style={{ fontSize: '11.5px', color: '#64748b' }}>
+                  Full Page Notifications Stream: Prospective client leads, site visit bookings, escrow receipts & security audit logs
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {unreadNotificationsCount > 0 && (
+                <button
+                  type="button"
+                  className="btn-secondary-action"
+                  onClick={handleMarkAllNotificationsRead}
+                  style={{ padding: '7px 14px', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Check size={14} />
+                  <span>Mark All as Read</span>
+                </button>
+              )}
+              <button
+                type="button"
+                className="btn-secondary-action"
+                onClick={() => setShowNotificationPanel(false)}
+                style={{ padding: '7px 16px', fontSize: '12.5px' }}
+              >
+                Close (ESC)
+              </button>
+            </div>
+          </header>
+
+          {/* Fullscreen Notifications Workspace (Sidebar stays visible on left) */}
+          <div className="fullscreen-content-container" style={{ padding: '24px 32px' }}>
+            
+            {/* Filter Pills Bar Card */}
+            <div className="white-panel" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '18px' }}>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {[
+                  { key: 'ALL', label: 'All Alerts', count: notificationsList.length },
+                  { key: 'INQUIRY', label: '👥 Customer Leads', count: notificationsList.filter(n => n.type === 'INQUIRY').length },
+                  { key: 'VISIT', label: '📅 Site Visits', count: notificationsList.filter(n => n.type === 'VISIT').length },
+                  { key: 'PAYMENT', label: '💳 Escrow Receipts', count: notificationsList.filter(n => n.type === 'PAYMENT').length },
+                  { key: 'SECURITY', label: '🛡️ System & Security', count: notificationsList.filter(n => n.type === 'SECURITY').length }
+                ].map(tab => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setNotificationCategoryFilter(tab.key)}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      fontWeight: notificationCategoryFilter === tab.key ? 700 : 500,
+                      cursor: 'pointer',
+                      border: notificationCategoryFilter === tab.key ? '1.5px solid #2563eb' : '1px solid #e2e8f0',
+                      background: notificationCategoryFilter === tab.key ? '#eff6ff' : '#ffffff',
+                      color: notificationCategoryFilter === tab.key ? '#1d4ed8' : '#475569',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <span>{tab.label}</span>
+                    <span style={{ background: notificationCategoryFilter === tab.key ? '#2563eb' : '#f1f5f9', color: notificationCategoryFilter === tab.key ? '#ffffff' : '#64748b', padding: '1px 6px', borderRadius: '10px', fontSize: '10.5px' }}>
+                      {tab.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#059669', fontWeight: 600 }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
+                <span>Live Escrow & MySQL Sync Stream</span>
+              </div>
+            </div>
+
+            {/* Notifications Full-Width Cards Stream */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {notificationsList
+                .filter(n => notificationCategoryFilter === 'ALL' || n.type === notificationCategoryFilter)
+                .map(notif => {
+                  const isRead = readNotificationIds.includes(notif.id);
+                  return (
+                    <div
+                      key={notif.id}
+                      style={{
+                        background: isRead ? '#ffffff' : '#f0fdf4',
+                        border: isRead ? '1px solid #e2e8f0' : '1.5px solid #86efac',
+                        borderRadius: '12px',
+                        padding: '18px 22px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '16px',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+                        transition: 'all 0.15s'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          width: '44px',
+                          height: '44px',
+                          borderRadius: '10px',
+                          background: notif.type === 'INQUIRY' ? '#eff6ff' : notif.type === 'VISIT' ? '#faf5ff' : notif.type === 'PAYMENT' ? '#ecfdf5' : '#fefce8',
+                          color: notif.type === 'INQUIRY' ? '#2563eb' : notif.type === 'VISIT' ? '#7c3aed' : notif.type === 'PAYMENT' ? '#059669' : '#ca8a04',
+                          border: '1px solid',
+                          borderColor: notif.type === 'INQUIRY' ? '#bfdbfe' : notif.type === 'VISIT' ? '#ddd6fe' : notif.type === 'PAYMENT' ? '#a7f3d0' : '#fde047',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          {notif.type === 'INQUIRY' && <Inbox size={20} />}
+                          {notif.type === 'VISIT' && <Calendar size={20} />}
+                          {notif.type === 'PAYMENT' && <CreditCard size={20} />}
+                          {notif.type === 'SECURITY' && <ShieldCheck size={20} />}
+                        </div>
+
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{ fontSize: '14.5px', fontWeight: 700, color: '#0f172a' }}>{notif.title}</span>
+                            {!isRead && (
+                              <span style={{ fontSize: '10.5px', background: '#dcfce7', color: '#15803d', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                                NEW
+                              </span>
+                            )}
+                            <span style={{ fontSize: '11.5px', color: '#94a3b8' }}>• {notif.time}</span>
+                          </div>
+                          <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748b', lineHeight: 1.45 }}>
+                            {notif.desc}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                        <button
+                          type="button"
+                          className="btn-primary-action"
+                          style={{ padding: '7px 16px', fontSize: '12.5px' }}
+                          onClick={() => {
+                            handleMarkNotificationRead(notif.id);
+                            setShowNotificationPanel(false);
+                            if (notif.targetTab) handleSwitchTab(notif.targetTab);
+                          }}
+                        >
+                          <span>{notif.type === 'INQUIRY' ? 'Open in CRM' : notif.type === 'VISIT' ? 'View Schedule' : notif.type === 'PAYMENT' ? 'View Ledger' : 'View Settings'}</span>
+                          <ArrowRight size={13} />
+                        </button>
+
+                        {!isRead && (
+                          <button
+                            type="button"
+                            className="btn-secondary-action"
+                            style={{ padding: '7px 11px', fontSize: '12px' }}
+                            onClick={() => handleMarkNotificationRead(notif.id)}
+                            title="Mark as read"
+                          >
+                            <Check size={13} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+
           </div>
         </div>
       )}

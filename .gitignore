@@ -23,6 +23,7 @@ backend/apache-maven-*/
 .edge-*/
 .story-review/
 .video-*/
+scratch/
 
 # Logs & Environment variables
 *.log
