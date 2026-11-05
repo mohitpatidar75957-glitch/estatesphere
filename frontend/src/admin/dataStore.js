@@ -38,10 +38,11 @@ export const DEFAULT_25_APARTMENTS = Array.from({ length: 25 }, (_, i) => {
   const block = blocks[(index - 1) % blocks.length];
   const floorNum = (index - 1) % 4;
   const floor = floors[floorNum];
-  const bedrooms = (index % 2 === 0) ? 2 : (index % 5 === 0 ? 4 : 3);
-  const bathrooms = bedrooms >= 3 ? bedrooms : 2;
-  const areaSqft = 1250 + (index * 85);
-  const terraceArea = 20 + (index * 3);
+  const bedrooms = (index % 2 === 0) ? 2 : 3;
+  const bathrooms = (bedrooms === 3) ? 3 : 2;
+  const areaSqm = 90 + (index * 6) % 160;
+  const areaSqft = Math.round(areaSqm * 10.764);
+  const terraceArea = 15 + (index * 5) % 45;
   const aptNum = `No-${index < 10 ? '0' + index : index}`;
   const price = 25000000 + (index * 1250000); // from ₹2.62 Cr to ₹5.62 Cr
   
@@ -985,6 +986,31 @@ export const dataStore = {
                 apartmentNumber: newNum,
                 title: item.title ? item.title.replace(/№0?\d+/g, newNum).replace(/NO\.\s*\d+/gi, newNum) : item.title
               };
+            }
+            // Auto-heal any discrepancy with MySQL database for standard seed units (1 to 25)
+            const unitId = Number(item.id) || parseInt((item.apartmentNumber || '').replace(/[^\d]/g, ''), 10);
+            if (unitId >= 1 && unitId <= 25) {
+              const expectedBeds = (unitId % 2 === 0) ? 2 : 3;
+              if (item.bedrooms !== expectedBeds) {
+                item.bedrooms = expectedBeds;
+                item.bathrooms = expectedBeds === 3 ? 3 : 2;
+                if (item.title && (item.title.includes('Bed Residence') || item.title.includes('BHK'))) {
+                  item.title = `${expectedBeds} Bed Residence - Unit ${item.apartmentNumber || `No-${unitId < 10 ? '0' + unitId : unitId}`}`;
+                }
+                needsUpdate = true;
+              }
+              const expectedAreaSqm = 90 + (unitId * 6) % 160;
+              const expectedAreaSqft = Math.round(expectedAreaSqm * 10.764);
+              if (item.areaSqft && Math.abs(item.areaSqft - expectedAreaSqft) > 200) {
+                item.areaSqft = expectedAreaSqft;
+                item.areaSqm = expectedAreaSqm;
+                needsUpdate = true;
+              }
+              const expectedTerrace = 15 + (unitId * 5) % 45;
+              if (item.terraceArea && Math.abs(item.terraceArea - expectedTerrace) > 25) {
+                item.terraceArea = expectedTerrace;
+                needsUpdate = true;
+              }
             }
             // Ensure buyer financial breakdown is always present
             if (item.buyer && item.buyer.name) {

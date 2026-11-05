@@ -67,9 +67,9 @@ const generateFallbackProperties = () => {
     }
 
     const bedrooms = (i % 2 === 0) ? 2 : 3
-    const areaSqm = 92 + (i * 7) % 63 // Diverse sizes from 92 to 155 sqm
-    const terraceArea = 15 + (i * 6) % 35 // 15 to 50 sqm
-    const aptNum = `NO. ${i}`
+    const areaSqm = 90 + (i * 6) % 160
+    const terraceArea = 15 + (i * 5) % 45
+    const aptNum = `No-${i < 10 ? '0' + i : i}`
 
     list.push({
       id: i,
@@ -249,10 +249,11 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
             const localMatch = localApts.find(la => String(la.id) === String(item.id) || la.apartmentNumber === item.apartmentNumber)
             if (localMatch) {
               return {
-                ...item,
                 ...localMatch,
+                ...item, // REAL DATABASE DATA TAKES PRECEDENCE (bedrooms, areaSqft, areaSqm, price, status, city, address)
                 imageUrl: localMatch.imageUrl || item.imageUrl,
-                roomGallery: localMatch.roomGallery || item.roomGallery
+                roomGallery: localMatch.roomGallery || item.roomGallery,
+                buyer: localMatch.buyer || null
               }
             }
             return item
@@ -267,6 +268,14 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
           })
 
           setProperties(allProperties)
+          setSelectedApartment(prev => {
+            if (!prev) return null
+            const updated = allProperties.find(p => String(p.id) === String(prev.id) || p.apartmentNumber === prev.apartmentNumber)
+            return updated || prev
+          })
+          try {
+            localStorage.setItem('era_apartments_db_v2', JSON.stringify(allProperties))
+          } catch (_) {}
         }
       })
       .catch(() => {
