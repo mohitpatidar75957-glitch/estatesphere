@@ -46,96 +46,9 @@ export const DEFAULT_25_APARTMENTS = Array.from({ length: 25 }, (_, i) => {
   const aptNum = `No-${index < 10 ? '0' + index : index}`;
   const price = 25000000 + (index * 1250000); // from ₹2.62 Cr to ₹5.62 Cr
   
-  // Realistic initial statuses (18 Available, 4 Reserved, 3 Sold)
-  let status = 'AVAILABLE';
-  let buyer = null;
-
-  if (index === 3) {
-    status = 'RESERVED';
-    buyer = {
-      name: 'Ananya Deshmukh',
-      phone: '+91 98112 33490',
-      email: 'ananya.deshmukh@fortiscare.org',
-      dealAmount: price,
-      paidAmount: 1500000,
-      balanceAmount: price - 1500000,
-      paymentPlan: 'TOKEN_ADVANCE',
-      bookingDate: '01 Nov 2026',
-      saleDate: '01 Nov 2026',
-      paymentStatus: 'TOKEN_PAID',
-      paymentStatusLabel: 'Token Advance Received (₹15 Lakh Paid • Balance on Agreement)',
-      emiDetails: { tokenAmount: 1500000, nextDueDate: '15 Nov 2026' },
-      assignedAgent: 'Rohit Verma (Manager)',
-      notes: 'Token received for 3 BHK Duplex. Financing approval in progress.'
-    };
-  } else if (index === 5) {
-    status = 'SOLD';
-    buyer = {
-      name: 'Vikramaditya Singhania',
-      phone: '+91 98201 44521',
-      email: 'vikram.singhania@apexcapital.in',
-      dealAmount: 31250000,
-      paidAmount: 28125000,
-      balanceAmount: 3125000,
-      paymentPlan: 'EMI_PLAN',
-      bookingDate: '26 Oct 2026',
-      saleDate: '26 Oct 2026',
-      paymentStatus: 'PARTIALLY_PAID',
-      paymentStatusLabel: 'Active EMI Plan (90% Paid • ₹31.25 L Balance)',
-      emiDetails: { monthlyEmi: 312500, paidInstallments: 9, totalInstallments: 10, nextDueDate: '15 Nov 2026' },
-      assignedAgent: 'Super Admin',
-      notes: 'Bespoke travertine finishes requested. Final registry scheduled next month.'
-    };
-  } else if (index === 8) {
-    status = 'SOLD';
-    buyer = {
-      name: 'Dr. Harshvardhan Kapoor',
-      phone: '+91 98220 88711',
-      email: 'dr.harsh@cardiohealth.in',
-      dealAmount: 35000000,
-      paidAmount: 17500000,
-      balanceAmount: 17500000,
-      paymentPlan: 'EMI_PLAN',
-      bookingDate: '29 Oct 2026',
-      saleDate: '29 Oct 2026',
-      paymentStatus: 'PARTIALLY_PAID',
-      paymentStatusLabel: 'Milestone / EMI Plan (50% Paid • ₹1.75 Cr Balance)',
-      emiDetails: { monthlyEmi: 350000, nextMilestone: 'Structure Complete (5th Floor Slab)', nextDueDate: '20 Dec 2026' },
-      assignedAgent: 'Pooja Sharma (Sales Agent)',
-      notes: 'Car parking slot P-14 allocated in basement B1.'
-    };
-  } else if (index === 19) {
-    status = 'SOLD';
-    buyer = {
-      name: 'Sunil & Meera Mittal',
-      phone: '+91 98330 99812',
-      email: 'sunil.mittal@mittalgroup.com',
-      dealAmount: 48750000,
-      paidAmount: 48750000,
-      balanceAmount: 0,
-      paymentPlan: 'FULL_PAYMENT',
-      bookingDate: '02 Nov 2026',
-      saleDate: '02 Nov 2026',
-      paymentStatus: 'FULLY_PAID',
-      paymentStatusLabel: '100% Full Payment Cleared (Zero Balance Due)',
-      emiDetails: null,
-      assignedAgent: 'Super Admin',
-      notes: 'All dues cleared. Possession letter and key handover scheduled.'
-    };
-  } else if (index === 7 || index === 14 || index === 21) {
-    status = 'RESERVED';
-    buyer = {
-      name: index === 7 ? 'Siddharth Oberoi' : (index === 14 ? 'Kavita Chawla' : 'Aditya Roy'),
-      phone: index === 7 ? '+91 98101 22345' : (index === 14 ? '+91 98711 55670' : '+91 99200 44321'),
-      email: index === 7 ? 'siddharth@oberoiholdings.com' : (index === 14 ? 'kavita.chawla@gmail.com' : 'aditya.roy@zenithtech.io'),
-      dealAmount: price,
-      saleDate: '31 Oct 2026',
-      paymentStatus: 'TOKEN_PAID',
-      paymentStatusLabel: 'Holding Token Received',
-      assignedAgent: index === 7 ? 'Pooja Sharma (Sales Agent)' : 'Rohit Verma (Manager)',
-      notes: 'Client scheduled on-site inspection before final signing.'
-    };
-  }
+  // Initial status: all units available, no sales yet until real transaction recorded
+  const status = 'AVAILABLE';
+  const buyer = null;
 
   const typology = floorNum === 3 ? typologies[2] : (floorNum === 0 ? typologies[0] : typologies[1]);
   const carpetAreaSqft = Math.round(areaSqft * 0.72);
@@ -265,31 +178,17 @@ const DEFAULT_INITIAL_INQUIRIES = [
 const DEFAULT_INITIAL_ACTIVITY = [
   {
     id: 'act-1',
-    text: 'Super Admin marked Unit No-05 as SOLD OUT',
-    tag: 'STATUS_CHANGE',
-    time: '10 mins ago',
-    type: 'sold'
+    text: 'System initialized with EstateSphere Indore master project',
+    tag: 'SYSTEM',
+    time: 'Today',
+    type: 'system'
   },
   {
     id: 'act-2',
-    text: 'New inquiry received from Ananya Deshmukh (Book a Call)',
-    tag: 'NEW_LEAD',
-    time: '45 mins ago',
-    type: 'lead'
-  },
-  {
-    id: 'act-3',
-    text: 'Super Admin reserved Unit No-03 for client review',
-    tag: 'STATUS_CHANGE',
-    time: '2 hours ago',
-    type: 'reserved'
-  },
-  {
-    id: 'act-4',
-    text: 'Site visit confirmed for Vikramaditya Singhania (Penthouse Duplex)',
-    tag: 'SITE_TOUR',
-    time: '3 hours ago',
-    type: 'tour'
+    text: 'All 25 residential apartments loaded with available status',
+    tag: 'INVENTORY',
+    time: 'Today',
+    type: 'inventory'
   }
 ];
 
@@ -298,382 +197,7 @@ const DEFAULT_INITIAL_ACTIVITY = [
 // ========================================================
 // POINT 4: BUYER / CUSTOMER MASTER REGISTRY SEED
 // ========================================================
-export const DEFAULT_BUYERS = [
-  {
-    id: 'BUY-2026-001',
-    name: 'Ananya Deshmukh',
-    phone: '+91 98112 33490',
-    altPhone: '+91 98112 33491',
-    email: 'ananya.deshmukh@fortiscare.org',
-    address: 'Penthouse 402, Horizon Greens, MG Road',
-    city: 'Bangalore',
-    state: 'Karnataka',
-    pincode: '560001',
-    occupation: 'Senior Partner & Legal Counsel',
-    company: 'Deshmukh & Co Advocates',
-    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-    kyc: {
-      status: 'VERIFIED',
-      panNumber: 'ABCDE1234F',
-      aadhaarNumber: '5412-8921-3401',
-      verifiedDate: '01 Nov 2026',
-      verifiedBy: 'Super Admin',
-      panDocName: 'ananya_pan_card.pdf',
-      aadhaarDocName: 'ananya_aadhaar_card.pdf'
-    },
-    assignedAgent: 'Rohit Verma (Manager)',
-    registeredDate: '01 Nov 2026',
-    bookedUnits: ['No-03'],
-    bookingHistory: [
-      {
-        bookingId: 'BK-2026-003',
-        unitNumber: 'No-03',
-        projectName: 'Dwellora Residence',
-        bookingDate: '01 Nov 2026',
-        agreedPrice: 28750000,
-        paidAmount: 1500000,
-        balanceAmount: 27250000,
-        status: 'RESERVED',
-        agreementStatus: 'Under Legal Review',
-        paymentPlan: 'TOKEN_ADVANCE'
-      }
-    ],
-    paymentHistory: [
-      {
-        receiptNo: 'RCP-2026-003',
-        date: '01 Nov 2026',
-        amount: 1500000,
-        paymentMode: 'NEFT / RTGS',
-        txnId: 'HDFC0002910481',
-        stage: 'Token Holding Advance',
-        status: 'CLEARED',
-        invoiceNo: 'INV-2026-003'
-      }
-    ],
-    documents: [
-      { id: 'doc-1', title: 'Official Booking Receipt (No-03)', type: 'RECEIPT', date: '01 Nov 2026', size: '1.2 MB', url: '#' },
-      { id: 'doc-2', title: 'Draft Allotment Agreement', type: 'AGREEMENT', date: '02 Nov 2026', size: '3.4 MB', url: '#' },
-      { id: 'doc-3', title: 'KYC PAN & Aadhaar Dossier', type: 'KYC_PROOF', date: '01 Nov 2026', size: '850 KB', url: '#' }
-    ],
-    communications: [
-      { id: 'comm-1', date: '01 Nov 2026 11:30 AM', type: 'CALL', agent: 'Rohit Verma', summary: 'Discussed penthouse solarium deck specifications and agreement draft.', nextFollowUp: '15 Nov 2026' },
-      { id: 'comm-2', date: '03 Nov 2026 03:45 PM', type: 'WHATSAPP', agent: 'Rohit Verma', summary: 'Shared high-resolution 360 floor plan and parking allocation slot P-08.' }
-    ],
-    internalNotes: 'Client preferred Tower B1 due to sunset solarium deck. Pre-approved home loan sanctioned with HDFC Bank.',
-    cancellationHistory: []
-  },
-  {
-    id: 'BUY-2026-002',
-    name: 'Vikramaditya Singhania',
-    phone: '+91 98201 44521',
-    altPhone: '+91 98201 44522',
-    email: 'vikram.singhania@apexcapital.in',
-    address: 'Bungalow 12, Malabar Hill Promenade',
-    city: 'Mumbai',
-    state: 'Maharashtra',
-    pincode: '400006',
-    occupation: 'Managing Director & CIO',
-    company: 'Apex Capital Ventures',
-    avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80',
-    kyc: {
-      status: 'VERIFIED',
-      panNumber: 'BKGPS9821M',
-      aadhaarNumber: '7821-4412-9012',
-      verifiedDate: '26 Oct 2026',
-      verifiedBy: 'Super Admin',
-      panDocName: 'vikram_pan.pdf',
-      aadhaarDocName: 'vikram_aadhaar.pdf'
-    },
-    assignedAgent: 'Super Admin',
-    registeredDate: '26 Oct 2026',
-    bookedUnits: ['No-05'],
-    bookingHistory: [
-      {
-        bookingId: 'BK-2026-005',
-        unitNumber: 'No-05',
-        projectName: 'Dwellora Residence',
-        bookingDate: '26 Oct 2026',
-        agreedPrice: 31250000,
-        paidAmount: 28125000,
-        balanceAmount: 3125000,
-        status: 'CONFIRMED',
-        agreementStatus: 'Executed & Registered',
-        paymentPlan: 'EMI_PLAN'
-      }
-    ],
-    paymentHistory: [
-      { receiptNo: 'RCP-2026-005A', date: '26 Oct 2026', amount: 5000000, paymentMode: 'RTGS', txnId: 'ICIC000391028', stage: 'Down Payment (15%)', status: 'CLEARED', invoiceNo: 'INV-2026-005' },
-      { receiptNo: 'RCP-2026-005B', date: '01 Nov 2026', amount: 23125000, paymentMode: 'RTGS', txnId: 'ICIC000419201', stage: 'Milestone 1-4 Slab Payment', status: 'CLEARED', invoiceNo: 'INV-2026-005B' }
-    ],
-    documents: [
-      { id: 'doc-1', title: 'Executed Buyer Sale Agreement', type: 'AGREEMENT', date: '27 Oct 2026', size: '4.8 MB', url: '#' },
-      { id: 'doc-2', title: 'Payment Receipt Cum Tax Invoice', type: 'RECEIPT', date: '01 Nov 2026', size: '1.5 MB', url: '#' },
-      { id: 'doc-3', title: 'Basement EV Parking Allotment Letter', type: 'PARKING_LETTER', date: '28 Oct 2026', size: '1.1 MB', url: '#' }
-    ],
-    communications: [
-      { id: 'comm-1', date: '26 Oct 2026 10:00 AM', type: 'MEETING', agent: 'Super Admin', summary: 'On-site sample villa inspection and contract signing.', nextFollowUp: '15 Nov 2026' }
-    ],
-    internalNotes: 'VIP Investor. Final installment of ₹31.25 Lakh due upon structure hand-over milestone.',
-    cancellationHistory: []
-  },
-  {
-    id: 'BUY-2026-003',
-    name: 'Dr. Harshvardhan Kapoor',
-    phone: '+91 98220 88711',
-    altPhone: '',
-    email: 'dr.harsh@cardiohealth.in',
-    address: 'Plot 45, Jubilee Enclave, Koramangala 4th Block',
-    city: 'Bangalore',
-    state: 'Karnataka',
-    pincode: '560034',
-    occupation: 'Chief Cardiac Surgeon',
-    company: 'Fortis Memorial Healthcare',
-    avatar: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=150&auto=format&fit=crop&q=80',
-    kyc: {
-      status: 'VERIFIED',
-      panNumber: 'HKLMN6621R',
-      aadhaarNumber: '9012-3341-5521',
-      verifiedDate: '29 Oct 2026',
-      verifiedBy: 'Pooja Sharma (Sales Agent)',
-      panDocName: 'dr_harsh_pan.pdf',
-      aadhaarDocName: 'dr_harsh_aadhaar.pdf'
-    },
-    assignedAgent: 'Pooja Sharma (Sales Agent)',
-    registeredDate: '29 Oct 2026',
-    bookedUnits: ['No-08'],
-    bookingHistory: [
-      {
-        bookingId: 'BK-2026-008',
-        unitNumber: 'No-08',
-        projectName: 'Dwellora Residence',
-        bookingDate: '29 Oct 2026',
-        agreedPrice: 35000000,
-        paidAmount: 17500000,
-        balanceAmount: 17500000,
-        status: 'CONFIRMED',
-        agreementStatus: 'Executed & Registered',
-        paymentPlan: 'EMI_PLAN'
-      }
-    ],
-    paymentHistory: [
-      { receiptNo: 'RCP-2026-008A', date: '29 Oct 2026', amount: 17500000, paymentMode: 'Cheque / Clearing', txnId: 'CHQ-991204', stage: 'Booking & Foundation Milestone (50%)', status: 'CLEARED', invoiceNo: 'INV-2026-008' }
-    ],
-    documents: [
-      { id: 'doc-1', title: 'Allotment Letter & Unit Specs (No-08)', type: 'ALLOTMENT_LETTER', date: '29 Oct 2026', size: '2.1 MB', url: '#' },
-      { id: 'doc-2', title: '50% Milestone Payment Receipt', type: 'RECEIPT', date: '30 Oct 2026', size: '1.2 MB', url: '#' }
-    ],
-    communications: [
-      { id: 'comm-1', date: '29 Oct 2026 02:30 PM', type: 'CALL', agent: 'Pooja Sharma', summary: 'Confirmed receipt of clearance for Cheque CHQ-991204.', nextFollowUp: '20 Dec 2026' }
-    ],
-    internalNotes: 'Allocated 2 dedicated basement car parking slots P-14 & P-15.',
-    cancellationHistory: []
-  },
-  {
-    id: 'BUY-2026-004',
-    name: 'Sunil & Meera Mittal',
-    phone: '+91 98330 99812',
-    altPhone: '+91 98330 99813',
-    email: 'sunil.mittal@mittalgroup.com',
-    address: 'Mittal Towers, 14th Floor, Nariman Point',
-    city: 'Mumbai',
-    state: 'Maharashtra',
-    pincode: '400021',
-    occupation: 'Chairman & Industrialist',
-    company: 'Mittal Industrial Group',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    kyc: {
-      status: 'VERIFIED',
-      panNumber: 'RNVMS7712E',
-      aadhaarNumber: '2212-6612-8812',
-      verifiedDate: '02 Nov 2026',
-      verifiedBy: 'Super Admin',
-      panDocName: 'mittal_pan.pdf',
-      aadhaarDocName: 'mittal_aadhaar.pdf'
-    },
-    assignedAgent: 'Super Admin',
-    registeredDate: '02 Nov 2026',
-    bookedUnits: ['No-19'],
-    bookingHistory: [
-      {
-        bookingId: 'BK-2026-019',
-        unitNumber: 'No-19',
-        projectName: 'Dwellora Residence',
-        bookingDate: '02 Nov 2026',
-        agreedPrice: 48750000,
-        paidAmount: 48750000,
-        balanceAmount: 0,
-        status: 'CONFIRMED',
-        agreementStatus: '100% Registry & Possession Slip Issued',
-        paymentPlan: 'FULL_PAYMENT'
-      }
-    ],
-    paymentHistory: [
-      { receiptNo: 'RCP-2026-020A', date: '02 Nov 2026', amount: 48750000, paymentMode: 'RTGS', txnId: 'KKBK000189211', stage: 'Full Lumsum Cleared (100%)', status: 'CLEARED', invoiceNo: 'INV-2026-020' }
-    ],
-    documents: [
-      { id: 'doc-1', title: '100% Full Payment Clearance Certificate', type: 'CLEARANCE', date: '02 Nov 2026', size: '1.4 MB', url: '#' },
-      { id: 'doc-2', title: 'Possession Letter & Key Handover Slip', type: 'POSSESSION', date: '03 Nov 2026', size: '2.6 MB', url: '#' }
-    ],
-    communications: [
-      { id: 'comm-1', date: '02 Nov 2026 05:00 PM', type: 'MEETING', agent: 'Super Admin', summary: 'Executed deed of sale and handed over master welcome key kit.' }
-    ],
-    internalNotes: 'Zero balance due. Keys handed over. Priority interior access granted.',
-    cancellationHistory: []
-  },
-  {
-    id: 'BUY-2026-005',
-    name: 'Siddharth Oberoi',
-    phone: '+91 98101 22345',
-    altPhone: '',
-    email: 'siddharth@oberoiholdings.com',
-    address: 'Villa 7, Golf Links Residences',
-    city: 'New Delhi',
-    state: 'Delhi',
-    pincode: '110003',
-    occupation: 'Founder & CEO',
-    company: 'Oberoi Tech Holdings',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-    kyc: {
-      status: 'VERIFIED',
-      panNumber: 'AOZPO4412K',
-      aadhaarNumber: '3312-7782-9901',
-      verifiedDate: '31 Oct 2026',
-      verifiedBy: 'Pooja Sharma',
-      panDocName: 'oberoi_pan.pdf',
-      aadhaarDocName: 'oberoi_aadhaar.pdf'
-    },
-    assignedAgent: 'Pooja Sharma (Sales Agent)',
-    registeredDate: '31 Oct 2026',
-    bookedUnits: ['No-07'],
-    bookingHistory: [
-      {
-        bookingId: 'BK-2026-007',
-        unitNumber: 'No-07',
-        projectName: 'Dwellora Residence',
-        bookingDate: '31 Oct 2026',
-        agreedPrice: 33750000,
-        paidAmount: 1500000,
-        balanceAmount: 32250000,
-        status: 'RESERVED',
-        agreementStatus: 'Under Legal Review',
-        paymentPlan: 'TOKEN_ADVANCE'
-      }
-    ],
-    paymentHistory: [
-      { receiptNo: 'RCP-2026-007', date: '31 Oct 2026', amount: 1500000, paymentMode: 'UPI / Online', txnId: 'UPI-9921029141', stage: 'Token Advance Deposit', status: 'CLEARED', invoiceNo: 'INV-2026-007' }
-    ],
-    documents: [
-      { id: 'doc-1', title: 'Token Holding Certificate (No-07)', type: 'RECEIPT', date: '31 Oct 2026', size: '1.1 MB', url: '#' }
-    ],
-    communications: [
-      { id: 'comm-1', date: '31 Oct 2026 12:15 PM', type: 'CALL', agent: 'Pooja Sharma', summary: 'Client confirmed token payment. Booking confirmation issued.', nextFollowUp: '15 Nov 2026' }
-    ],
-    internalNotes: 'Client scheduled on-site inspection with family on Nov 15th.',
-    cancellationHistory: []
-  },
-  {
-    id: 'BUY-2026-006',
-    name: 'Kavita Chawla',
-    phone: '+91 98711 55670',
-    altPhone: '',
-    email: 'kavita.chawla@gmail.com',
-    address: 'A-24, Vasant Vihar Enclave',
-    city: 'New Delhi',
-    state: 'Delhi',
-    pincode: '110057',
-    occupation: 'Creative Director & Designer',
-    company: 'Chawla Couture Studio',
-    avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
-    kyc: {
-      status: 'PENDING',
-      panNumber: 'CKMPR8812D',
-      aadhaarNumber: '6612-4412-8890',
-      verifiedDate: null,
-      verifiedBy: null,
-      panDocName: 'kavita_pan_pending.pdf',
-      aadhaarDocName: ''
-    },
-    assignedAgent: 'Rohit Verma (Manager)',
-    registeredDate: '31 Oct 2026',
-    bookedUnits: ['No-14'],
-    bookingHistory: [
-      {
-        bookingId: 'BK-2026-014',
-        unitNumber: 'No-14',
-        projectName: 'Dwellora Residence',
-        bookingDate: '31 Oct 2026',
-        agreedPrice: 42500000,
-        paidAmount: 1500000,
-        balanceAmount: 41000000,
-        status: 'RESERVED',
-        agreementStatus: 'KYC Document Pending',
-        paymentPlan: 'TOKEN_ADVANCE'
-      }
-    ],
-    paymentHistory: [
-      { receiptNo: 'RCP-2026-014', date: '31 Oct 2026', amount: 1500000, paymentMode: 'IMPS / Bank Transfer', txnId: 'SBIN000918231', stage: 'Holding Advance', status: 'CLEARED', invoiceNo: 'INV-2026-014' }
-    ],
-    documents: [
-      { id: 'doc-1', title: 'Reservation Token Slip', type: 'RECEIPT', date: '31 Oct 2026', size: '980 KB', url: '#' }
-    ],
-    communications: [
-      { id: 'comm-1', date: '31 Oct 2026 04:00 PM', type: 'CALL', agent: 'Rohit Verma', summary: 'Requested scanned Aadhaar card copy to complete KYC verification.', nextFollowUp: '08 Nov 2026' }
-    ],
-    internalNotes: 'Aadhaar card copy awaited to complete KYC signoff.',
-    cancellationHistory: []
-  },
-  {
-    id: 'BUY-2026-007',
-    name: 'Aditya Roy',
-    phone: '+91 99200 44321',
-    altPhone: '',
-    email: 'aditya.roy@zenithtech.io',
-    address: 'Skyline Terrace 18, Indiranagar 100ft Road',
-    city: 'Bangalore',
-    state: 'Karnataka',
-    pincode: '560038',
-    occupation: 'VP of Engineering',
-    company: 'Zenith Global Systems',
-    avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80',
-    kyc: {
-      status: 'VERIFIED',
-      panNumber: 'AROYP3312L',
-      aadhaarNumber: '4412-9912-3321',
-      verifiedDate: '31 Oct 2026',
-      verifiedBy: 'Super Admin',
-      panDocName: 'aditya_pan.pdf',
-      aadhaarDocName: 'aditya_aadhaar.pdf'
-    },
-    assignedAgent: 'Rohit Verma (Manager)',
-    registeredDate: '31 Oct 2026',
-    bookedUnits: ['No-21'],
-    bookingHistory: [
-      {
-        bookingId: 'BK-2026-021',
-        unitNumber: 'No-21',
-        projectName: 'Dwellora Residence',
-        bookingDate: '31 Oct 2026',
-        agreedPrice: 51250000,
-        paidAmount: 1500000,
-        balanceAmount: 49750000,
-        status: 'RESERVED',
-        agreementStatus: 'Agreement Scheduled',
-        paymentPlan: 'TOKEN_ADVANCE'
-      }
-    ],
-    paymentHistory: [
-      { receiptNo: 'RCP-2026-021', date: '31 Oct 2026', amount: 1500000, paymentMode: 'NEFT', txnId: 'AXIS000991823', stage: 'Token Advance', status: 'CLEARED', invoiceNo: 'INV-2026-021' }
-    ],
-    documents: [
-      { id: 'doc-1', title: 'Token Holding Agreement Slip', type: 'RECEIPT', date: '31 Oct 2026', size: '1.2 MB', url: '#' }
-    ],
-    communications: [
-      { id: 'comm-1', date: '31 Oct 2026 06:15 PM', type: 'WHATSAPP', agent: 'Rohit Verma', summary: 'Sent agreement schedule details for next week.' }
-    ],
-    internalNotes: 'Client opted for automated EMI milestone deductions.',
-    cancellationHistory: []
-  }
-];
+export const DEFAULT_BUYERS = [];
 
 export const DEFAULT_PROJECTS = [
   {
@@ -1012,8 +536,21 @@ export const dataStore = {
                 needsUpdate = true;
               }
             }
-            // Ensure buyer financial breakdown is always present
-            if (item.buyer && item.buyer.name) {
+            // Purge fake demo buyers and dummy sold/reserved statuses on units
+            const dummyBuyerNames = ['Ananya Deshmukh', 'Vikramaditya Singhania', 'Dr. Harshvardhan Kapoor', 'Sunil & Meera Mittal', 'Siddharth Oberoi', 'Kavita Chawla', 'Aditya Roy', 'Private Client', 'Prospective Client'];
+            if (item.buyer && dummyBuyerNames.includes(item.buyer.name?.trim())) {
+              item.status = 'AVAILABLE';
+              item.buyer = null;
+              needsUpdate = true;
+            }
+            if ((item.status === 'SOLD' || item.status === 'RESERVED') && (!item.buyer || !item.buyer.name || dummyBuyerNames.includes(item.buyer.name?.trim()))) {
+              item.status = 'AVAILABLE';
+              item.buyer = null;
+              needsUpdate = true;
+            }
+
+            // Ensure buyer financial breakdown is present ONLY for real buyers
+            if (item.buyer && item.buyer.name && !dummyBuyerNames.includes(item.buyer.name?.trim())) {
               const deal = item.buyer.dealAmount || item.price || 30000000;
               const isFull = item.buyer.paymentStatus === 'FULLY_PAID' || item.buyer.paymentPlan === 'FULL_PAYMENT';
               const paid = item.buyer.paidAmount !== undefined ? item.buyer.paidAmount : (isFull ? deal : (item.status === 'RESERVED' ? 1500000 : Math.round(deal * 0.9)));
@@ -1025,42 +562,8 @@ export const dataStore = {
                 paidAmount: paid,
                 balanceAmount: balance,
                 paymentPlan: plan,
-                bookingDate: item.buyer.bookingDate || item.buyer.saleDate || '26 Oct 2026'
+                bookingDate: item.buyer.bookingDate || item.buyer.saleDate || new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date())
               };
-            }
-            // Auto-hydrate buyer on sold/reserved units if missing
-            if ((item.status === 'SOLD' || item.status === 'RESERVED') && (!item.buyer || !item.buyer.name)) {
-              const seed = DEFAULT_25_APARTMENTS.find(d => d.id === item.id || d.apartmentNumber === item.apartmentNumber);
-              if (seed && seed.buyer) {
-                needsUpdate = true;
-                item.buyer = { ...seed.buyer };
-              } else if (item.status === 'SOLD') {
-                needsUpdate = true;
-                item.buyer = {
-                  name: 'Private Client',
-                  phone: '+91 98200 11000',
-                  email: 'buyer@estatesphere.in',
-                  dealAmount: item.price || 30000000,
-                  saleDate: '28 Oct 2026',
-                  paymentStatus: 'FULLY_PAID',
-                  paymentStatusLabel: '100% Payment Cleared (Registry Complete)',
-                  assignedAgent: 'Super Admin',
-                  notes: 'Direct client purchase.'
-                };
-              } else if (item.status === 'RESERVED') {
-                needsUpdate = true;
-                item.buyer = {
-                  name: 'Prospective Client',
-                  phone: '+91 98112 00000',
-                  email: 'client@estatesphere.in',
-                  dealAmount: item.price || 28000000,
-                  saleDate: 'Today',
-                  paymentStatus: 'TOKEN_PAID',
-                  paymentStatusLabel: 'Token Advance Received',
-                  assignedAgent: 'Rohit Verma',
-                  notes: 'Token advance received. Document verification in progress.'
-                };
-              }
             }
             // Enrich with Point 3 Apartment Management specs if missing
             const superArea = Number(item.areaSqft) || 1500;
@@ -2005,45 +1508,37 @@ export const dataStore = {
   // POINT 4: BUYER & CUSTOMER MANAGEMENT METHODS
   // ==========================================
   getBuyers() {
-    if (typeof window === 'undefined') return DEFAULT_BUYERS;
+    if (typeof window === 'undefined') return [];
     try {
       const raw = localStorage.getItem(STORAGE_KEYS.BUYERS);
       if (!raw) {
-        localStorage.setItem(STORAGE_KEYS.BUYERS, JSON.stringify(DEFAULT_BUYERS));
-        return DEFAULT_BUYERS;
+        localStorage.setItem(STORAGE_KEYS.BUYERS, JSON.stringify([]));
+        return [];
       }
       const parsed = JSON.parse(raw);
       if (!Array.isArray(parsed) || parsed.length === 0) {
-        localStorage.setItem(STORAGE_KEYS.BUYERS, JSON.stringify(DEFAULT_BUYERS));
-        return DEFAULT_BUYERS;
+        localStorage.setItem(STORAGE_KEYS.BUYERS, JSON.stringify([]));
+        return [];
       }
 
-      // Auto-migrate unit number for Sunil & Meera Mittal to No-19 matching inventory
-      let needsFix = false;
-      const normalized = parsed.map(b => {
-        if (b.name?.includes('Sunil') && b.bookedUnits?.includes('No-20')) {
-          needsFix = true;
-          return {
-            ...b,
-            bookedUnits: ['No-19'],
-            bookingHistory: (b.bookingHistory || []).map(bk => ({
-              ...bk,
-              unitNumber: 'No-19',
-              bookingId: 'BK-2026-019'
-            }))
-          };
-        }
-        return b;
+      // Automatically purge any dummy demo buyers (Ananya Deshmukh, Vikramaditya, etc.)
+      const dummyNames = ['Ananya Deshmukh', 'Vikramaditya Singhania', 'Dr. Harshvardhan Kapoor', 'Sunil & Meera Mittal', 'Siddharth Oberoi', 'Kavita Chawla', 'Aditya Roy', 'Private Client', 'Prospective Client'];
+      const realBuyers = parsed.filter(b => {
+        if (!b || !b.name) return false;
+        if (dummyNames.includes(b.name.trim())) return false;
+        if (b.id && String(b.id).startsWith('BUY-2026-00')) return false;
+        return true;
       });
-      if (needsFix) {
-        localStorage.setItem(STORAGE_KEYS.BUYERS, JSON.stringify(normalized));
-        return normalized;
+
+      if (realBuyers.length !== parsed.length) {
+        localStorage.setItem(STORAGE_KEYS.BUYERS, JSON.stringify(realBuyers));
+        return realBuyers;
       }
 
-      return parsed;
+      return realBuyers;
     } catch (e) {
       console.error('[dataStore] Error loading buyers:', e);
-      return DEFAULT_BUYERS;
+      return [];
     }
   },
 

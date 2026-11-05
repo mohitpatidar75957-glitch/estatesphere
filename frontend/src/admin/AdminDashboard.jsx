@@ -427,11 +427,7 @@ export default function AdminDashboard() {
   }, [projects, projectSearch, projectStatusFilter]);
 
   // Scheduled Site Visits
-  const [tours, setTours] = useState([
-    { id: 201, customerName: 'Vikramaditya Singhania', phone: '+91 98201 44521', unit: 'No-03 Penthouse Duplex', date: 'Today', time: '02:30 PM', status: 'CONFIRMED' },
-    { id: 202, customerName: 'Ananya Deshmukh', phone: '+91 98112 33490', unit: 'No-02 Garden Apartment', date: 'Tomorrow', time: '11:00 AM', status: 'PENDING' },
-    { id: 203, customerName: 'Sameer Kapoor', phone: '+91 98330 11982', unit: 'No-06 Corner Panorama', date: '29 Oct 2026', time: '04:30 PM', status: 'CONFIRMED' }
-  ]);
+  const [tours, setTours] = useState([]);
 
   // Filters & Search for Apartments (Point 3: Apartment / Flat Management)
   const [searchQuery, setSearchQuery] = useState('');
@@ -5373,25 +5369,73 @@ export default function AdminDashboard() {
                           </tr>
                         </thead>
                         <tbody>
-                          {buyers
-                            .filter(b => {
-                              const q = searchBuyerQuery.trim().toLowerCase();
-                              const matchSearch = !q ||
-                                b.name?.toLowerCase().includes(q) ||
-                                b.phone?.toLowerCase().includes(q) ||
-                                b.email?.toLowerCase().includes(q) ||
-                                b.id?.toLowerCase().includes(q) ||
-                                b.kyc?.panNumber?.toLowerCase().includes(q) ||
-                                (b.bookedUnits || []).some(u => u.toLowerCase().includes(q));
-                              const matchKyc = buyerKycFilter === 'ALL' || b.kyc?.status === buyerKycFilter;
-                              const matchPlan = buyerPlanFilter === 'ALL' || (b.bookingHistory || []).some(bk => bk.paymentPlan === buyerPlanFilter);
-                              const isSold = (b.bookingHistory || []).some(bk => bk.status === 'CONFIRMED' || bk.status === 'SOLD');
-                              const isReserved = (b.bookingHistory || []).some(bk => bk.status === 'RESERVED');
-                              const matchStatus = buyerStatusFilter === 'ALL' || (buyerStatusFilter === 'SOLD' ? isSold : isReserved);
-                              const matchProject = activeProjectId === 'ALL' || String(b.projectId || 'proj-1') === String(activeProjectId) || (b.bookingHistory || []).some(bk => String(bk.projectId || 'proj-1') === String(activeProjectId));
-                              return matchSearch && matchKyc && matchPlan && matchStatus && matchProject;
-                            })
-                            .map(b => {
+                          {(() => {
+                            const filteredBuyersList = buyers
+                              .filter(b => {
+                                const q = searchBuyerQuery.trim().toLowerCase();
+                                const matchSearch = !q ||
+                                  b.name?.toLowerCase().includes(q) ||
+                                  b.phone?.toLowerCase().includes(q) ||
+                                  b.email?.toLowerCase().includes(q) ||
+                                  b.id?.toLowerCase().includes(q) ||
+                                  b.kyc?.panNumber?.toLowerCase().includes(q) ||
+                                  (b.bookedUnits || []).some(u => u.toLowerCase().includes(q));
+                                const matchKyc = buyerKycFilter === 'ALL' || b.kyc?.status === buyerKycFilter;
+                                const matchPlan = buyerPlanFilter === 'ALL' || (b.bookingHistory || []).some(bk => bk.paymentPlan === buyerPlanFilter);
+                                const isSold = (b.bookingHistory || []).some(bk => bk.status === 'CONFIRMED' || bk.status === 'SOLD');
+                                const isReserved = (b.bookingHistory || []).some(bk => bk.status === 'RESERVED');
+                                const matchStatus = buyerStatusFilter === 'ALL' || (buyerStatusFilter === 'SOLD' ? isSold : isReserved);
+                                const matchProject = activeProjectId === 'ALL' || String(b.projectId || 'proj-1') === String(activeProjectId) || (b.bookingHistory || []).some(bk => String(bk.projectId || 'proj-1') === String(activeProjectId));
+                                return matchSearch && matchKyc && matchPlan && matchStatus && matchProject;
+                              });
+
+                            if (filteredBuyersList.length === 0) {
+                              return (
+                                <tr>
+                                  <td colSpan={5} style={{ padding: '56px 24px', textAlign: 'center' }}>
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '60px', height: '60px', borderRadius: '50%', background: '#eff6ff', color: '#2563eb', marginBottom: '14px' }}>
+                                      <UserCheck size={30} />
+                                    </div>
+                                    <div style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>No Units Sold Yet</div>
+                                    <div style={{ fontSize: '13px', color: '#64748b', marginTop: '6px', maxWidth: '440px', margin: '6px auto 18px', lineHeight: 1.5 }}>
+                                      All 25 residences are currently available in inventory. When a flat is booked or sold, its live customer ledger, payment milestones, and KYC documents will appear here.
+                                    </div>
+                                    <button
+                                      type="button"
+                                      className="btn-primary-action"
+                                      onClick={() => {
+                                        const avail = apartments.find(a => a.status === 'AVAILABLE') || apartments[0];
+                                        setBookingWorkflowModal({
+                                          isOpen: true,
+                                          step: 1,
+                                          unitNumber: avail ? avail.apartmentNumber : 'No-01',
+                                          buyerType: 'NEW',
+                                          buyerId: '',
+                                          buyerName: '',
+                                          buyerPhone: '',
+                                          buyerEmail: '',
+                                          buyerPan: '',
+                                          dealAmount: avail ? String(avail.price) : '28800000',
+                                          paidAmount: '1500000',
+                                          paymentMode: 'NEFT / RTGS',
+                                          txnId: 'HDFC' + Math.floor(10000000 + Math.random() * 90000000),
+                                          bankName: 'HDFC Bank',
+                                          paymentPlan: 'TOKEN_ADVANCE',
+                                          bookingDate: new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date()),
+                                          fromInquiryId: null
+                                        });
+                                      }}
+                                      style={{ fontSize: '13px', padding: '8px 20px', background: '#059669', borderColor: '#059669', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                                    >
+                                      <Plus size={15} />
+                                      <span>+ Record Real Sale / Allotment</span>
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            }
+
+                            return filteredBuyersList.map(b => {
                               const totalAgreed = (b.bookingHistory || []).reduce((acc, bk) => acc + (bk.agreedPrice || 0), 0);
                               const totalPaid = (b.bookingHistory || []).reduce((acc, bk) => acc + (bk.paidAmount || 0), 0);
                               const totalBal = Math.max(0, totalAgreed - totalPaid);
@@ -5584,7 +5628,8 @@ export default function AdminDashboard() {
 
                                 </tr>
                               );
-                            })}
+                            });
+                          })()}
                         </tbody>
                       </table>
                     </div>
@@ -5617,7 +5662,20 @@ export default function AdminDashboard() {
                           </tr>
                         </thead>
                         <tbody>
-                          {filteredSalesApartments.map(apt => {
+                          {filteredSalesApartments.length === 0 ? (
+                            <tr>
+                              <td colSpan={6} style={{ padding: '56px 24px', textAlign: 'center' }}>
+                                <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '60px', height: '60px', borderRadius: '50%', background: '#f1f5f9', color: '#64748b', marginBottom: '14px' }}>
+                                  <Home size={28} />
+                                </div>
+                                <div style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>No Booked or Sold Units</div>
+                                <div style={{ fontSize: '13px', color: '#64748b', marginTop: '6px' }}>
+                                  All 25 residential apartments are currently available in inventory.
+                                </div>
+                              </td>
+                            </tr>
+                          ) : (
+                            filteredSalesApartments.map(apt => {
                             const buyer = apt.buyer || {
                               name: apt.status === 'SOLD' ? 'Private Client' : 'Prospective Buyer',
                               phone: '+91 98200 00000',
@@ -5728,7 +5786,7 @@ export default function AdminDashboard() {
 
                               </tr>
                             );
-                          })}
+                          }))}
                         </tbody>
                       </table>
                     </div>
@@ -5753,13 +5811,30 @@ export default function AdminDashboard() {
                           </tr>
                         </thead>
                         <tbody>
-                          {buyers
-                            .filter(b => {
+                          {(() => {
+                            const duesList = buyers.filter(b => {
                               const agreed = (b.bookingHistory || []).reduce((acc, bk) => acc + (bk.agreedPrice || 0), 0);
                               const paid = (b.bookingHistory || []).reduce((acc, bk) => acc + (bk.paidAmount || 0), 0);
                               return (agreed - paid) > 0;
-                            })
-                            .map(b => {
+                            });
+
+                            if (duesList.length === 0) {
+                              return (
+                                <tr>
+                                  <td colSpan={6} style={{ padding: '56px 24px', textAlign: 'center' }}>
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '60px', height: '60px', borderRadius: '50%', background: '#f0fdf4', color: '#16a34a', marginBottom: '14px' }}>
+                                      <CheckCircle2 size={30} />
+                                    </div>
+                                    <div style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>No Overdue Balances or Dues</div>
+                                    <div style={{ fontSize: '13px', color: '#64748b', marginTop: '6px' }}>
+                                      There are currently no outstanding receivables across project inventory.
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            }
+
+                            return duesList.map(b => {
                               const totalAgreed = (b.bookingHistory || []).reduce((acc, bk) => acc + (bk.agreedPrice || 0), 0);
                               const totalPaid = (b.bookingHistory || []).reduce((acc, bk) => acc + (bk.paidAmount || 0), 0);
                               const totalBal = totalAgreed - totalPaid;
@@ -5827,7 +5902,8 @@ export default function AdminDashboard() {
                                   </td>
                                 </tr>
                               );
-                            })}
+                            });
+                          })()}
                         </tbody>
                       </table>
                     </div>
