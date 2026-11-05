@@ -677,18 +677,18 @@ export const DEFAULT_BUYERS = [
 export const DEFAULT_PROJECTS = [
   {
     id: 'proj-1',
-    name: 'Dwellora Residence',
-    tagline: 'A place by day — by night to return to',
-    description: 'A boutique residential master enclave designed around privacy, wellbeing, and timeless contemporary living. Featuring natural travertine stone, layered solarium terraces, and generous private openings.',
-    location: 'New Golden Mile, Near Horizon Beach Road',
-    address: '302-B, Golden Mile Enclave, Bangalore (560103)',
-    city: 'Bangalore',
-    googleMapsUrl: 'https://maps.google.com/?q=12.9716,77.5946',
+    name: 'EstateSphere Indore',
+    tagline: 'Luxury Living & High-Rise Apartments on Super Corridor',
+    description: 'A boutique residential master enclave designed around privacy, wellbeing, and timeless contemporary living located on Super Corridor, Indore. Featuring natural travertine stone, layered solarium terraces, and generous private openings.',
+    location: 'Super Corridor, Near Airport Road',
+    address: '302-B, 3rd Floor, Swadesh Bhawan, Indore (452001)',
+    city: 'Indore',
+    googleMapsUrl: 'https://maps.google.com/?q=22.7196,75.8577',
     startingPrice: 26250000,
     status: 'Under Construction',
     launchDate: '15 Jan 2024',
     completionDate: 'December 2026',
-    reraNumber: 'PRM/KA/RERA/1251',
+    reraNumber: 'PRM/MP/RERA/2026/044',
     heroImage: '/assets/luxury_villa_day.jpg',
     nightImage: '/assets/luxury_villa_night.jpg',
     videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
@@ -706,7 +706,11 @@ export const DEFAULT_PROJECTS = [
       'Smart Home Automation',
       'Italian Modular Kitchen'
     ],
-    isMaster: true
+    isMaster: true,
+    syncUrl: 'http://localhost:8085/api/projects',
+    projectKey: 'PROJ-INDORE-MASTER',
+    syncStatus: 'CONNECTED',
+    syncLastTested: 'Live MySQL & Spring Boot Active'
   }
 ];
 
@@ -753,7 +757,7 @@ export const ROLE_PERMISSIONS = {
   }
 };
 
-// Initial Team Members (3 Core Roles)
+// Initial Team Members (3 Core Roles with Assigned Projects)
 const DEFAULT_INITIAL_TEAM = [
   {
     id: 'team-1',
@@ -765,6 +769,7 @@ const DEFAULT_INITIAL_TEAM = [
     roleBadge: '👑 Super Admin',
     accessLevel: 'All-Access Control (Users, Deletions, Settings)',
     permissions: ROLE_PERMISSIONS.SUPER_ADMIN,
+    assignedProjects: ['ALL'],
     phone: '+91 98200 11000',
     status: 'ACTIVE',
     joinedDate: 'Jan 2026'
@@ -779,6 +784,7 @@ const DEFAULT_INITIAL_TEAM = [
     roleBadge: '💼 Admin (Manager)',
     accessLevel: 'Flats Add/Edit, Photos, Sold-Out Toggle & Leads',
     permissions: ROLE_PERMISSIONS.ADMIN_MANAGER,
+    assignedProjects: ['proj-1'],
     phone: '+91 98210 22111',
     status: 'ACTIVE',
     joinedDate: 'Mar 2026'
@@ -793,6 +799,7 @@ const DEFAULT_INITIAL_TEAM = [
     roleBadge: '📞 Sales Agent',
     accessLevel: 'Inventory View & Leads Outreach (No Deletions)',
     permissions: ROLE_PERMISSIONS.SALES_AGENT,
+    assignedProjects: ['proj-1'],
     phone: '+91 98220 33222',
     status: 'ACTIVE',
     joinedDate: 'May 2026'
@@ -1485,7 +1492,8 @@ export const dataStore = {
             }
             return {
               ...m,
-              permissions: perms
+              permissions: perms,
+              assignedProjects: m.assignedProjects || (m.role === 'SUPER_ADMIN' ? ['ALL'] : ['proj-1'])
             };
           });
         }
@@ -1524,6 +1532,9 @@ export const dataStore = {
       permissions,
       phone: memberData.phone ? memberData.phone.trim() : '+91 98000 00000',
       status: 'ACTIVE',
+      assignedProjects: Array.isArray(memberData.assignedProjects) && memberData.assignedProjects.length > 0 
+        ? memberData.assignedProjects 
+        : (roleKey === 'SUPER_ADMIN' ? ['ALL'] : ['proj-1']),
       joinedDate: 'Oct 2026'
     };
     const updated = [...current, newMember];
@@ -1566,7 +1577,7 @@ export const dataStore = {
     return updated;
   },
 
-  updateTeamMemberPermissions(id, permissions, newRole = null, userName = 'Super Admin') {
+  updateTeamMemberPermissions(id, permissions, newRole = null, userName = 'Super Admin', assignedProjects = null) {
     const current = this.getTeam();
     let updatedName = '';
     const updated = current.map(m => {
@@ -1586,6 +1597,7 @@ export const dataStore = {
           roleLabel,
           roleBadge,
           permissions,
+          assignedProjects: assignedProjects || m.assignedProjects || (assignedRole === 'SUPER_ADMIN' ? ['ALL'] : ['proj-1']),
           accessLevel: `${permissions.modules.length} Modules: ${permissions.modules.join(', ')}`
         };
       }
@@ -1778,7 +1790,6 @@ export const dataStore = {
 
   // --- PROJECTS (POINT 2: PROJECT MANAGEMENT) ---
   getProjects() {
-    // Purge old v2 key if present
     try {
       localStorage.removeItem('era_projects_db_v2');
     } catch (_) {}
@@ -1786,16 +1797,53 @@ export const dataStore = {
     const raw = localStorage.getItem(STORAGE_KEYS.PROJECTS);
     if (raw) {
       try {
-        const parsed = JSON.parse(raw);
+        let parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Keep only the real Dwellora master project and any custom added projects; remove dummy proj-2 and proj-3
-          const sanitized = parsed.filter(p => p.id !== 'proj-2' && p.id !== 'proj-3');
-          if (sanitized.length > 0) {
-            if (sanitized.length !== parsed.length) {
-              localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(sanitized));
+          // Strictly remove all dummy Bhopal/Ujjain projects (proj-2, proj-3) and duplicates
+          const cleaned = [];
+          const seenIds = new Set();
+          const seenNames = new Set();
+
+          for (const p of parsed) {
+            // Delete dummy demo projects
+            if (p.id === 'proj-2' || p.id === 'proj-3' || p.projectKey === 'PROJ-BHOPAL-LAKEVIEW' || p.projectKey === 'PROJ-UJJAIN-HERITAGE') {
+              continue;
             }
-            return sanitized;
+
+            const cleanName = (p.name || '').trim();
+            const lowerName = cleanName.toLowerCase();
+
+            // If it's the primary project
+            if (p.id === 'proj-1' || lowerName.includes('dwellora') || lowerName === 'estatesphere indore') {
+              if (!seenIds.has('proj-1')) {
+                cleaned.push({
+                  ...p,
+                  id: 'proj-1',
+                  name: 'EstateSphere Indore',
+                  city: 'Indore',
+                  location: 'Super Corridor, Indore',
+                  address: '302-B, 3rd Floor, Swadesh Bhawan, Indore (452001)',
+                  reraNumber: 'PRM/MP/RERA/2026/044',
+                  projectKey: 'PROJ-INDORE-MASTER',
+                  isMaster: true
+                });
+                seenIds.add('proj-1');
+                seenNames.add('estatesphere indore');
+              }
+            } else if (!seenIds.has(p.id) && !seenNames.has(lowerName)) {
+              // Real custom project added by user
+              cleaned.push(p);
+              seenIds.add(p.id);
+              seenNames.add(lowerName);
+            }
           }
+
+          if (cleaned.length === 0) {
+            cleaned.push(DEFAULT_PROJECTS[0]);
+          }
+
+          localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(cleaned));
+          return cleaned;
         }
       } catch (_) {}
     }
@@ -1816,9 +1864,9 @@ export const dataStore = {
       name: projectData.name || 'New Master Development',
       tagline: projectData.tagline || 'Luxury Residential Community',
       description: projectData.description || 'Exclusive residential development featuring world-class architecture and serene living spaces.',
-      location: projectData.location || 'Bangalore Horizon Enclave',
-      address: projectData.address || 'Golden Boulevard, Bangalore',
-      city: projectData.city || 'Bangalore',
+      location: projectData.location || 'Super Corridor, Indore',
+      address: projectData.address || '302-B, 3rd Floor, Swadesh Bhawan, Indore (452001)',
+      city: projectData.city || 'Indore',
       googleMapsUrl: projectData.googleMapsUrl || 'https://maps.google.com/?q=12.9716,77.5946',
       startingPrice: Number(projectData.startingPrice) || 25000000,
       status: projectData.status || 'Under Construction',
@@ -1833,7 +1881,11 @@ export const dataStore = {
       totalUnits: Number(projectData.totalUnits) || 20,
       totalBlocks: projectData.totalBlocks || '2 Towers',
       amenities: Array.isArray(projectData.amenities) ? projectData.amenities : ['Gated Community 24/7', 'Swimming Pool', 'EV Parking'],
-      isMaster: !!projectData.isMaster
+      isMaster: !!projectData.isMaster,
+      syncUrl: projectData.syncUrl || 'http://localhost:8085/api/projects',
+      projectKey: projectData.projectKey || ('PROJ-' + String(newId).toUpperCase()),
+      syncStatus: projectData.syncStatus || 'CONNECTED',
+      syncLastTested: projectData.syncLastTested || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
     let updated = [newProj, ...current];
@@ -2010,7 +2062,7 @@ export const dataStore = {
       altPhone: buyerData.altPhone?.trim() || '',
       email: buyerData.email.trim().toLowerCase(),
       address: buyerData.address?.trim() || '',
-      city: buyerData.city?.trim() || 'Bangalore',
+      city: buyerData.city?.trim() || 'Indore',
       state: buyerData.state?.trim() || 'Karnataka',
       pincode: buyerData.pincode?.trim() || '',
       occupation: buyerData.occupation?.trim() || 'Business Professional',
@@ -2284,8 +2336,8 @@ export const dataStore = {
       } catch (e) {}
     }
     const defaultSessions = [
-      { id: 'sess-101', name: 'Super Admin', email: 'superadmin@estatesphere.com', role: 'SUPER_ADMIN', ip: '192.168.1.104', location: 'Bangalore, KA', device: 'Windows 11 • Chrome 124', time: 'Today, 04:00 PM', status: 'ACTIVE' },
-      { id: 'sess-102', name: 'Rohit Verma', email: 'rohit@estatesphere.com', role: 'ADMIN_MANAGER', ip: '192.168.1.118', location: 'Bangalore, KA', device: 'Windows 11 • Edge 123', time: 'Today, 02:30 PM', status: 'ACTIVE' },
+      { id: 'sess-101', name: 'Super Admin', email: 'superadmin@estatesphere.com', role: 'SUPER_ADMIN', ip: '192.168.1.104', location: 'Indore, MP', device: 'Windows 11 • Chrome 124', time: 'Today, 04:00 PM', status: 'ACTIVE' },
+      { id: 'sess-102', name: 'Rohit Verma', email: 'rohit@estatesphere.com', role: 'ADMIN_MANAGER', ip: '192.168.1.118', location: 'Indore, MP', device: 'Windows 11 • Edge 123', time: 'Today, 02:30 PM', status: 'ACTIVE' },
       { id: 'sess-103', name: 'Sneha Rao', email: 'sneha@estatesphere.com', role: 'SALES_AGENT', ip: '103.21.144.18', location: 'Mumbai, MH', device: 'macOS Sonoma • Safari 17', time: 'Yesterday, 06:15 PM', status: 'LOGGED_OUT' },
       { id: 'sess-104', name: 'Arjun Kapoor', email: 'arjun@estatesphere.com', role: 'SALES_AGENT', ip: '49.207.211.55', location: 'New Delhi, DL', device: 'iOS 17 • Mobile Safari', time: '02 Nov 2026, 11:20 AM', status: 'EXPIRED' }
     ];

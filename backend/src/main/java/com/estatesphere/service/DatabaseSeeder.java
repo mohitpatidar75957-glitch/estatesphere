@@ -62,8 +62,8 @@ public class DatabaseSeeder implements ApplicationRunner {
                 String aptNum = String.format("No-%02d", i);
 
                 p.setTitle(bedrooms + " Bed Residence - Unit " + aptNum);
-                p.setCity("Estepona");
-                p.setAddress("Costa del Sol, Malaga, Spain");
+                p.setCity("Indore");
+                p.setAddress("Super Corridor, Near Airport Road, Indore (452001)");
                 
                 // Price in Indian Rupees or general large values (e.g., from 2.5 Cr upwards)
                 BigDecimal basePrice = new BigDecimal("25000000");
@@ -93,7 +93,7 @@ public class DatabaseSeeder implements ApplicationRunner {
             repository.saveAll(seedProperties);
             System.out.println(">>> Successfully seeded " + seedProperties.size() + " properties into the database with format 'No-01'.");
         } else {
-            // Migrate existing properties to 'No-01' format
+            // Migrate existing properties to 'No-01' format and ensure city is Indore
             List<Property> existing = repository.findAll();
             boolean changed = false;
             for (Property p : existing) {
@@ -107,10 +107,15 @@ public class DatabaseSeeder implements ApplicationRunner {
                     }
                     changed = true;
                 }
+                if (!"Indore".equalsIgnoreCase(p.getCity())) {
+                    p.setCity("Indore");
+                    p.setAddress("Super Corridor, Near Airport Road, Indore (452001)");
+                    changed = true;
+                }
             }
             if (changed) {
                 repository.saveAll(existing);
-                System.out.println(">>> Successfully updated existing properties to 'No-01' format.");
+                System.out.println(">>> Successfully updated existing properties to Indore location & format.");
             } else {
                 System.out.println(">>> Database properties verified with format 'No-01'. Count: " + repository.count());
             }
