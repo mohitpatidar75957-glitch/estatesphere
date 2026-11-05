@@ -5392,44 +5392,46 @@ export default function AdminDashboard() {
                             if (filteredBuyersList.length === 0) {
                               return (
                                 <tr>
-                                  <td colSpan={5} style={{ padding: '56px 24px', textAlign: 'center' }}>
-                                    <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '60px', height: '60px', borderRadius: '50%', background: '#eff6ff', color: '#2563eb', marginBottom: '14px' }}>
-                                      <UserCheck size={30} />
+                                  <td colSpan={6} style={{ padding: '64px 24px', textAlign: 'center', width: '100%' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', maxWidth: '520px', margin: '0 auto', textAlign: 'center' }}>
+                                      <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '64px', height: '64px', borderRadius: '50%', background: '#eff6ff', color: '#2563eb', marginBottom: '16px' }}>
+                                        <UserCheck size={32} />
+                                      </div>
+                                      <div style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.01em' }}>No Units Sold Yet</div>
+                                      <div style={{ fontSize: '13.5px', color: '#64748b', marginTop: '8px', marginBottom: '22px', lineHeight: 1.6, textAlign: 'center' }}>
+                                        All 25 residences are currently available in inventory. When a flat is booked or sold, its live customer ledger, payment milestones, and KYC documents will appear here.
+                                      </div>
+                                      <button
+                                        type="button"
+                                        className="btn-primary-action"
+                                        onClick={() => {
+                                          const avail = apartments.find(a => a.status === 'AVAILABLE') || apartments[0];
+                                          setBookingWorkflowModal({
+                                            isOpen: true,
+                                            step: 1,
+                                            unitNumber: avail ? avail.apartmentNumber : 'No-01',
+                                            buyerType: 'NEW',
+                                            buyerId: '',
+                                            buyerName: '',
+                                            buyerPhone: '',
+                                            buyerEmail: '',
+                                            buyerPan: '',
+                                            dealAmount: avail ? String(avail.price) : '28800000',
+                                            paidAmount: '1500000',
+                                            paymentMode: 'NEFT / RTGS',
+                                            txnId: 'HDFC' + Math.floor(10000000 + Math.random() * 90000000),
+                                            bankName: 'HDFC Bank',
+                                            paymentPlan: 'TOKEN_ADVANCE',
+                                            bookingDate: new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date()),
+                                            fromInquiryId: null
+                                          });
+                                        }}
+                                        style={{ fontSize: '13px', padding: '10px 22px', background: '#059669', borderColor: '#059669', display: 'inline-flex', alignItems: 'center', gap: '8px', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}
+                                      >
+                                        <Plus size={16} />
+                                        <span>Record Real Sale / Allotment</span>
+                                      </button>
                                     </div>
-                                    <div style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>No Units Sold Yet</div>
-                                    <div style={{ fontSize: '13px', color: '#64748b', marginTop: '6px', maxWidth: '440px', margin: '6px auto 18px', lineHeight: 1.5 }}>
-                                      All 25 residences are currently available in inventory. When a flat is booked or sold, its live customer ledger, payment milestones, and KYC documents will appear here.
-                                    </div>
-                                    <button
-                                      type="button"
-                                      className="btn-primary-action"
-                                      onClick={() => {
-                                        const avail = apartments.find(a => a.status === 'AVAILABLE') || apartments[0];
-                                        setBookingWorkflowModal({
-                                          isOpen: true,
-                                          step: 1,
-                                          unitNumber: avail ? avail.apartmentNumber : 'No-01',
-                                          buyerType: 'NEW',
-                                          buyerId: '',
-                                          buyerName: '',
-                                          buyerPhone: '',
-                                          buyerEmail: '',
-                                          buyerPan: '',
-                                          dealAmount: avail ? String(avail.price) : '28800000',
-                                          paidAmount: '1500000',
-                                          paymentMode: 'NEFT / RTGS',
-                                          txnId: 'HDFC' + Math.floor(10000000 + Math.random() * 90000000),
-                                          bankName: 'HDFC Bank',
-                                          paymentPlan: 'TOKEN_ADVANCE',
-                                          bookingDate: new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date()),
-                                          fromInquiryId: null
-                                        });
-                                      }}
-                                      style={{ fontSize: '13px', padding: '8px 20px', background: '#059669', borderColor: '#059669', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                                    >
-                                      <Plus size={15} />
-                                      <span>+ Record Real Sale / Allotment</span>
-                                    </button>
                                   </td>
                                 </tr>
                               );
@@ -5945,9 +5947,27 @@ export default function AdminDashboard() {
                           </tr>
                         </thead>
                         <tbody>
-                          {apartments
-                            .filter(a => a.status === 'SOLD' || a.status === 'RESERVED')
-                            .map(apt => {
+                          {(() => {
+                            const docApts = apartments.filter(a => a.status === 'SOLD' || a.status === 'RESERVED');
+                            if (docApts.length === 0) {
+                              return (
+                                <tr>
+                                  <td colSpan={5} style={{ padding: '64px 24px', textAlign: 'center', width: '100%' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', maxWidth: '500px', margin: '0 auto', textAlign: 'center' }}>
+                                      <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '60px', height: '60px', borderRadius: '50%', background: '#f1f5f9', color: '#64748b', marginBottom: '14px' }}>
+                                        <FileText size={28} />
+                                      </div>
+                                      <div style={{ fontSize: '17px', fontWeight: 800, color: '#0f172a' }}>No Documents Issued Yet</div>
+                                      <div style={{ fontSize: '13px', color: '#64748b', marginTop: '6px' }}>
+                                        When an apartment is sold or reserved, all legal dossiers, tax invoices, and possession slips will appear here.
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            }
+
+                            return docApts.map(apt => {
                               const buyer = apt.buyer || {
                                 name: 'Private Client',
                                 phone: '+91 98200 11000',
@@ -6153,7 +6173,8 @@ export default function AdminDashboard() {
                                   </td>
                                 </tr>
                               );
-                            })}
+                            });
+                          })()}
                         </tbody>
                       </table>
                     </div>
