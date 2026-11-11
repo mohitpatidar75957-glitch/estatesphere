@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import FloorPlanSVG from './FloorPlanSVG'
 import ApartmentScene from './ApartmentScene'
-import { ArrowDown, ArrowUp, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, X, Home, ArrowLeft } from 'lucide-react'
 import { dataStore } from '../admin/dataStore'
 import { openApartmentBrochure } from '../utils/brochureGenerator'
 
@@ -396,6 +396,31 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
           <span>✣</span>
         </div>
 
+        {/* Sleek Luxury Home Navigation Pill */}
+        <div className="rail-home-action-wrap">
+          <button
+            type="button"
+            className="rail-luxury-home-btn"
+            onClick={() => navigateTo('/')}
+            title="Return to Homepage"
+          >
+            <Home size={12} strokeWidth={2.2} />
+            <span>HOME</span>
+          </button>
+
+          {selectedApartment && (
+            <button
+              type="button"
+              className="rail-luxury-units-btn"
+              onClick={() => { setSelectedApartment(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              title="Back to All Apartments"
+            >
+              <ArrowLeft size={11} strokeWidth={2.2} />
+              <span>UNITS</span>
+            </button>
+          )}
+        </div>
+
         {/* Navigation Breadcrumb inside rail */}
         {selectedApartment ? (
           <div className="rail-routing-info">
@@ -424,9 +449,15 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
           <small>RESIDENCE</small>
         </div>
         <div className="nav-actions">
-          <a href="/apartments" onClick={(e) => { e.preventDefault(); setSelectedApartment(null); }}>
-            {selectedApartment ? 'All apartments' : 'Select an apartment'}
-          </a>
+          {selectedApartment ? (
+            <a href="/apartments" onClick={(e) => { e.preventDefault(); setSelectedApartment(null); }}>
+              All apartments
+            </a>
+          ) : (
+            <a href="/" onClick={(e) => { e.preventDefault(); navigateTo('/'); }}>
+              Home
+            </a>
+          )}
           <button onClick={openForm}>Book a call</button>
           <a className="nav-contact" href="/contact" onClick={(e) => { e.preventDefault(); navigateTo('/contact') }}>Contact</a>
         </div>
