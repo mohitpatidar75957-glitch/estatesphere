@@ -124,6 +124,18 @@ export default function AdminDashboard() {
     return 'dashboard';
   });
 
+  // Listen to browser hash changes (support direct URL routing & back/forward navigation)
+  useEffect(() => {
+    const onHashChange = () => {
+      const h = typeof window !== 'undefined' ? window.location.hash.replace('#', '') : '';
+      if (['dashboard', 'projects', 'apartments', 'sales', 'media', 'content', 'inquiries', 'team', 'settings'].includes(h)) {
+        setCurrentTab(h);
+      }
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
   // Role Access Guard: Ensure user never stays on or navigates to an unauthorized tab
   useEffect(() => {
     if (userPermissions && Array.isArray(userPermissions.modules) && userPermissions.modules.length > 0) {
