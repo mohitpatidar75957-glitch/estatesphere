@@ -3,6 +3,7 @@ import FloorPlanSVG from './FloorPlanSVG'
 import ApartmentScene from './ApartmentScene'
 import { ArrowDown, ArrowUp, X, Home, ArrowLeft } from 'lucide-react'
 import { dataStore } from '../admin/dataStore'
+import { openApartmentBrochure } from '../utils/brochureGenerator'
 
 // Progressive 360° loader: shows a blurred low-res preview OVER the
 // canvas while the full 8K panorama streams in, then fades the preview
@@ -563,7 +564,13 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
                       {selectedApartment.status === 'RESERVED' ? 'REQUEST WAITLIST' : 'SUBMIT A REQUEST'}
                     </button>
                   )}
-                  <button className="detail-pdf-btn" onClick={() => alert('Brochure PDF generation is configured.')}>PDF</button>
+                  <button 
+                    className="detail-pdf-btn" 
+                    onClick={() => openApartmentBrochure(selectedApartment)}
+                    title="Download / Print Architectural Brochure (PDF)"
+                  >
+                    PDF
+                  </button>
                 </div>
               </div>
             </div>
