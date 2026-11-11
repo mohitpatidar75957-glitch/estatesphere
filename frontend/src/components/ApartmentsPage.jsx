@@ -404,7 +404,7 @@ export default function ApartmentsPage({ navigateTo, openForm }) {
             onClick={() => navigateTo('/')}
             title="Return to Homepage"
           >
-            <Home size={12} strokeWidth={2.2} />
+            <Home size={12} strokeWidth={1.8} />
             <span>HOME</span>
           </button>
 
